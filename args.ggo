@@ -1,0 +1,59 @@
+# Configuration file for the automatic generation of the input options parsing
+
+package "xmeasures"
+version "1.0"
+
+purpose "Extrinsic measures evaluation for overlapping multiresolution clusterings with possible inequal node base."
+
+
+usage "xmeasures [OPTIONS] clustering1 clustering2
+
+  clustering  - input file, collection of the clusters to be evaluated"
+
+option  "f1" f  "evaluate F1 Max Average Harmonic Mean"  flag off
+option  "nmi" n  "evaluate NMI"  flag off
+option  "membership" m  "average expected membership of the nodes in the clusters, > 0, typically >= 1"  float default="1"
+#modeoption  "sync-base" s  "synchronize node base with the specified collection"  string  mode="sync"
+
+args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allow input files to be unnamed parameters
+#args "--unamed-opts=clusterings"   # Allow input files to be unnamed parameters
+
+# Basic structure, see https://www.gnu.org/software/gengetopt/gengetopt.html#Basic-Usage
+#     package "<packname>"
+#     version "<version>"
+#     purpose "<purpose>"
+#     usage "<usage>"
+#     description "<description>"
+#     versiontext "<versiontext>"
+#
+#     args "<command line options>"
+#
+#     option <long> <short> "<desc>"
+#         {details="<detailed description>"}
+#         {argtype} {typestr="<type descr>"}
+#         {values="<value1>","<value2>",...}
+#         {default="<default value>"}
+#         {dependon="<other option>"}
+#         {required} {argoptional} {multiple}
+#         {hidden}
+#
+#     option <long> <short> "<desc>" flag <on/off>
+#
+#     section "section name" {sectiondesc="optional section description"}
+#
+#     text "a textual sentence"
+#
+#
+# Mutually exclusive options should belong to a group:
+#
+#     defgroup "<group name>" {groupdesc="<group description>"} {required}
+#     groupoption <long> <short> "<desc>" <argtype> group="<group name>" \
+#          {argoptional} {multiple}
+#
+#     defgroup "my grp2"
+#     defgroup "grp1" groupdesc="an option of this group is required" required
+#     groupoption "opta" a "string a" group="grp1" multiple
+
+# = Changelog =
+# v1.1 - Sync/extract modes added
+# v1.0 - Initial Release
