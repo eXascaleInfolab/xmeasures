@@ -40,6 +40,7 @@
 		</Unit>
 		<Unit filename="autogen/cmdline.h" />
 		<Unit filename="include/interface.h" />
+		<Unit filename="include/iotypes.h" />
 		<Unit filename="src/interface.cpp" />
 		<Unit filename="src/main.cpp" />
 		<Extensions>
