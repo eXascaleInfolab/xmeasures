@@ -11,8 +11,11 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
-#include <cstdint>
-#include <vector>
+#include <unordered_set>
+
+#define INCLUDE_STL_FS
+#include "fileio.h"
+
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>  // unique_ptr
@@ -53,7 +56,6 @@
 #endif // DEBUG
 #endif // HEAVY_VALIDATION
 
-using std::vector;
 using std::unordered_set;
 using std::unordered_map;
 using std::unique_ptr;

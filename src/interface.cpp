@@ -8,15 +8,21 @@
 //! \email luart@ya.ru
 //! \date 2017-02-13
 
-#include "iotypes.h"
 #include "interface.h"
+
 
 Clusters loadClustering(const char* filename, float membership)
 {
-	Clusters  cls;
+	Clusters  cls;  // Return using NRVO, named return value optimization
 
+	// Open file
 	NamedFileWrapper  finp(filename, "r");
-	// TODO: make and link  iotypes.cpp
+	if(!finp) {
+		perror(string("ERROR loadClustering(), failed on opening ").append(filename).c_str());
+		return cls;
+	}
+	// Load clusters
+
 
 	// Note: AggHash can be used to verify that each loaded cluster is unique
 

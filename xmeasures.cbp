@@ -35,12 +35,16 @@
 			<Add directory="include" />
 			<Add directory="autogen" />
 		</Compiler>
+		<Linker>
+			<Add library="stdc++fs" />
+		</Linker>
 		<Unit filename="autogen/cmdline.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="autogen/cmdline.h" />
+		<Unit filename="include/fileio.h" />
 		<Unit filename="include/interface.h" />
-		<Unit filename="include/iotypes.h" />
+		<Unit filename="src/fileio.cpp" />
 		<Unit filename="src/interface.cpp" />
 		<Unit filename="src/main.cpp" />
 		<Extensions>
