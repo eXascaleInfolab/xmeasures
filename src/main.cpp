@@ -9,7 +9,10 @@
 //! \email luart@ya.ru
 //! \date 2017-02-13
 
+#include <cstdio>
 #include "cmdline.h"  // Arguments parsing
+#include "interface.h"
+
 
 int main(int argc, char **argv)
 {
@@ -31,22 +34,22 @@ int main(int argc, char **argv)
 	}
 
 	if(args_info.membership_arg <= 0) {
-		fprintf(stderrm "ERROR, positive membership is expected: %G\n", args_info.membership_arg);
+		fprintf(stderr, "ERROR, positive membership is expected: %G\n", args_info.membership_arg);
 		return 1;
 	}
 
 	// Load collections as relations
-	auto rels1 = loadClustering(args_info.inputs[0], args_info.membership_arg);
-	auto rels2 = loadClustering(args_info.inputs[1], args_info.membership_arg);
+	auto cls1 = loadClustering(args_info.inputs[0], args_info.membership_arg);
+	auto cls2 = loadClustering(args_info.inputs[1], args_info.membership_arg);
 
 	// Evaluate and output measures
 	if(args_info.f1_flag)
-		printf("F1_MAH: %G", evalF1(rels1, rels2));
+		printf("F1_MAH: %G", evalF1(cls1, cls2));
 
 	if(args_info.nmi_flag) {
 		if(args_info.f1_flag)
 			fputs(", ", stdout);
-		printf("NMI: %G", evalNmi(rels1, rels2));
+		printf("NMI: %G", evalNmi(cls1, cls2));
 	}
 	puts("");  // \n
 

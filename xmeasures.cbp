@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-DDEBUG" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -31,11 +32,15 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
+			<Add directory="include" />
+			<Add directory="autogen" />
 		</Compiler>
 		<Unit filename="autogen/cmdline.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="autogen/cmdline.h" />
+		<Unit filename="include/interface.h" />
+		<Unit filename="src/interface.cpp" />
 		<Unit filename="src/main.cpp" />
 		<Extensions>
 			<DoxyBlocks>
