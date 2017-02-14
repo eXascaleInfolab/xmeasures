@@ -52,6 +52,33 @@ size_t AggHash::hash() const
 }
 
 // File IO Types definitions ---------------------------------------------------
+
+size_t NamedFileWrapper::size() const noexcept
+{
+	size_t  cmsbytes = -1;
+#ifdef __unix__  // sqrt(cmsbytes) lines => linebuf = max(4-8Kb, sqrt(cmsbytes) * 2) with dynamic realloc
+	struct stat  filest;
+	int fd = fileno(m_file);
+	if(fd != -1 && !fstat(fd, &filest))
+		return filest.st_size;
+#endif // __unix
+	error_code  err;
+	cmsbytes = fs::file_size(m_name, err);
+	if(cmsbytes == size_t(-1))
+		fprintf(stderr, "WARNING size(), file size evaluation failed: %s\n"
+			, err.message().c_str());
+
+//	// Get length of the file
+//	fseek(m_file, 0, SEEK_END);
+//	cmsbytes = ftell(m_file);  // The number of bytes in the input communities
+//	if(cmsbytes == size_t(-1))
+//		perror("WARNING size(), file size evaluation failed");
+//	//fprintf(stderr, "  %s: %lu bytes\n", fname, cmsbytes);
+//	rewind(m_file);  // Set position to the begin of the file
+
+	return cmsbytes;
+}
+
 bool StringBuffer::readline(FILE* input)
 {
 #if HEAVY_VALIDATION >= 2
@@ -102,7 +129,7 @@ void ensureDir(const string& dir)
 			.append("' already exists as non-directory path\n").c_str(), stderr);
 }
 
-void parseHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum) {
+void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum) {
     //! Parse id value
     //! \return  - id value of 0 in case of parsing errors
 	auto parseId = []() -> Id {
@@ -146,7 +173,7 @@ void parseHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, siz
 				ndsnum = parseId();
 				++attrs;
 			} else {
-				fprintf(stderr, "WARNING parseHeader(), the header parsing is omitted"
+				fprintf(stderr, "WARNING parseCnlHeader(), the header parsing is omitted"
 					" because of the unexpected attribute: %s\n", tok);
 				break;
 			}
@@ -155,41 +182,15 @@ void parseHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, siz
 		// Validate and correct the number of clusters if required
 		// Note: it's better to reallocate a container a few times than too much overconsume the memory
 		if(ndsnum && clsnum > ndsnum) {
-			fprintf(stderr, "WARNING parseHeader(), clsnum (%lu) typically should be"
+			fprintf(stderr, "WARNING parseCnlHeader(), clsnum (%lu) typically should be"
 				" less than ndsnum (%lu)\n", clsnum, ndsnum);
 			clsnum = ndsnum;
-			//assert(0 && "parseHeader(), clsnum typically should be less than ndsnum");
+			//assert(0 && "parseCnlHeader(), clsnum typically should be less than ndsnum");
 		}
 		// Get following line for the unified subsequent processing
 		line.readline(fcls);
 		break;
 	}
-}
-
-size_t fileSize(const NamedFileWrapper& file) noexcept
-{
-	size_t  cmsbytes = -1;
-#ifdef __unix__  // sqrt(cmsbytes) lines => linebuf = max(4-8Kb, sqrt(cmsbytes) * 2) with dynamic realloc
-	struct stat  filest;
-	int fd = fileno(file);
-	if(fd != -1 && !fstat(fd, &filest))
-		return filest.st_size;
-#endif // __unix
-	error_code  err;
-	cmsbytes = fs::file_size(file.name(), err);
-	if(cmsbytes == size_t(-1))
-		fprintf(stderr, "WARNING fileSize(), file size evaluation failed: %s\n"
-			, err.message().c_str());
-
-//	// Get length of the file
-//	fseek(file, 0, SEEK_END);
-//	cmsbytes = ftell(file);  // The number of bytes in the input communities
-//	if(cmsbytes == size_t(-1))
-//		perror("WARNING fileSize(), file size evaluation failed");
-//	//fprintf(stderr, "  %s: %lu bytes\n", fname, cmsbytes);
-//	rewind(file);  // Set position to the begin of the file
-
-	return cmsbytes;
 }
 
 Id estimateNodes(size_t filesize, float membership) noexcept

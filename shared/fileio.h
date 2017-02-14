@@ -12,42 +12,6 @@
 //! \email luart@ya.ru
 //! \date 2017-02-13
 
-// Global MACROSES:
-//	- HEAVY_VALIDATION  - use alternative evaluations to validate results
-//		- 0  - turn off heavy validation
-//		- 1  - default value for the heavy validation
-//		- 2  - extra heavy validation (might duplicate already performed heavy validation)
-//		- 3  - cross validation of functions (executed on each call, but only once is enough)
-//
-//	- TRACE, TRACE_EXTRA  - detailed tracing under debug (trace nodes weights)
-//		- 0  - turn off the tracing
-//		- 1  - brief tracing that can be used in release to show warnings, etc.
-//		- 2  - detailed tracing for DEBUG
-//		- 3  - extra detailed tracing
-//
-// NOTE: undefined maro definition is interpreted as having value 0
-
-#ifndef TRACE
-#ifdef DEBUG
-	#define TRACE 2
-#elif !defined(NDEBUG)  // RELEASE, !NDEBUG
-	#define TRACE 1
-//#else  // RELEASE, NDEBUG
-//	#define TRACE 0
-#endif // DEBUG
-#endif // TRACE
-
-#ifndef HEAVY_VALIDATION
-#ifdef DEBUG
-	#define HEAVY_VALIDATION 2
-#elif !defined(NDEBUG)  // RELEASE, !NDEBUG
-	#define HEAVY_VALIDATION 1
-//#else  // ELEASE, NDEBUG
-//	#define HEAVY_VALIDATION 0
-#endif // DEBUG
-#endif // HEAVY_VALIDATION
-
-
 #ifndef FILEIO_H
 #define FILEIO_H
 
@@ -199,6 +163,11 @@ public:
     //! \return const string&  - file name
     const string& name() const noexcept  { return m_name; }
 
+    //! \brief File size
+    //!
+    //! \return size_t  - file size or -1 on error
+    size_t size() const noexcept;
+
     //! \brief Implicit conversion to the file descriptor
     //!
     //! \return FILE*  - file descriptor
@@ -304,6 +273,9 @@ public:
 };
 
 // Base types declarations -----------------------------------------------------
+//ATTENTION: can be redefined. Take measures (? types.h + macro check).
+//Move to the relevant app as a local type
+
 //! Node Id
 using Id = uint32_t;
 //constexpr Id  ID_NONE = numeric_limits<Id>::max();
@@ -350,18 +322,67 @@ public:
 	size_t hash() const;
 };
 
+//// Accessory Functions ---------------------------------------------------------
+////! Processing candidates
+//template <typename CandidateT>
+//using Candidates = vector<CandidateT>;
+//
+////! \brief Accumulate best candidates and holding their max value (score)
+////!
+////! \param cands Candidates<CandidateT>&  - accumulated candidates
+////! \param vmax ValT&  - current max value (score) of the accumulated candidates
+////! \param cand CandidateT  - processing candidate
+////! \param ValT Weight  - current value for cand
+////! \param size=1 Id  - average number of components (links) used for val evaluation in
+////! 	cands and cand
+////!\if HEAVY_VALIDATION >= 3
+////! \param vcacc=nullptr AccWeight* - accumulated value of the candidates if not nullptr
+////!\endif  // HEAVY_VALIDATION
+////! \return void
+//////! \return bool  - the cands were updated
+//template <typename CandidateT, typename ValT>
+//inline void accBest(Candidates<CandidateT>& cands, ValT& vmax
+//	, CandidateT cand, ValT val, const Id size=1
+//#if HEAVY_VALIDATION >= 3
+//	, AccWeight* vcacc=nullptr  // accumulated value of the candidates
+//#endif // HEAVY_VALIDATION
+//	)
+//{
+//	// Otherwise cands should be extended using move(cand)
+//	static_assert(sizeof(CandidateT) <= sizeof(void*) || is_arithmetic<CandidateT>::value
+//		, "accBest(), CandidateT should be either arithmetic type or small object type");
+////	bool  updated = false;
+//	// Skip items with negative gain
+//	if(!less(val, vmax, size)) {
+//		if(less(vmax, val, size)) {
+//			// Reset candidates
+//			vmax = val;
+//			cands.clear();
+//#if HEAVY_VALIDATION >= 3
+//			if(vcacc)
+//				*vcacc = 0;
+//#endif // HEAVY_VALIDATION
+//		}
+//		// Update candidates
+//		cands.push_back(cand);
+//#if HEAVY_VALIDATION >= 3
+//		if(vcacc)
+//			*vcacc += val;
+//#endif // HEAVY_VALIDATION
+////		updated = true;
+//	}
+//#if TRACE >= 3
+//	fprintf(stderr, "  >>>>> accBest(), resulting vmax: %g, val: %g\n", vmax, val);
+//#endif // TRACE
+////	return updated;
+//}
+
 // File I/O functions ----------------------------------------------------------
 //! \brief Ensure existence of the specified directory
 //!
 //! \param dir const string&  - directory to be created if has not existed
 //! \return void
 void ensureDir(const string& dir);
-
-//! \brief Get file size
-//!
-//! \param file const NamedFileWrapper&  - target file
-//! \return size_t  - file size, -1 on error
-size_t fileSize(const NamedFileWrapper& file) noexcept;
 
 //! \brief  Parse the header of CNL file and validate the results
 //! \post clsnum <= ndsnum if ndsnum > 0. 0 means not specified
@@ -371,7 +392,7 @@ size_t fileSize(const NamedFileWrapper& file) noexcept;
 //! \param[out] clsnum size_t&  - resulting number of clusters if specified, 0 in case of parsing errors
 //! \param[out] ndsnum size_t&  - resulting number of nodes if specified, 0 in case of parsing errors
 //! \return void
-void parseHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum);
+void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum);
 
 //! \brief Estimate the number of nodes from the CNL file size
 //!

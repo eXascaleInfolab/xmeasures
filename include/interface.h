@@ -12,49 +12,12 @@
 #define INTERFACE_H
 
 #include <unordered_set>
+#include <unordered_map>
+#include <memory>  // unique_ptr
 
 #define INCLUDE_STL_FS
 #include "fileio.h"
 
-#include <unordered_set>
-#include <unordered_map>
-#include <memory>  // unique_ptr
-
-
-// Global MACROSES:
-//	- HEAVY_VALIDATION  - use alternative evaluations to validate results
-//		- 0  - turn off heavy validation
-//		- 1  - default value for the heavy validation
-//		- 2  - extra heavy validation (might duplicate already performed heavy validation)
-//		- 3  - cross validation of functions (executed on each call, but only once is enough)
-//
-//	- TRACE, TRACE_EXTRA  - detailed tracing under debug (trace nodes weights)
-//		- 0  - turn off the tracing
-//		- 1  - brief tracing that can be used in release to show warnings, etc.
-//		- 2  - detailed tracing for DEBUG
-//		- 3  - extra detailed tracing
-//
-// NOTE: undefined maro definition is interpreted as having value 0
-
-#ifndef TRACE
-#ifdef DEBUG
-	#define TRACE 2
-#elif !defined(NDEBUG)  // RELEASE, !NDEBUG
-	#define TRACE 1
-//#else  // RELEASE, NDEBUG
-//	#define TRACE 0
-#endif // DEBUG
-#endif // TRACE
-
-#ifndef HEAVY_VALIDATION
-#ifdef DEBUG
-	#define HEAVY_VALIDATION 2
-#elif !defined(NDEBUG)  // RELEASE, !NDEBUG
-	#define HEAVY_VALIDATION 1
-//#else  // ELEASE, NDEBUG
-//	#define HEAVY_VALIDATION 0
-#endif // DEBUG
-#endif // HEAVY_VALIDATION
 
 using std::unordered_set;
 using std::unordered_map;
@@ -64,55 +27,164 @@ using std::unique_ptr;
 // Data Types ------------------------------------------------------------------
 using Id = uint32_t;
 
-using RawIds = vector<Id>;
-using RawCollection = vector<RawIds>;  //!< Clusters of nodes
+using RawIds = vector<Id>;  //!< Node ids
+
+//using RawCollection = vector<RawIds>;  //!< Clusters of nodes
 
 struct Cluster;
 
 //! Cluster matching counter
-struct Counter {
-	Cluster*  orig;  //!<  Originator cluster
-	Id  count;  //!<  Occurrences counter
+class Counter {
+	Cluster*  m_orig;  //!<  Originator cluster
+	Id  m_count;  //!<  Occurrences counter
+public:
+    //! Default constructor
+	Counter(): m_orig(nullptr), m_count(0)  {}
 
-	Counter(): orig(nullptr), count(0)  {}
+    //! \brief Update the counter from the specified origin
+    //!
+    //! \param orig Cluster*  - counter origin
+    //! \return void
+	void operator()(Cluster* orig) noexcept
+	{
+		if(m_orig != orig) {
+			m_orig = orig;
+			m_count = 0;
+		}
+		++m_count;
+	}
+
+    //! \brief Get counted value
+    //!
+    //! \return Id  - counted value
+	Id operator()() const noexcept  { return m_count; }
+
+    //! \brief Get counter origin
+    //!
+    //! \return Cluster*  - counter origin
+	Cluster* origin() const noexcept  { return m_orig; }
+
+    //! \brief Clear (reset) the counter
+	void clear() noexcept
+	{
+		m_orig = nullptr;
+		m_count = 0;
+	}
 };
 
-struct Cluster {
-	RawIds  members;  //!< ORDERED node ids
-	Counter  counter;
+using Prob = float;  //!< Probability
+using AccProb = double;  //!< Accumulated Probability
 
-//	Cluster(): members(), counter()  {}
+struct Cluster {
+	RawIds  members;  //!< Node ids, unordered
+	Counter  counter;  //!< Cluster matching counter
+
+    //! Default constructor
+	Cluster(): members(), counter()  {}
+
+    //! \brief F1 renormalized relative to the current cluster
+    //!
+    //! \param matches Id  - the number of matched members
+    //! \param size Id  - size of the matching foreign cluster
+    //! \return AccProb  - resulting renormalized relative f1
+	AccProb rf1(Id matches, Id size) const noexcept
+	{
+		// F1 = 2 * pr * rc / (pr + rc)
+		// pr = m / c1
+		// rc = m / c2
+		// F1 = 2 * m/c1 * m/c2 / (m/c1 + m/c2)
+		// Relative F1 = m * m/c2 / (m/c1 + m/c2) = m/c2 / (1/c1 + 1/c2)
+		// = m*c1 / c2 + c1
+		return matches / AccProb(size + members.size()) * size;  // E [0, 1)
+	}
 };
 
 using Clusters = unordered_set<unique_ptr<Cluster>>;  //!< Clusters storage, input collection
 
-using ClusterPtrs = vector<Cluster*>;
+using ClusterPtrs = vector<Cluster*>;  //!< Cluster pointers, ordered
 using NodeClusters = unordered_map<Id, ClusterPtrs>;  //!< Node to clusters relations
 
-using F1s = vector<float>;  //!< Resulting F1s for the collection of clusters
+//! Resulting F1_MAH-s for 2 input collections of clusters in a single direction
+using F1s = vector<Prob>;
+
+//! Collection describing cluster-node relations
+class Collection {
+	Clusters  m_cls;  //!< Clusters
+	NodeClusters  m_ndcs;  //!< Node clusters relations
+protected:
+    //! Default constructor
+	Collection(): m_cls(), m_ndcs()  {}
+
+    //! \brief Max F1 for each member node
+    //! \note External cn collection can have unequal node base and overlapping
+    //! clusters on multiple resolutions
+    //! \attention Directed (non-symmetric) evaluation
+    //!
+    //! \param cn const Collection&  - collection to compare with
+    //! \return F1s - resulting max F1 for each member node
+	F1s mbsF1Max(const Collection& cn) const;
+
+    //! \brief F1 Max Average relative to the specified collection FROM this one
+    //! \note External cn collection can have unequal node base and overlapping
+    //! clusters on multiple resolutions
+    //! \attention Directed (non-symmetric) evaluation
+    //!
+    //! \param cn const Collection&  - collection to compare with
+    //! \return AccProb  - resulting max average f1 from this collection
+    //! to the specified one (DIRECTED)
+	inline AccProb f1MaxAvg(const Collection& cn) const;
+public:
+	//! \brief F1 Max Average Harmonic Mean considering overlaps,
+	//! multi-resolution and possibly unequal node base
+	//! \note Undirected (symmetric) evaluation
+	//!
+	//! \param cn1 const Collection&  - first collection
+	//! \param cn2 const Collection&  - second collection
+	//! \return Prob  - resulting F1_MAH
+	static Prob f1mah(const Collection& cn1, const Collection& cn2);
+
+	//! \brief Load collection from the CNL file
+	//! \pre All clusters in the file are expected to be unique and not validated for
+	//! the mutual match
+	//!
+	//! \param filename const char*  - name of the input file
+	//! \param membership=1 float  - expected membership of nodes, >0, typically >= 1
+    //! \return bool  - the collection is loaded successfully
+	static Collection load(const char* filename, float membership=1);
+};
 
 // Function Interfaces ---------------------------------------------------------
-//! \brief Load clustering from the file
+////! Collection describing cluster-node relations
+//struct Collection {
+//	Clusters  clusters;
+//	NodeClusters  nodecls;
+//
+//	Collection(): clusters(), nodecls()  {}
+//};
+
+//! \brief Load collection from the CNL file
+//! \pre All clusters in the file are expected to be unique and not validated for
+//! the mutual match
 //!
 //! \param filename const char*  - name of the input file
-//! \param membership=1 float  - membership of nodes, >0, typically >= 1
-//! \return Clusters  - loaded clusters
-Clusters loadClustering(const char* filename, float membership=1);
+//! \param membership=1 float  - expected membership of nodes, >0, typically >= 1
+//! \return Clusters  - loaded collection
+Collection loadCollection(const char* filename, float membership=1);
 
-//! \brief F1 Max Average Harmonic Mean evaluation  considering overlaps,
-//! multi-resolution and possibly unequal node base
-//!
-//! \param cls1 const Clusters&  - first clustering
-//! \param cls2 const Clusters&  - second clustering
-//! \return float  - resulting F1_MAH
-float evalF1(const Clusters& cls1, const Clusters& cls2);
+////! \brief F1 Max Average Harmonic Mean evaluation  considering overlaps,
+////! multi-resolution and possibly unequal node base
+////!
+////! \param cn1 const Collection&  - first collection
+////! \param cn2 const Collection&  - second collection
+////! \return float  - resulting F1_MAH
+//float evalF1(const Collection& cn1, const Collection& cn2);
 
 //! \brief NMI evaluation considering overlaps, multi-resolution and possibly
 //! unequal node base
 //!
-//! \param cls1 const Clusters&
-//! \param cls2 const Clusters&
+//! \param cn1 const Collection&  - first collection
+//! \param cn2 const Collection&  - second collection
 //! \return float  - resulting NMI
-float evalNmi(const Clusters& cls1, const Clusters& cls2);
+float evalNmi(const Collection& cn1, const Collection& cn2);
 
 #endif // INTERFACE_H
