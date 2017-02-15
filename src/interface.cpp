@@ -16,118 +16,6 @@
 
 using namespace daoc;
 
-//Collection loadCollection(const char* filename, float membership)
-//{
-//	Collection  cn;  // Return using NRVO, named return value optimization
-//
-//	// Open file
-//	NamedFileWrapper  file(filename, "r");
-//	if(!file) {
-//		perror(string("ERROR loadClustering(), failed on opening ").append(filename).c_str());
-//		return cn;
-//	}
-//
-//	// Load clusters
-//	// Note: CNL [CSN] format only is supported
-//	size_t  clsnum = 0;  // The number of clusters
-//	size_t  ndsnum = 0;  // The number of nodes
-//	// Note: strings defined out of the cycle to avoid reallocations
-//	StringBuffer  line;  // Reading line
-//	// Parse header and read the number of clusters if specified
-//	parseCnlHeader(file, line, clsnum, ndsnum);
-//
-//	// Estimate the number of clusters in the file if not specified
-//	if(!clsnum) {
-//		size_t  cmsbytes = -1;  // Bytes in communities file
-//		if(!ndsnum) {
-//			cmsbytes = file.size();
-//			if(cmsbytes != size_t(-1))  // File length fetching failed
-//				ndsnum = estimateCnlNodes(cmsbytes, membership);
-//		}
-//		clsnum = estimateClusters(ndsnum, membership);
-//#if TRACE >= 2
-//		fprintf(stderr, "loadClustering(), %lu nodes (estimated: %u)"
-//			", %lu estimated clusters\n", ndsnum, cmsbytes != size_t(-1), clsnum);
-//#endif // TRACE
-//	} else {
-//#if TRACE >= 2
-//		fprintf(stderr, "loadClustering(), specified %lu clusters, %lu nodes\n"
-//			, clsnum, ndsnum);
-//#endif // TRACE
-//		if(!ndsnum)
-//			ndsnum = clsnum * clsnum / membership;  // The expected number of nodes
-//	}
-//
-//	// Preallocate space for the clusters and nodes
-//	if(cn.clusters.bucket_count() * cn.clusters.max_load_factor() < clsnum)
-//		cn.clusters.reserve(clsnum);
-//	if(cn.nodecls.bucket_count() * cn.nodecls.max_load_factor() < ndsnum)
-//		cn.nodecls.reserve(ndsnum);
-//
-//	// Parse clusters
-//	// ATTENTION: without '\n' delimiter the terminating '\n' is read as an item
-//	constexpr char  mbdelim[] = " \t\n";  // Delimiter for the members
-//	do {
-//		// Skip cluster id if specified and parse first node id
-//		char *tok = strtok(line, mbdelim);  // const_cast<char*>(line.data())
-//
-//		// Skip comments
-//		if(!tok || tok[0] == '#')
-//			continue;
-//		// Skip the cluster id if present
-//		if(tok[strlen(tok) - 1] == '>') {
-//			const char* cidstr = tok;
-//			tok = strtok(nullptr, mbdelim);
-//			// Skip empty clusters, which actually should not exist
-//			if(!tok) {
-//				fprintf(stderr, "WARNING loadClustering(), empty cluster"
-//					" exists: '%s', skipped\n", cidstr);
-//				continue;
-//			}
-//		}
-//
-//		// Parse remained node ids and load cluster members
-//		auto icl = cn.clusters.emplace_hint(cn.clusters.end(), new Cluster());
-//		Cluster* const  pcl = icl->get();
-//		auto& members = pcl->members;
-//		do {
-//			// Note: only node id is parsed, share part is skipped if exists,
-//			// but potentially can be considered in NMI and F1 evaluation.
-//			// In the latter case abs diff of shares instead of co occurrence
-//			// counting should be performed.
-//			Id  nid = strtoul(tok, nullptr, 10);
-//#if VALIDATE >= 2
-//			if(!nid && tok[0] != '0') {
-//				fprintf(stderr, "WARNING loadClustering(), conversion error of '%s' into 0: %s\n"
-//					, tok, strerror(errno));
-//				continue;
-//			}
-//#endif // VALIDATE
-//			members.push_back(nid);
-//			cn.nodecls[nid].push_back(pcl);
-//		} while((tok = strtok(nullptr, mbdelim)));
-//	} while(line.readline(file));
-//	// Rehash the clusters and nodes for faster traversing if required
-//	if(cn.clusters.size() < cn.clusters.bucket_count() * cn.clusters.max_load_factor() / 2)
-//		cn.clusters.reserve(cn.clusters.size());
-//	if(cn.nodecls.size() < cn.nodecls.bucket_count() * cn.nodecls.max_load_factor() / 2)
-//		cn.nodecls.reserve(cn.nodecls.size());
-//#if TRACE >= 2
-//	printf("loadNodes(), loaded %lu clusters (reserved %lu buckets, overhead: %0.4f %%) and"
-//		" %lu nodes (reserved %lu buckets, overhead: %0.4f %%) from %s\n"
-//		, cn.clusters.size(), cn.clusters.bucket_count()
-//		, float(cn.clusters.bucket_count() - cn.clusters.size()) / cn.clusters.bucket_count() * 100
-//		, cn.nodecls.size(), cn.nodecls.bucket_count()
-//		, float(cn.nodecls.bucket_count() - cn.nodecls.size()) / cn.nodecls.bucket_count() * 100
-//		, file.name().c_str());
-//#else
-//	printf("Loaded %lu clusters %lu nodes from %s\n", cn.clusters.size()
-//		, cn.nodecls.size(), file.name().c_str());
-//#endif
-//
-//	return cn;
-//}
-
 F1s Collection::mbsF1Max(const Collection& cn) const
 {
 //	// Note: crels defined outside the cycle to avoid reallocations
@@ -182,7 +70,15 @@ Collection Collection::load(const char* filename, float membership)
 	// Open file
 	NamedFileWrapper  file(filename, "r");
 	if(!file) {
-		perror(string("ERROR loadClustering(), failed on opening ").append(filename).c_str());
+		perror(string("ERROR load(), failed on opening ").append(filename).c_str());
+		return cn;
+	}
+
+	constexpr size_t  FILESIZE_INVALID = size_t(-1);
+	const size_t fsize = file.size();
+	if(!fsize) {
+		fputs(("WARNING load(), the file '" + file.name()
+			+ " is empty, skipped\n").c_str(), stderr);
 		return cn;
 	}
 
@@ -197,25 +93,20 @@ Collection Collection::load(const char* filename, float membership)
 
 	// Estimate the number of clusters in the file if not specified
 	if(!clsnum) {
-		size_t  cmsbytes = -1;  // Bytes in communities file
-		if(!ndsnum) {
-			cmsbytes = file.size();
-			if(cmsbytes != size_t(-1))  // File length fetching failed
-				ndsnum = estimateCnlNodes(cmsbytes, membership);
+		if(!ndsnum && fsize != FILESIZE_INVALID) {  // File length fetching failed
+			ndsnum = estimateCnlNodes(fsize, membership);
+#if TRACE >= 2
+			fprintf(stderr, "load(), %lu estimated nodes from %lu bytes\n", ndsnum, fsize);
+#endif // TRACE
 		}
 		clsnum = estimateClusters(ndsnum, membership);
-#if TRACE >= 2
-		fprintf(stderr, "loadClustering(), %lu nodes (estimated: %u)"
-			", %lu estimated clusters\n", ndsnum, cmsbytes != size_t(-1), clsnum);
-#endif // TRACE
 	} else {
-#if TRACE >= 2
-		fprintf(stderr, "loadClustering(), specified %lu clusters, %lu nodes\n"
-			, clsnum, ndsnum);
-#endif // TRACE
 		if(!ndsnum)
 			ndsnum = clsnum * clsnum / membership;  // The expected number of nodes
 	}
+#if TRACE >= 2
+	fprintf(stderr, "load(), expected %lu clusters, %lu nodes\n", clsnum, ndsnum);
+#endif // TRACE
 
 	// Preallocate space for the clusters and nodes
 	if(cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() < clsnum)
@@ -226,6 +117,13 @@ Collection Collection::load(const char* filename, float membership)
 	// Parse clusters
 	// ATTENTION: without '\n' delimiter the terminating '\n' is read as an item
 	constexpr char  mbdelim[] = " \t\n";  // Delimiter for the members
+	// Estimate the number of chars per node, floating number
+	const float  ndchars = ndsnum ? (fsize != FILESIZE_INVALID
+		? ndsnum / fsize : log10(ndsnum) + 1)  // Note: + 1 to consider the leading space
+		: 1;
+#if VALIDATE >= 2
+	assert(ndchars >= 1 && "load(), ndchars invalid");
+#endif // VALIDATE
 	do {
 		// Skip cluster id if specified and parse first node id
 		char *tok = strtok(line, mbdelim);  // const_cast<char*>(line.data())
@@ -239,7 +137,7 @@ Collection Collection::load(const char* filename, float membership)
 			tok = strtok(nullptr, mbdelim);
 			// Skip empty clusters, which actually should not exist
 			if(!tok) {
-				fprintf(stderr, "WARNING loadClustering(), empty cluster"
+				fprintf(stderr, "WARNING load(), empty cluster"
 					" exists: '%s', skipped\n", cidstr);
 				continue;
 			}
@@ -249,6 +147,7 @@ Collection Collection::load(const char* filename, float membership)
 		auto icl = cn.m_cls.emplace_hint(cn.m_cls.end(), new Cluster());
 		Cluster* const  pcl = icl->get();
 		auto& members = pcl->members;
+		members.reserve(line.length() / ndchars);  // Note: strtok() does not affect line.length()
 		do {
 			// Note: only node id is parsed, share part is skipped if exists,
 			// but potentially can be considered in NMI and F1 evaluation.
@@ -257,7 +156,7 @@ Collection Collection::load(const char* filename, float membership)
 			Id  nid = strtoul(tok, nullptr, 10);
 #if VALIDATE >= 2
 			if(!nid && tok[0] != '0') {
-				fprintf(stderr, "WARNING loadClustering(), conversion error of '%s' into 0: %s\n"
+				fprintf(stderr, "WARNING load(), conversion error of '%s' into 0: %s\n"
 					, tok, strerror(errno));
 				continue;
 			}
@@ -265,6 +164,7 @@ Collection Collection::load(const char* filename, float membership)
 			members.push_back(nid);
 			cn.m_ndcs[nid].push_back(pcl);
 		} while((tok = strtok(nullptr, mbdelim)));
+		members.shrink_to_fit();  // Free over reserved space
 	} while(line.readline(file));
 	// Rehash the clusters and nodes for faster traversing if required
 	if(cn.m_cls.size() < cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() / 2)
@@ -286,11 +186,6 @@ Collection Collection::load(const char* filename, float membership)
 
 	return cn;
 }
-
-//Prob evalF1(const Collection& cn1, const Collection& cn2)
-//{
-//    return 0;
-//}
 
 Prob evalNmi(const Collection& cn1, const Collection& cn2)
 {

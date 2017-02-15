@@ -154,31 +154,6 @@ public:
 };
 
 // Function Interfaces ---------------------------------------------------------
-////! Collection describing cluster-node relations
-//struct Collection {
-//	Clusters  clusters;
-//	NodeClusters  nodecls;
-//
-//	Collection(): clusters(), nodecls()  {}
-//};
-
-//! \brief Load collection from the CNL file
-//! \pre All clusters in the file are expected to be unique and not validated for
-//! the mutual match
-//!
-//! \param filename const char*  - name of the input file
-//! \param membership=1 float  - expected membership of nodes, >0, typically >= 1
-//! \return Clusters  - loaded collection
-Collection loadCollection(const char* filename, float membership=1);
-
-////! \brief F1 Max Average Harmonic Mean evaluation  considering overlaps,
-////! multi-resolution and possibly unequal node base
-////!
-////! \param cn1 const Collection&  - first collection
-////! \param cn2 const Collection&  - second collection
-////! \return float  - resulting F1_MAH
-//float evalF1(const Collection& cn1, const Collection& cn2);
-
 //! \brief NMI evaluation considering overlaps, multi-resolution and possibly
 //! unequal node base
 //!
