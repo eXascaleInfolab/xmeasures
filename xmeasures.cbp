@@ -16,7 +16,7 @@
 					<Add option="-DDEBUG" />
 					<Add option="-D_GLIBCXX_DEBUG" />
 					<Add option="-DTRACE=2" />
-					<Add option="-DHEAVY_VALIDATION=2" />
+					<Add option="-DVALIDATE=2" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -27,7 +27,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-DTRACE=1" />
-					<Add option="-DHEAVY_VALIDATION=1" />
+					<Add option="-DVALIDATE=1" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />

@@ -31,28 +31,7 @@ using fs::is_directory;
 using fs::exists;
 using fs::status;
 
-// Accessory types definitions -------------------------------------------------
-void AggHash::add(Id id) noexcept
-{
-	++m_size;
-	m_idsum += id;
-	m_id2sum += id * id;
-}
-
-void AggHash::clear() noexcept
-{
-	m_size = 0;
-	m_idsum = 0;
-	m_id2sum = 0;
-}
-
-size_t AggHash::hash() const
-{
-	return std::hash<string>()(string(reinterpret_cast<const char*>(this), sizeof *this));
-}
-
 // File IO Types definitions ---------------------------------------------------
-
 size_t NamedFileWrapper::size() const noexcept
 {
 	size_t  cmsbytes = -1;
@@ -81,9 +60,9 @@ size_t NamedFileWrapper::size() const noexcept
 
 bool StringBuffer::readline(FILE* input)
 {
-#if HEAVY_VALIDATION >= 2
+#if VALIDATE >= 2
 	assert(input && "readline(), valid file stream should be specified");
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 	// Read data from file until the string is read or an error occurs
 	while(fgets(data() + m_cur, size() - m_cur, input) && data()[size()-2]) {
 #if TRACE >= 3  // Verified
@@ -94,9 +73,9 @@ bool StringBuffer::readline(FILE* input)
 		resize(size() + (size() / (spagesize * 2) + 1) * spagesize);
 		data()[size() - 2] = 0;  // Set prelast element to 0
 	}
-#if HEAVY_VALIDATION >= 2
+#if VALIDATE >= 2
 	assert((!m_cur || strlen(data()) >= m_cur) && "readline(), string size validation failed");
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 	m_cur = 0;  // Reset the writing (appending) position
 	// Note: prelast and last elements of the buffer will be always zero
 
@@ -130,14 +109,14 @@ void ensureDir(const string& dir)
 }
 
 void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum) {
-    //! Parse id value
+    //! Parse count value
     //! \return  - id value of 0 in case of parsing errors
-	auto parseId = []() -> Id {
+	auto parseCount = []() -> size_t {
 		char* tok = strtok(nullptr, " \t,");  // Note: the value can't be ended with ':'
 		//errno = 0;
 		const auto val = strtoul(tok, nullptr, 10);
 		if(errno)
-			perror("WARNING parseId(), id value parsing error");
+			perror("WARNING parseCount(), id value parsing error");
 		return val;
 	};
 
@@ -167,10 +146,10 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 
 			// Identify the attribute and read it's value
 			if(!strcmp(tok, clsmark)) {
-				clsnum = parseId();
+				clsnum = parseCount();
 				++attrs;
 			} else if(!strcmp(tok, ndsmark)) {
-				ndsnum = parseId();
+				ndsnum = parseCount();
 				++attrs;
 			} else {
 				fprintf(stderr, "WARNING parseCnlHeader(), the header parsing is omitted"
@@ -193,17 +172,17 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 	}
 }
 
-Id estimateNodes(size_t filesize, float membership) noexcept
+size_t estimateCnlNodes(size_t filesize, float membership) noexcept
 {
 	if(membership <= 0) {
-		fprintf(stderr, "WARNING estimateNodes(), invalid membership = %G specified"
+		fprintf(stderr, "WARNING estimateCnlNodes(), invalid membership = %G specified"
 			", reseted to 1\n", membership);
 		membership = 1;
-		//throw invalid_argument("estimateNodes(), membership = "
+		//throw invalid_argument("estimateCnlNodes(), membership = "
 		//	+ to_string(membership) + " should be positive\n");
 	}
 
-	Id  ndsnum = 0;  // The estimated number of nodes
+	size_t  ndsnum = 0;  // The estimated number of nodes
 	if(filesize) {
 		size_t  magn = 10;  // Decimal ids magnitude
 		unsigned  img = 1;  // Index of the magnitude (10^1)
@@ -218,7 +197,7 @@ Id estimateNodes(size_t filesize, float membership) noexcept
 	return ndsnum / membership;
 }
 
-Id estimateClusters(Id ndsnum, float membership) noexcept
+size_t estimateClusters(size_t ndsnum, float membership) noexcept
 {
 	if(membership <= 0) {
 		fprintf(stderr, "WARNING estimateClusters(), invalid membership = %G specified"
@@ -228,7 +207,7 @@ Id estimateClusters(Id ndsnum, float membership) noexcept
 		//	+ to_string(membership) + " should be positive\n");
 	}
 
-	Id  clsnum = 0;  // The estimated number of clusters
+	size_t  clsnum = 0;  // The estimated number of clusters
 	// Usually the number of clusters does not increase square root of the number of nodes
 	// Note: do not estimate in case the number of nodes is not specified
 	if(ndsnum)

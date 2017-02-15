@@ -272,56 +272,6 @@ public:
 	using StringBufferBase::at;
 };
 
-// Base types declarations -----------------------------------------------------
-//ATTENTION: can be redefined. Take measures (? types.h + macro check).
-//Move to the relevant app as a local type
-
-//! Node Id
-using Id = uint32_t;
-//constexpr Id  ID_NONE = numeric_limits<Id>::max();
-
-//! Size type
-//! \note Larger than Id type with at least twice in magnitude
-using Size = uint64_t;
-
-// Accessory types -------------------------------------------------------------
-//! \brief Aggregation hash of ids
-class AggHash {
-	Size  m_size;  //!< Size of the container
-	Size  m_idsum;  //!<  Sum of the members
-	Size  m_id2sum;  //!< Sum of the squared members
-public:
-    //! \brief Default constructor
-	AggHash() noexcept
-	: m_size(0), m_idsum(0), m_id2sum(0)  {}
-
-    //! \brief Add id to the aggregation
-    //!
-    //! \param id Id  - id to be included into the hash
-    //! \return void
-	void add(Id id) noexcept;
-
-    //! \brief Clear/reset the aggregation
-    //!
-    //! \return void
-	void clear() noexcept;
-
-    //! \brief Number of the aggregated ids
-    //!
-    //! \return size_t  - number of the aggregated ids
-	size_t size() const noexcept  { return m_size; }
-
-//    //! \brief The hash is empty
-//    //!
-//    //! \return bool  - the hash is empty
-//	bool empty() const noexcept  { return !m_size; }
-
-    //! \brief Evaluate hash of the aggregation
-    //!
-    //! \return size_t  - resulting hash
-	size_t hash() const;
-};
-
 //// Accessory Functions ---------------------------------------------------------
 ////! Processing candidates
 //template <typename CandidateT>
@@ -335,17 +285,17 @@ public:
 ////! \param ValT Weight  - current value for cand
 ////! \param size=1 Id  - average number of components (links) used for val evaluation in
 ////! 	cands and cand
-////!\if HEAVY_VALIDATION >= 3
+////!\if VALIDATE >= 3
 ////! \param vcacc=nullptr AccWeight* - accumulated value of the candidates if not nullptr
-////!\endif  // HEAVY_VALIDATION
+////!\endif  // VALIDATE
 ////! \return void
 //////! \return bool  - the cands were updated
 //template <typename CandidateT, typename ValT>
 //inline void accBest(Candidates<CandidateT>& cands, ValT& vmax
 //	, CandidateT cand, ValT val, const Id size=1
-//#if HEAVY_VALIDATION >= 3
+//#if VALIDATE >= 3
 //	, AccWeight* vcacc=nullptr  // accumulated value of the candidates
-//#endif // HEAVY_VALIDATION
+//#endif // VALIDATE
 //	)
 //{
 //	// Otherwise cands should be extended using move(cand)
@@ -358,17 +308,17 @@ public:
 //			// Reset candidates
 //			vmax = val;
 //			cands.clear();
-//#if HEAVY_VALIDATION >= 3
+//#if VALIDATE >= 3
 //			if(vcacc)
 //				*vcacc = 0;
-//#endif // HEAVY_VALIDATION
+//#endif // VALIDATE
 //		}
 //		// Update candidates
 //		cands.push_back(cand);
-//#if HEAVY_VALIDATION >= 3
+//#if VALIDATE >= 3
 //		if(vcacc)
 //			*vcacc += val;
-//#endif // HEAVY_VALIDATION
+//#endif // VALIDATE
 ////		updated = true;
 //	}
 //#if TRACE >= 3
@@ -399,15 +349,27 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 //! \param filesize size_t  - the number of bytes in the CNL file
 //! \param membership=1.f float  - average membership of the node,
 //! 	> 0, typically ~= 1
-//! \return Id  - estimated number of nodes
-Id estimateNodes(size_t filesize, float membership=1.f) noexcept;
+//! \return size_t  - estimated number of nodes
+size_t estimateCnlNodes(size_t filesize, float membership=1.f) noexcept;
+
+//float avgNodeChars(size_t filesize, size_t ndsnum) noexcept;
+//
+////! \brief Estimate the number of nodes from the CNL file size
+////!
+////! \param filesize size_t  - the number of bytes in the CNL file
+////! \param nidsize float  - average size of the node id in chars in the string
+////! 	including spaces
+////! \param membership=1.f float  - average membership of the node,
+////! 	> 0, typically ~= 1
+////! \return size_t  - estimated number of nodes
+//size_t estimateStringNodes(size_t strsize, float nidsize, float membership=1.f) noexcept;
 
 //! \brief Estimate the number of clusters from the number of nodes
 //!
-//! \param ndsnum Id - the number of nodes
+//! \param ndsnum size_t - the number of nodes
 //! \param membership=1.f float  - average membership of the node,
 //! 	> 0, typically ~= 1
-//! \return Id  - estimated number of clusters
-Id estimateClusters(Id ndsnum, float membership=1.f) noexcept;
+//! \return size_t  - estimated number of clusters
+size_t estimateClusters(size_t ndsnum, float membership=1.f) noexcept;
 
 #endif // FILEIO_H

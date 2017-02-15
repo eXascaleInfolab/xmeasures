@@ -42,14 +42,10 @@ int main(int argc, char **argv)
 	// Load collections as relations
 	auto cn1 = Collection::load(args_info.inputs[0], args_info.membership_arg);
 	auto cn2 = Collection::load(args_info.inputs[1], args_info.membership_arg);
-//	auto cn1 = loadCollection(args_info.inputs[0], args_info.membership_arg);
-//	auto cn2 = loadCollection(args_info.inputs[1], args_info.membership_arg);
 
 	// Evaluate and output measures
-	if(args_info.f1_flag) {
+	if(args_info.f1_flag)
 		printf("F1_MAH: %G", Collection::f1mah(cn1, cn2));
-//		printf("F1_MAH: %G", evalF1(cn1, cn2));
-	}
 
 //	if(args_info.nmi_flag) {
 //		if(args_info.f1_flag)

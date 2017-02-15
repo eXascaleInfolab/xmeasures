@@ -13,7 +13,7 @@
 #define MACRODEF_H
 
 // Global MACROSES:
-//	- HEAVY_VALIDATION  - use alternative evaluations to validate results
+//	- VALIDATE  - use alternative evaluations to validate results
 //		- 0  - turn off heavy validation
 //		- 1  - default value for the heavy validation
 //		- 2  - extra heavy validation (might duplicate already performed heavy validation)
@@ -37,14 +37,14 @@
 #endif // DEBUG
 #endif // TRACE
 
-#ifndef HEAVY_VALIDATION
+#ifndef VALIDATE
 #ifdef DEBUG
-	#define HEAVY_VALIDATION 2
+	#define VALIDATE 2
 #elif !defined(NDEBUG)  // RELEASE, !NDEBUG
-	#define HEAVY_VALIDATION 1
+	#define VALIDATE 1
 //#else  // ELEASE, NDEBUG
-//	#define HEAVY_VALIDATION 0
+//	#define VALIDATE 0
 #endif // DEBUG
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 
 #endif // MACRODEF_H

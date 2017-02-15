@@ -114,15 +114,15 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const size_t size=1)
 //! 	to consider accumulation error
 //! \return bool  - whether val1 ~= val2
 template <typename ValT, enable_if_t<is_floating_point<ValT>::value, float>* = nullptr>
-//#if HEAVY_VALIDATION <= 1
+//#if VALIDATE <= 1
 constexpr
 //#else
 //inline
-//#endif // HEAVY_VALIDATION
+//#endif // VALIDATE
 bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1)
 {
 	static_assert(is_floating_point<ValT>::value, "equal(), value type should be fractional");
-//#if HEAVY_VALIDATION >= 2
+//#if VALIDATE >= 2
 //	// Allow stand-alone nodes
 //	//assert(size >= 1 && "equal(), size should be positive");
 //#if TRACE >= 3
@@ -133,7 +133,7 @@ bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1)
 //		, fabs(a - b), precision_limit<ValT>() * size * (1 + fabs(a) + fabs(b))
 //		, (1 + fabs(a) + fabs(b)));
 //#endif // TRACE_EXTRA
-//#endif // HEAVY_VALIDATION
+//#endif // VALIDATE
 	// ~ a == b with strictly defined equality margin
 	// ATTENTION:
 	// - "1 +" is required to handle accumulation error correctly for float numbers < 1
@@ -349,7 +349,7 @@ RandIT binary_ifind(RandIT begin, const RandIT end, const T val
 		if(!((cres < 0 && ((begin = pos + 1), true)) || (cres > 0 && ((iend = pos), true))))
 			return pos;
 	}
-#if HEAVY_VALIDATION >= 2
+#if VALIDATE >= 2
 #if TRACE >= 3
 	if(!(iend == end || cmp(*iend, val) <= 0)) {
 		// Note: iend != end is always true here
@@ -362,7 +362,7 @@ RandIT binary_ifind(RandIT begin, const RandIT end, const T val
 #endif // TRACE
 	assert((iend == end || cmp(*iend, val) >= 0)
 	&& "binary_ifind(), iterator verification failed");
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 	return iend;
 }
 
@@ -507,9 +507,9 @@ bool sorted(IterT begin, const IterT end
 	static_assert(is_same<decltype(cmp(*begin, *begin)), decltype(bsVal(nullptr, nullptr))>::value
 		, "sorted(), cmp() must return the same type as bsVal()");
 	static_assert(is_iterator<IterT>(), "sorted(), IterT must be a forward iterator type");
-#if HEAVY_VALIDATION >= 1
+#if VALIDATE >= 1
 	assert(begin != end && "sorted(), empty container is being checked");
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 	if(begin == end)
 		return true;
 	// The container is sorted if it empty or has only one item
@@ -537,20 +537,20 @@ typename ContainerT::iterator insorted(ContainerT& els, const ItemT el, CompareF
 {
 	static_assert(sizeof(ItemT) <= sizeof(void*)
 		, "insorted(), ItemT should not increase the address type size");
-#if HEAVY_VALIDATION >= 3
+#if VALIDATE >= 3
 	assert(sorted(els.begin(), els.end(), cmp) && "insorted(), els should be sorted");
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 	auto iel = els.begin();
 	if(!els.empty() && cmp(*iel, el) < 0)
 		iel = fast_ifind(++iel, els.end(), el, cmp);
-#if HEAVY_VALIDATION >= 1
+#if VALIDATE >= 1
 #if TRACE >= 2
 	if(!(iel == els.end() || cmp(*iel, el) != 0))
 		fprintf(stderr, "  >>>>>>> insorted(), #%u (%p) is already among %lu members\n"
 			, el->id, el, els.size());
 #endif // TRACE
 	assert((iel == els.end() || cmp(*iel, el) != 0) && "insorted(), elements must be unique");
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 	return iel;
 }
 
@@ -572,20 +572,20 @@ inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT 
 {
 	static_assert(sizeof(ItemT) <= sizeof(void*)
 		, "insortedLight(), ItemT should not increase the address type size");
-//#if HEAVY_VALIDATION >= 3
+//#if VALIDATE >= 3
 //	assert(sorted(els.begin(), els.end(), cmp) && "insorted(), els should be not sorted");  // Note: issues occur in case of cmp is bsObjsDest
-//#endif // HEAVY_VALIDATION
+//#endif // VALIDATE
 	auto iel = els.begin();
 	if(!els.empty() && cmp(*iel, el) < 0)
 		iel = linear_ifind(++iel, els.end(), el, cmp);
-#if HEAVY_VALIDATION >= 1
+#if VALIDATE >= 1
 #if TRACE >= 2
 	if(!(iel == els.end() || cmp(*iel, el) != 0))
 		fprintf(stderr, "  >>>>>>> insortedLight(), #%u (%p) is already among %lu members\n"
 			, el->id, el, els.size());
 #endif // TRACE
 	assert((iel == els.end() || cmp(*iel, el) != 0) && "insortedLight(), elements must be unique");
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 	return iel;
 }
 

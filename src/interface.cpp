@@ -42,7 +42,7 @@ using namespace daoc;
 //		if(!ndsnum) {
 //			cmsbytes = file.size();
 //			if(cmsbytes != size_t(-1))  // File length fetching failed
-//				ndsnum = estimateNodes(cmsbytes, membership);
+//				ndsnum = estimateCnlNodes(cmsbytes, membership);
 //		}
 //		clsnum = estimateClusters(ndsnum, membership);
 //#if TRACE >= 2
@@ -96,13 +96,13 @@ using namespace daoc;
 //			// In the latter case abs diff of shares instead of co occurrence
 //			// counting should be performed.
 //			Id  nid = strtoul(tok, nullptr, 10);
-//#if HEAVY_VALIDATION >= 2
+//#if VALIDATE >= 2
 //			if(!nid && tok[0] != '0') {
 //				fprintf(stderr, "WARNING loadClustering(), conversion error of '%s' into 0: %s\n"
 //					, tok, strerror(errno));
 //				continue;
 //			}
-//#endif // HEAVY_VALIDATION
+//#endif // VALIDATE
 //			members.push_back(nid);
 //			cn.nodecls[nid].push_back(pcl);
 //		} while((tok = strtok(nullptr, mbdelim)));
@@ -201,7 +201,7 @@ Collection Collection::load(const char* filename, float membership)
 		if(!ndsnum) {
 			cmsbytes = file.size();
 			if(cmsbytes != size_t(-1))  // File length fetching failed
-				ndsnum = estimateNodes(cmsbytes, membership);
+				ndsnum = estimateCnlNodes(cmsbytes, membership);
 		}
 		clsnum = estimateClusters(ndsnum, membership);
 #if TRACE >= 2
@@ -255,13 +255,13 @@ Collection Collection::load(const char* filename, float membership)
 			// In the latter case abs diff of shares instead of co occurrence
 			// counting should be performed.
 			Id  nid = strtoul(tok, nullptr, 10);
-#if HEAVY_VALIDATION >= 2
+#if VALIDATE >= 2
 			if(!nid && tok[0] != '0') {
 				fprintf(stderr, "WARNING loadClustering(), conversion error of '%s' into 0: %s\n"
 					, tok, strerror(errno));
 				continue;
 			}
-#endif // HEAVY_VALIDATION
+#endif // VALIDATE
 			members.push_back(nid);
 			cn.m_ndcs[nid].push_back(pcl);
 		} while((tok = strtok(nullptr, mbdelim)));
