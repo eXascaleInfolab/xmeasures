@@ -12,6 +12,11 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-Wredundant-decls" />
+					<Add option="-Winline" />
+					<Add option="-Wswitch-default" />
+					<Add option="-Wmain" />
+					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-DDEBUG" />
 					<Add option="-D_GLIBCXX_DEBUG" />
@@ -25,7 +30,9 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-march=core2" />
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-O3" />
 					<Add option="-DTRACE=1" />
 					<Add option="-DVALIDATE=1" />
 				</Compiler>
@@ -35,7 +42,16 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-Wall" />
+			<Add option="-Wnon-virtual-dtor" />
+			<Add option="-Winit-self" />
+			<Add option="-Wcast-align" />
+			<Add option="-Wundef" />
+			<Add option="-Wfloat-equal" />
+			<Add option="-Wunreachable-code" />
+			<Add option="-Wmissing-include-dirs" />
+			<Add option="-Weffc++" />
+			<Add option="-Wzero-as-null-pointer-constant" />
+			<Add option="-std=c++14" />
 			<Add option="-fexceptions" />
 			<Add directory="include" />
 			<Add directory="autogen" />

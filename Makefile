@@ -12,14 +12,14 @@ LD = g++
 WINDRES = windres
 
 INC = -Iinclude -Iautogen -Ishared
-CFLAGS = -Wall -fexceptions
+CFLAGS = -Wnon-virtual-dtor -Winit-self -Wcast-align -Wundef -Wfloat-equal -Wunreachable-code -Wmissing-include-dirs -Weffc++ -Wzero-as-null-pointer-constant -std=c++14 -fexceptions
 RESINC = 
 LIBDIR = 
 LIB = -lstdc++fs
 LDFLAGS = 
 
 INC_DEBUG = $(INC)
-CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG -D_GLIBCXX_DEBUG -DTRACE=2 -DHEAVY_VALIDATION=2
+CFLAGS_DEBUG = $(CFLAGS) -Wredundant-decls -Winline -Wswitch-default -Wmain -Wall -g -DDEBUG -D_GLIBCXX_DEBUG -DTRACE=2 -DVALIDATE=2
 RESINC_DEBUG = $(RESINC)
 RCFLAGS_DEBUG = $(RCFLAGS)
 LIBDIR_DEBUG = $(LIBDIR)
@@ -30,7 +30,7 @@ DEP_DEBUG =
 OUT_DEBUG = bin/Debug/xmeasures
 
 INC_RELEASE = $(INC)
-CFLAGS_RELEASE = $(CFLAGS) -O2 -DTRACE=1 -DHEAVY_VALIDATION=1
+CFLAGS_RELEASE = $(CFLAGS) -march=core2 -fomit-frame-pointer -O3 -DTRACE=1 -DVALIDATE=1
 RESINC_RELEASE = $(RESINC)
 RCFLAGS_RELEASE = $(RCFLAGS)
 LIBDIR_RELEASE = $(LIBDIR)
