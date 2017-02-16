@@ -147,12 +147,16 @@ void ensureDir(const string& dir)
 	if(!exists(outdir)) {
 		error_code  err;
 		if(!create_directories(outdir, err))
-			fputs(string("ERROR ensureDir(), target directory '").append(dir)
-				.append("' can't be created: ").append(err.message())
-				.append("\n").c_str(), stderr);
+//			fputs(string("ERROR ensureDir(), target directory '").append(dir)
+//				.append("' can't be created: ").append(err.message())
+//				.append("\n").c_str(), stderr);
+			throw std::ios_base::failure(string("ERROR ensureDir(), target directory '")
+				.append(dir).append("' can't be created: ") += err.message());
 	} else if(!is_directory(outdir))
-		fputs(string("ERROR ensureDir(), target entry '").append(dir)
-			.append("' already exists as non-directory path\n").c_str(), stderr);
+//		fputs(string("ERROR ensureDir(), target entry '").append(dir)
+//			.append("' already exists as a non-directory path\n").c_str(), stderr);
+		throw std::ios_base::failure(string("ERROR ensureDir(), target entry '").append(dir)
+			+= "' already exists as a non-directory path\n");
 }
 
 void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum) {
@@ -163,10 +167,12 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 		//errno = 0;
 		const auto val = strtoul(tok, nullptr, 10);
 		if(errno)
-			perror("WARNING parseCount(), id value parsing error");
+			perror(string("WARNING parseCount(), id value parsing error for the tok '")
+				.append(tok).append("'").c_str());
 		return val;
 	};
 
+	errno = 0;  // Reset errno
 	// Process the header, which is a special initial comment
 	// The target header is:  # Clusters: <cls_num>[,] Nodes: <cls_num>
 	constexpr char  clsmark[] = "clusters";

@@ -134,7 +134,7 @@ Collection Collection::load(const char* filename, float membership)
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.bucket_count() * 100
 		, file.name().c_str());
-#else
+#else TRACE >= 1
 	printf("Loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
 		, cn.m_ndcs.size(), file.name().c_str());
 #endif
@@ -169,7 +169,7 @@ AccProb Collection::f1MaxAvg(const Collection& cn, bool weighted) const
 #endif // VALIDATE
 		uint64_t  csizesSum = 0;
 		auto icl = m_cls.begin();
-		const size_t  clsnum = m_cls.size();
+		const Id  clsnum = m_cls.size();
 		for(size_t i = 0; i < clsnum; ++i) {
 			auto csize = (*icl++)->members.size();
 			aggf1max += f1maxs[i] * csize;

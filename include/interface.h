@@ -131,6 +131,16 @@ public:
     //! \param weighted=false bool  - weighted average by cluster size
 	//! \return Prob  - resulting F1_MAH
 	static Prob f1mah(const Collection& cn1, const Collection& cn2, bool weighted=false);
+
+    //! \brief Clusters count
+    //!
+    //! \return Id  - the number of clusters in the collection
+	Id clusters() const noexcept  { return m_cls.size(); }
+
+    //! \brief Nodes count
+    //!
+    //! \return Id  - the number of nodes in the collection
+	Id nodes() const noexcept  { return m_ndcs.size(); }
 protected:
     //! \brief F1 Max Average relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping

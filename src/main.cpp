@@ -44,6 +44,11 @@ int main(int argc, char **argv)
 	auto cn1 = Collection::load(args_info.inputs[0], args_info.membership_arg);
 	auto cn2 = Collection::load(args_info.inputs[1], args_info.membership_arg);
 
+	// Check the nodebase
+	if(cn1.nodes() != cn2.nodes())
+		fprintf(stderr, "WARNING, the number of nodes in the collections differs"
+			": %u != %u\n", cn1.nodes(), cn2.nodes());
+
 	// Evaluate and output measures
 	if(args_info.f1_flag)
 		printf("F1_%s: %G\n", args_info.weighted_flag ? "mwah" : "mah"
