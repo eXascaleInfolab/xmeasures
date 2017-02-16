@@ -134,7 +134,7 @@ Collection Collection::load(const char* filename, float membership)
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.bucket_count() * 100
 		, file.name().c_str());
-#else TRACE >= 1
+#elif TRACE >= 1
 	printf("Loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
 		, cn.m_ndcs.size(), file.name().c_str());
 #endif
@@ -163,18 +163,21 @@ AccProb Collection::f1MaxAvg(const Collection& cn, bool weighted) const
 	AccProb  aggf1max = 0;
 	const auto  f1maxs = clsF1Max(cn);
 	if(weighted) {
+		const Id  clsnum = m_cls.size();
 #if VALIDATE >= 2
-		assert(f1maxs.size() == m_cls.size()
+		assert(f1maxs.size() == clsnum
 			&& "f1MaxAvg(), F1s are not synchronized with the clusters");
 #endif // VALIDATE
 		uint64_t  csizesSum = 0;
 		auto icl = m_cls.begin();
-		const Id  clsnum = m_cls.size();
 		for(size_t i = 0; i < clsnum; ++i) {
 			auto csize = (*icl++)->members.size();
 			aggf1max += f1maxs[i] * csize;
 			csizesSum += csize;
 		}
+#if VALIDATE >= 2
+		assert(csizesSum >= clsnum && "f1MaxAvg(), invalid sum of the cluster sizes");
+#endif // VALIDATE
 		aggf1max /= csizesSum / AccProb(clsnum);
 	} else for(auto f1max: f1maxs)
 		aggf1max += f1max;

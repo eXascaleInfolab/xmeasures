@@ -12,7 +12,7 @@ LD = g++
 WINDRES = windres
 
 INC = -Iinclude -Iautogen -Ishared
-CFLAGS = -Wnon-virtual-dtor -Winit-self -Wcast-align -Wundef -Wfloat-equal -Wunreachable-code -Wmissing-include-dirs -Weffc++ -Wzero-as-null-pointer-constant -std=c++14 -fexceptions
+CFLAGS = -Wnon-virtual-dtor -Winit-self -Wcast-align -Wundef -Wfloat-equal -Wunreachable-code -Wmissing-include-dirs -Weffc++ -Wzero-as-null-pointer-constant -std=c++14 -fexceptions -fstack-protector-strong -D_FORTIFY_SOURCE=2
 RESINC = 
 LIBDIR = 
 LIB = -lstdc++fs
