@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "1.0"
+#define CMDLINE_PARSER_VERSION "1.1"
 #endif
 
 /** @brief Where the command line options are stored */
@@ -41,6 +41,8 @@ struct gengetopt_args_info
   const char *version_help; /**< @brief Print version and exit help description.  */
   int f1_flag;	/**< @brief evaluate F1 Max Average Harmonic Mean (default=off).  */
   const char *f1_help; /**< @brief evaluate F1 Max Average Harmonic Mean help description.  */
+  int weighted_flag;	/**< @brief evaluate weighted average by cluster size (default=off).  */
+  const char *weighted_help; /**< @brief evaluate weighted average by cluster size help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI help description.  */
   float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 (default='1').  */
@@ -50,11 +52,14 @@ struct gengetopt_args_info
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
+  unsigned int weighted_given ;	/**< @brief Whether weighted was given.  */
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */
+  int f1_mode_counter; /**< @brief Counter for mode f1 */
+  int nmi_mode_counter; /**< @brief Counter for mode nmi */
 } ;
 
 /** @brief The additional parameters to pass to parser functions */

@@ -25,9 +25,9 @@
 
 #include "cmdline.h"
 
-const char *gengetopt_args_info_purpose = "Evaluate extrinsic measures for overlapping multiresolution clusterings with\npossible inequal node base.";
+const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation for overlapping multiresolution clusterings with\npossible inequal node base.";
 
-const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated";
+const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2   clustering  - input file,\ncollection of the clusters to be evaluated";
 
 const char *gengetopt_args_info_versiontext = "";
 
@@ -36,7 +36,10 @@ const char *gengetopt_args_info_description = "";
 const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
+  "\n Mode: f1\n  Evaluation of the F1 Max Average Harmonic Mean",
   "  -f, --f1                evaluate F1 Max Average Harmonic Mean  (default=off)",
+  "  -w, --weighted          evaluate weighted average by cluster size\n                            (default=off)",
+  "\n Mode: nmi\n  Evaluation of the Normalized Mutual Information",
   "  -n, --nmi               evaluate NMI  (default=off)",
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1  (default=`1')",
     0
@@ -66,8 +69,11 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
   args_info->f1_given = 0 ;
+  args_info->weighted_given = 0 ;
   args_info->nmi_given = 0 ;
   args_info->membership_given = 0 ;
+  args_info->f1_mode_counter = 0 ;
+  args_info->nmi_mode_counter = 0 ;
 }
 
 static
@@ -75,6 +81,7 @@ void clear_args (struct gengetopt_args_info *args_info)
 {
   FIX_UNUSED (args_info);
   args_info->f1_flag = 0;
+  args_info->weighted_flag = 0;
   args_info->nmi_flag = 0;
   args_info->membership_arg = 1;
   args_info->membership_orig = NULL;
@@ -88,9 +95,10 @@ void init_args_info(struct gengetopt_args_info *args_info)
 
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
-  args_info->f1_help = gengetopt_args_info_help[2] ;
-  args_info->nmi_help = gengetopt_args_info_help[3] ;
-  args_info->membership_help = gengetopt_args_info_help[4] ;
+  args_info->f1_help = gengetopt_args_info_help[3] ;
+  args_info->weighted_help = gengetopt_args_info_help[4] ;
+  args_info->nmi_help = gengetopt_args_info_help[6] ;
+  args_info->membership_help = gengetopt_args_info_help[7] ;
   
 }
 
@@ -219,6 +227,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "version", 0, 0 );
   if (args_info->f1_given)
     write_into_file(outfile, "f1", 0, 0 );
+  if (args_info->weighted_given)
+    write_into_file(outfile, "weighted", 0, 0 );
   if (args_info->nmi_given)
     write_into_file(outfile, "nmi", 0, 0 );
   if (args_info->membership_given)
@@ -431,6 +441,29 @@ int update_arg(void *field, char **orig_field,
 }
 
 
+static int check_modes(
+  int given1[], const char *options1[],
+                       int given2[], const char *options2[])
+{
+  int i = 0, j = 0, errors = 0;
+  
+  while (given1[i] >= 0) {
+    if (given1[i]) {
+      while (given2[j] >= 0) {
+        if (given2[j]) {
+          ++errors;
+          fprintf(stderr, "%s: option %s conflicts with option %s\n",
+                  package_name, options1[i], options2[j]);
+        }
+        ++j;
+      }
+    }
+    ++i;
+  }
+  
+  return errors;
+}
+
 int
 cmdline_parser_internal (
   int argc, char **argv, struct gengetopt_args_info *args_info,
@@ -471,12 +504,13 @@ cmdline_parser_internal (
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
         { "f1",	0, NULL, 'f' },
+        { "weighted",	0, NULL, 'w' },
         { "nmi",	0, NULL, 'n' },
         { "membership",	1, NULL, 'm' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVfnm:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVfwnm:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -493,6 +527,7 @@ cmdline_parser_internal (
           exit (EXIT_SUCCESS);
 
         case 'f':	/* evaluate F1 Max Average Harmonic Mean.  */
+          args_info->f1_mode_counter += 1;
         
         
           if (update_arg((void *)&(args_info->f1_flag), 0, &(args_info->f1_given),
@@ -502,7 +537,19 @@ cmdline_parser_internal (
             goto failure;
         
           break;
+        case 'w':	/* evaluate weighted average by cluster size.  */
+          args_info->f1_mode_counter += 1;
+        
+        
+          if (update_arg((void *)&(args_info->weighted_flag), 0, &(args_info->weighted_given),
+              &(local_args_info.weighted_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "weighted", 'w',
+              additional_error))
+            goto failure;
+        
+          break;
         case 'n':	/* evaluate NMI.  */
+          args_info->nmi_mode_counter += 1;
         
         
           if (update_arg((void *)&(args_info->nmi_flag), 0, &(args_info->nmi_given),
@@ -538,6 +585,14 @@ cmdline_parser_internal (
 
 
 
+  if (args_info->f1_mode_counter && args_info->nmi_mode_counter) {
+    int f1_given[] = {args_info->f1_given, args_info->weighted_given,  -1};
+    const char *f1_desc[] = {"--f1", "--weighted",  0};
+    int nmi_given[] = {args_info->nmi_given,  -1};
+    const char *nmi_desc[] = {"--nmi",  0};
+    error_occurred += check_modes(f1_given, f1_desc, nmi_given, nmi_desc);
+  }
+  
 
   cmdline_parser_release (&local_args_info);
 

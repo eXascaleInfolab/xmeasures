@@ -142,39 +142,58 @@ Collection Collection::load(const char* filename, float membership)
 	return cn;
 }
 
-Prob Collection::f1mah(const Collection& cn1, const Collection& cn2)
+Prob Collection::f1mah(const Collection& cn1, const Collection& cn2, bool weighted)
 {
 #if TRACE >= 3
 	fputs("f1mah(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
-	const AccProb  f1ma1 = cn1.f1MaxAvg(cn2);
+	const AccProb  f1ma1 = cn1.f1MaxAvg(cn2, weighted);
 #if TRACE >= 3
 	fputs("f1mah(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
-	const AccProb  f1ma2 = cn2.f1MaxAvg(cn1);
+	const AccProb  f1ma2 = cn2.f1MaxAvg(cn1, weighted);
 #if TRACE >= 2
 	fprintf(stderr, "f1mah(),  f1ma1: %.3G,  f1ma2: %.3G\n", f1ma1, f1ma2);
 #endif // TRACE
 	return 2 * f1ma1 / (f1ma1 + f1ma2) * f1ma2;
 }
 
-AccProb Collection::f1MaxAvg(const Collection& cn) const
+AccProb Collection::f1MaxAvg(const Collection& cn, bool weighted) const
 {
 	AccProb  aggf1max = 0;
-	const auto  f1maxs = mbsF1Max(cn);
-	for(auto f1max: f1maxs)
+	const auto  f1maxs = clsF1Max(cn);
+	if(weighted) {
+#if VALIDATE >= 2
+		assert(f1maxs.size() == m_cls.size()
+			&& "f1MaxAvg(), F1s are not synchronized with the clusters");
+#endif // VALIDATE
+		uint64_t  csizesSum = 0;
+		auto icl = m_cls.begin();
+		const size_t  clsnum = m_cls.size();
+		for(size_t i = 0; i < clsnum; ++i) {
+			auto csize = (*icl++)->members.size();
+			aggf1max += f1maxs[i] * csize;
+			csizesSum += csize;
+		}
+		aggf1max /= csizesSum / AccProb(clsnum);
+	} else for(auto f1max: f1maxs)
 		aggf1max += f1max;
+#if VALIDATE >= 1
+	if(aggf1max >= f1maxs.size() + 1)
+		throw std::overflow_error("f1MaxAvg(), aggf1max is invalid (larger than"
+			" the number of clusters)\n");
+#endif // VALIDATE
 	return aggf1max / f1maxs.size();
 }
 
-F1s Collection::mbsF1Max(const Collection& cn) const
+F1s Collection::clsF1Max(const Collection& cn) const
 {
 //	// Note: crels defined outside the cycle to avoid reallocations
 //	ClusterPtrs  crels;  // Cluster relations from the evaluating one to the foreign collection clusters
 //	crels.reserve(sqrt(cn.m_cls.size()));  // Preallocate the space
 
 	F1s  f1maxs;  // Max F1 for each cluster [of this collection, self]; Uses NRVO return value optimization
-	f1maxs.reserve(cn.m_cls.size());  // Preallocate the space
+	f1maxs.reserve(m_cls.size());  // Preallocate the space
 
 	// Traverse all clusters in the collection
 	for(const auto& cl: m_cls) {

@@ -128,8 +128,9 @@ public:
 	//!
 	//! \param cn1 const Collection&  - first collection
 	//! \param cn2 const Collection&  - second collection
+    //! \param weighted=false bool  - weighted average by cluster size
 	//! \return Prob  - resulting F1_MAH
-	static Prob f1mah(const Collection& cn1, const Collection& cn2);
+	static Prob f1mah(const Collection& cn1, const Collection& cn2, bool weighted=false);
 protected:
     //! \brief F1 Max Average relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping
@@ -137,18 +138,28 @@ protected:
     //! \attention Directed (non-symmetric) evaluation
     //!
     //! \param cn const Collection&  - collection to compare with
+    //! \param weighted=false bool  - weighted average by cluster size
     //! \return AccProb  - resulting max average f1 from this collection
     //! to the specified one (DIRECTED)
-	inline AccProb f1MaxAvg(const Collection& cn) const;
+	inline AccProb f1MaxAvg(const Collection& cn, bool weighted=false) const;
 
-    //! \brief Max F1 for each member node
+    //! \brief Max F1 for each cluster
     //! \note External cn collection can have unequal node base and overlapping
     //! clusters on multiple resolutions
     //! \attention Directed (non-symmetric) evaluation
     //!
     //! \param cn const Collection&  - collection to compare with
     //! \return F1s - resulting max F1 for each member node
-	F1s mbsF1Max(const Collection& cn) const;
+	F1s clsF1Max(const Collection& cn) const;
+
+    //! \brief Max NMI (normalized by max cluster size) for each cluster
+    //! \note External cn collection can have unequal node base and overlapping
+    //! clusters on multiple resolutions
+    //! \attention Directed (non-symmetric) evaluation
+    //!
+    //! \param cn const Collection&  - collection to compare with
+    //! \return F1s - resulting max F1 for each member node
+	F1s clsNmiMax(const Collection& cn) const;
 };
 
 // Function Interfaces ---------------------------------------------------------
