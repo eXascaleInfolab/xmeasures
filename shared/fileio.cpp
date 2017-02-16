@@ -60,19 +60,23 @@ size_t NamedFileWrapper::size() const noexcept
 	return cmsbytes;
 }
 
-size_t StringBuffer::length() const
-#if VALIDATE < 2
-	noexcept
-#endif // VALIDATE
-{
-#if VALIDATE >= 2
-	const auto slen = strlen(data());
-	if(m_length != slen)
-		throw logic_error("ERROR length(), m_length (" + to_string(m_length)
-			+ ") != actual string length (" + to_string(slen) + ")\n");
-#endif // VALIDATE
-	return m_length;
-}
+//size_t StringBuffer::length() const
+//#if VALIDATE < 2
+//	noexcept
+//#endif // VALIDATE
+//{
+//#if VALIDATE >= 2
+//	const auto slen = strlen(data());
+//	if(m_length != slen) {
+//#if TRACE >= 2
+//		fprintf(stderr, "length(), string: %s\n", data());
+//#endif // TRACE
+//		throw logic_error("ERROR length(), m_length (" + to_string(m_length)
+//			+ ") != actual string length (" + to_string(slen) + ")\n");
+//	}
+//#endif // VALIDATE
+//	return m_length;
+//}
 
 bool StringBuffer::empty() const
 #if VALIDATE < 2
@@ -93,6 +97,7 @@ bool StringBuffer::readline(FILE* input)
 	assert(input && !m_cur
 		&& "readline(), valid file stream should be specified and have initial m_cur = 0");
 #endif // VALIDATE
+	*data() = 0;  // Set first element to 0 as an initialization to have the empty string on errors
 	const auto ibeg = ftell(input);
 	// Read data from file until the string is read or an error occurs
 	while(fgets(data() + m_cur, size() - m_cur, input) && data()[size()-2]) {
@@ -109,8 +114,11 @@ bool StringBuffer::readline(FILE* input)
 	if(iend == -1 || ibeg == -1)
 		perror("ERROR, file position reading error");
 	const size_t  slen = strlen(data());
-	assert((!m_cur || slen >= m_cur) && size_t(iend - ibeg) == slen
-		&& "readline(), string size validation failed");
+	if(!((!m_cur || slen >= m_cur) && size_t(iend - ibeg) == slen)) {
+		fprintf(stderr, "readline(), m_cur: %lu, slen: %lu, dpos: %li,  str: %s\n"
+			, m_cur, slen, iend - ibeg, data());
+		assert(0 && "readline(), string size validation failed");
+	}
 #endif // VALIDATE
 	m_cur = 0;  // Reset the writing (appending) position
 	// Note: prelast and last elements of the buffer will be always zero
@@ -194,7 +202,7 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 				ndsnum = parseCount();
 				++attrs;
 #if TRACE >= 2
-				fprintf(stderr, "parseCnlHeader(), nodes: %lu\n", clsnum);
+				fprintf(stderr, "parseCnlHeader(), nodes: %lu\n", ndsnum);
 #endif // TRACE
 			} else {
 				fprintf(stderr, "WARNING parseCnlHeader(), the header parsing is omitted"

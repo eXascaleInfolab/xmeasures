@@ -99,7 +99,7 @@ struct Cluster {
 
 using Clusters = unordered_set<unique_ptr<Cluster>>;  //!< Clusters storage, input collection
 
-using ClusterPtrs = vector<Cluster*>;  //!< Cluster pointers, ordered
+using ClusterPtrs = vector<Cluster*>;  //!< Cluster pointers, unordered
 using NodeClusters = unordered_map<Id, ClusterPtrs>;  //!< Node to clusters relations
 
 //! Resulting F1_MAH-s for 2 input collections of clusters in a single direction

@@ -227,7 +227,7 @@ public:
 	{
 		if(size <= 2)
 			size = 2;
-		data()[0] = 0;  // Set first element to 0
+		*data() = 0;  // Set first element to 0
 		data()[size-2] = 0;  // Set prelast reserved element to 0
 		// Note: data()[size-1] is set to 0 automatically on file read if
 		// the reading data size >= size - 1 bytes
@@ -245,7 +245,7 @@ public:
 		// Reset the buffer
 		resize(size);  // Note: can throw bad_alloc
 		shrink_to_fit();  // Free reserved memory
-		data()[0] = 0;  // Set first element to 0
+		*data() = 0;  // Set first element to 0
 		data()[size-2] = 0;  // Set prelast reserved element to 0
 		// Note: data()[size-1] is set to 0 automatically on file read if
 		// the reading data size >= size - 1 bytes
@@ -255,11 +255,7 @@ public:
     //! 	but without the terminating '0'
     //!
     //! \return size_t  - length of the holding c-string without the null terminator
-	size_t length() const
-#if VALIDATE < 2
-		noexcept
-#endif // VALIDATE
-	;
+	size_t length() const noexcept  { return m_length; }
 
     //! \brief Whether the string is empty or starts with the newline symbol
     //! \attention empty() is true for '\n' when length() == 1

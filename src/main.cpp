@@ -25,6 +25,7 @@ int main(int argc, char **argv)
 	// Validate arguments
 	if(!args_info.f1_given && !args_info.nmi_given) {
 		fputs("WARNING, no any measures to evaluate specified\n", stderr);
+		cmdline_parser_print_help();
 		return 1;
 	}
 

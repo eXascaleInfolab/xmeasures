@@ -58,7 +58,8 @@ Collection Collection::load(const char* filename, float membership)
 			ndsnum = clsnum * clsnum / membership;  // The expected number of nodes
 	}
 #if TRACE >= 2
-	fprintf(stderr, "load(), expected %lu clusters, %lu nodes\n", clsnum, ndsnum);
+	fprintf(stderr, "load(), expected %lu clusters, %lu nodes from %lu input bytes\n"
+		, clsnum, ndsnum, fsize);
 #endif // TRACE
 
 	// Preallocate space for the clusters and nodes
@@ -72,9 +73,10 @@ Collection Collection::load(const char* filename, float membership)
 	constexpr char  mbdelim[] = " \t\n";  // Delimiter for the members
 	// Estimate the number of chars per node, floating number
 	const float  ndchars = ndsnum ? (fsize != FILESIZE_INVALID
-		? ndsnum / fsize : log10(ndsnum) + 1)  // Note: + 1 to consider the leading space
-		: 1;
+		? fsize / float(ndsnum) : log10(float(ndsnum)) + 1)  // Note: + 1 to consider the leading space
+		: 1.f;
 #if VALIDATE >= 2
+	//fprintf(stderr, "load(), ndchars: %.4G\n", ndchars);
 	assert(ndchars >= 1 && "load(), ndchars invalid");
 #endif // VALIDATE
 	do {
@@ -125,7 +127,7 @@ Collection Collection::load(const char* filename, float membership)
 	if(cn.m_ndcs.size() < cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() / 2)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
 #if TRACE >= 2
-	printf("loadNodes(), loaded %lu clusters (reserved %lu buckets, overhead: %0.4f %%) and"
+	printf("loadNodes() [shrinked], loaded %lu clusters (reserved %lu buckets, overhead: %0.4f %%) and"
 		" %lu nodes (reserved %lu buckets, overhead: %0.4f %%) from %s\n"
 		, cn.m_cls.size(), cn.m_cls.bucket_count()
 		, float(cn.m_cls.bucket_count() - cn.m_cls.size()) / cn.m_cls.bucket_count() * 100
@@ -142,14 +144,17 @@ Collection Collection::load(const char* filename, float membership)
 
 Prob Collection::f1mah(const Collection& cn1, const Collection& cn2)
 {
-#if TRACE >= 2
+#if TRACE >= 3
 	fputs("f1mah(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ma1 = cn1.f1MaxAvg(cn2);
-#if TRACE >= 2
+#if TRACE >= 3
 	fputs("f1mah(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ma2 = cn2.f1MaxAvg(cn1);
+#if TRACE >= 2
+	fprintf(stderr, "f1mah(),  f1ma1: %.3G,  f1ma2: %.3G\n", f1ma1, f1ma2);
+#endif // TRACE
 	return 2 * f1ma1 / (f1ma1 + f1ma2) * f1ma2;
 }
 
@@ -157,7 +162,7 @@ AccProb Collection::f1MaxAvg(const Collection& cn) const
 {
 	AccProb  aggf1max = 0;
 	const auto  f1maxs = mbsF1Max(cn);
-	for(auto f1max: mbsF1Max(cn))
+	for(auto f1max: f1maxs)
 		aggf1max += f1max;
 	return aggf1max / f1maxs.size();
 }
@@ -178,22 +183,25 @@ F1s Collection::mbsF1Max(const Collection& cn) const
 		// Traverse all members (node ids)
 		for(auto nid: cl->members) {
 			// Find Matching clusters (containing the same member node id) in the foreign collection
-			const auto& mcls = cn.m_ndcs.at(nid);
-			const auto imc = fast_ifind(mcls.begin(), mcls.end(), cl.get(), bsVal<Cluster*>);
-			if(imc != mcls.end() && *imc == cl.get())
-				(*imc)->counter(cl.get());
+			const auto imcls = cn.m_ndcs.find(nid);
+			// Consider the case of unequal node base, i.e. missed node
+			if(imcls == cn.m_ndcs.end())
+				continue;
+			for(auto mcl: imcls->second) {
+				mcl->counter(cl.get());
 				// Note: need targ clusters for NMI, but only the max value for F1
-				//accBest(cands, f1max, *imc, relF1((*imc)->counter(), csize, (*imc)->size()), csize)
-				const Prob  cf1 = cl->f1((*imc)->counter(), (*imc)->members.size());
+				//accBest(cands, f1max, *imc, relF1(mcl->counter(), csize, mcl->size()), csize)
+				const Prob  cf1 = cl->f1(mcl->counter(), mcl->members.size());
 				if(f1max < cf1)  // Note: <  usage is fine here
 					f1max = cf1;
+			}
 		}
 		f1maxs.push_back(f1max);
-#if TRACE >= 2
-		fprintf(stderr, "  #%p (%lu): %.3G,  ", cl.get(), cl->members.size(), f1max);
+#if TRACE >= 3
+		fprintf(stderr, "  %p (%lu): %.3G", cl.get(), cl->members.size(), f1max);
 #endif // TRACE
 	}
-#if TRACE >= 2
+#if TRACE >= 3
 	fputs("\n", stderr);
 #endif // TRACE
 	return f1maxs;
