@@ -16,53 +16,6 @@
 
 using namespace daoc;
 
-F1s Collection::mbsF1Max(const Collection& cn) const
-{
-//	// Note: crels defined outside the cycle to avoid reallocations
-//	ClusterPtrs  crels;  // Cluster relations from the evaluating one to the foreign collection clusters
-//	crels.reserve(sqrt(cn.m_cls.size()));  // Preallocate the space
-
-	F1s  f1maxs;  // Max F1 for each cluster [of this collection, self]
-	f1maxs.reserve(cn.m_cls.size());  // Preallocate the space
-
-	// Traverse all clusters in the collection
-	for(const auto& cl: m_cls) {
-		//const Id  csize = cl->size();
-		Prob  rf1max = 0;
-		// Traverse all members (node ids)
-		for(auto nid: cl->members) {
-			// Find Matching clusters (containing the same member node id) in the foreign collection
-			const auto& mcls = cn.m_ndcs.at(nid);
-			const auto imc = fast_ifind(mcls.begin(), mcls.end(), cl.get(), bsVal<Cluster*>);
-			if(imc != mcls.end() && *imc == cl.get())
-				(*imc)->counter(cl.get());
-				// Note: need targ clusters for NMI, but only the max value for F1
-				//accBest(cands, rf1max, *imc, relF1((*imc)->counter(), csize, (*imc)->size()), csize)
-				const Prob  crf1 = cl->rf1((*imc)->counter(), (*imc)->members.size());
-				if(rf1max < crf1)  // Note: <  usage is fine here
-					rf1max = crf1;
-		}
-		f1maxs.push_back(rf1max);
-	}
-	return f1maxs;
-}
-
-AccProb Collection::f1MaxAvg(const Collection& cn) const
-{
-	AccProb  aggf1max = 0;
-	const auto  f1maxs = mbsF1Max(cn);
-	for(auto f1max: mbsF1Max(cn))
-		aggf1max += f1max;
-	return aggf1max / f1maxs.size();
-}
-
-Prob Collection::f1mah(const Collection& cn1, const Collection& cn2)
-{
-	const AccProb  f1ma1 = cn1.f1MaxAvg(cn2);
-	const AccProb  f1ma2 = cn2.f1MaxAvg(cn1);
-	return 2 * f1ma1 / (f1ma1 + f1ma2) * f1ma2;
-}
-
 Collection Collection::load(const char* filename, float membership)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
@@ -187,104 +140,66 @@ Collection Collection::load(const char* filename, float membership)
 	return cn;
 }
 
+Prob Collection::f1mah(const Collection& cn1, const Collection& cn2)
+{
+#if TRACE >= 2
+	fputs("f1mah(), F1 Max Avg of the first collection\n", stderr);
+#endif // TRACE
+	const AccProb  f1ma1 = cn1.f1MaxAvg(cn2);
+#if TRACE >= 2
+	fputs("f1mah(), F1 Max Avg of the second collection\n", stderr);
+#endif // TRACE
+	const AccProb  f1ma2 = cn2.f1MaxAvg(cn1);
+	return 2 * f1ma1 / (f1ma1 + f1ma2) * f1ma2;
+}
+
+AccProb Collection::f1MaxAvg(const Collection& cn) const
+{
+	AccProb  aggf1max = 0;
+	const auto  f1maxs = mbsF1Max(cn);
+	for(auto f1max: mbsF1Max(cn))
+		aggf1max += f1max;
+	return aggf1max / f1maxs.size();
+}
+
+F1s Collection::mbsF1Max(const Collection& cn) const
+{
+//	// Note: crels defined outside the cycle to avoid reallocations
+//	ClusterPtrs  crels;  // Cluster relations from the evaluating one to the foreign collection clusters
+//	crels.reserve(sqrt(cn.m_cls.size()));  // Preallocate the space
+
+	F1s  f1maxs;  // Max F1 for each cluster [of this collection, self]; Uses NRVO return value optimization
+	f1maxs.reserve(cn.m_cls.size());  // Preallocate the space
+
+	// Traverse all clusters in the collection
+	for(const auto& cl: m_cls) {
+		//const Id  csize = cl->size();
+		Prob  f1max = 0;
+		// Traverse all members (node ids)
+		for(auto nid: cl->members) {
+			// Find Matching clusters (containing the same member node id) in the foreign collection
+			const auto& mcls = cn.m_ndcs.at(nid);
+			const auto imc = fast_ifind(mcls.begin(), mcls.end(), cl.get(), bsVal<Cluster*>);
+			if(imc != mcls.end() && *imc == cl.get())
+				(*imc)->counter(cl.get());
+				// Note: need targ clusters for NMI, but only the max value for F1
+				//accBest(cands, f1max, *imc, relF1((*imc)->counter(), csize, (*imc)->size()), csize)
+				const Prob  cf1 = cl->f1((*imc)->counter(), (*imc)->members.size());
+				if(f1max < cf1)  // Note: <  usage is fine here
+					f1max = cf1;
+		}
+		f1maxs.push_back(f1max);
+#if TRACE >= 2
+		fprintf(stderr, "  #%p (%lu): %.3G,  ", cl.get(), cl->members.size(), f1max);
+#endif // TRACE
+	}
+#if TRACE >= 2
+	fputs("\n", stderr);
+#endif // TRACE
+	return f1maxs;
+}
+
 Prob evalNmi(const Collection& cn1, const Collection& cn2)
 {
 	return 0;
 }
-
-
-
-// Main types definitions ------------------------------------------------------
-////! \brief Cluster contains of the unique nodes
-//class Cluster {
-//public:
-//	using Members = set<Id>;
-//	using IMembers = Members::iterator;
-//
-//private:
-//	Members  m_members;  //!< Members (ids of the nodes)
-//	Size  m_sum;  //!< Sum of the members
-//	Size  m_sum2;  //!< Sum of the squared members
-//
-//protected:
-//    //! \brief Update cluster statistics
-//    //!
-//    //! \param node Id
-//    //! \return void
-//	void updateStat(Id node) noexcept
-//	{
-//		m_sum += node;
-//		m_sum2 += node * node;
-//	}
-//
-//public:
-//    //! \brief Validate the cluster
-//    //! Throw an exception in case of overflow or other issues
-//    //!
-//    //! \return void
-//	inline void validate();
-//
-//    //! \brief Add node to the cluster if the cluster hasn't had it
-//    //!
-//    //! \param node Id  - node id to be added
-//    //! \return bool  - whether the node is added
-//	inline bool extend(Id node);
-////    //! \return pair<IMembers, bool> extend(Id node)  - iterator to the target node
-////    //! 	and whether insertion was made (or the node already was present)
-////	inline pair<IMembers, bool> extend(Id node);
-//
-////    //! \brief Add node to the cluster if the cluster hasn't had it
-////    //!
-////    //! \param node  - node id to be added
-////    //! \param ims  - insertion hint
-////    //! \return pair<IMembers, bool> extend(Id node)  - iterator to the target node
-////    //! 	and whether insertion was made (or the node already was present)
-////	inline pair<IMembers, bool> extend(Id node, IMembers ims);
-//
-//    //! \brief Operator less
-//    //!
-//    //! \param cl const Cluster&  - candidate cluster to be compared
-//    //! \return bool  - whether this cluster less than cl
-//	inline bool operator<(const Cluster& cl) const noexcept;
-//};
-
-// Will be used in the xmeasure
-////! Clusters type, ordered by the cluster size
-//using Clusters = set<Cluster>;
-
-// Main types definitions ------------------------------------------------------
-//void Cluster::validate()
-//{
-//	if(m_sum2 < m_sum)
-//		throw overflow_error("validate(), m_sum2 is overflowed\n");
-//}
-//
-//bool Cluster::extend(Id node)
-//{
-//	bool added = m_members.insert(node).second;
-//	if(added)
-//		updateStat(node);
-//	return added;
-//}
-//
-////pair<Cluster::IMembers, bool> Cluster::extend(Id node)
-////{
-////	auto res = m_members.insert(node);  // Uses NRVO return value optimization
-////	if(res.second)
-////		updateStat(node);
-////	return res;
-////}
-////
-////pair<Cluster::IMembers, bool> Cluster::extend(Id node, IMembers ims)
-////{
-////	auto res = m_members.insert(ims, node);  // Uses NRVO return value optimization
-////	if(res.second)
-////		updateStat(node);
-////	return res;
-////}
-//
-//bool Cluster::operator<(const Cluster& cl) const noexcept
-//{
-//	return m_members.size() < cl.m_members.size() || (m_members.size() == cl.m_members.size()
-//		&& (m_sum < cl.m_sum || (m_sum == cl.m_sum && m_sum2 < cl.m_sum2)));
-//}

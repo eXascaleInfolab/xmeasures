@@ -370,18 +370,6 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 //! \return size_t  - estimated number of nodes
 size_t estimateCnlNodes(size_t filesize, float membership=1.f) noexcept;
 
-//float avgNodeChars(size_t filesize, size_t ndsnum) noexcept;
-//
-////! \brief Estimate the number of nodes from the CNL file size
-////!
-////! \param filesize size_t  - the number of bytes in the CNL file
-////! \param nidsize float  - average size of the node id in chars in the string
-////! 	including spaces
-////! \param membership=1.f float  - average membership of the node,
-////! 	> 0, typically ~= 1
-////! \return size_t  - estimated number of nodes
-//size_t estimateStringNodes(size_t strsize, float nidsize, float membership=1.f) noexcept;
-
 //! \brief Estimate the number of clusters from the number of nodes
 //!
 //! \param ndsnum size_t - the number of nodes
