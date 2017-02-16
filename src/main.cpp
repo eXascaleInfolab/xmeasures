@@ -46,7 +46,8 @@ int main(int argc, char **argv)
 
 	// Evaluate and output measures
 	if(args_info.f1_flag)
-		printf("F1_MAH: %G", Collection::f1mah(cn1, cn2, args_info.weighted_flag));
+		printf("F1_%s: %G\n", args_info.weighted_flag ? "mwah" : "mah"
+			, Collection::f1mah(cn1, cn2, args_info.weighted_flag));
 
 //	if(args_info.nmi_flag) {
 //		if(args_info.f1_flag)
