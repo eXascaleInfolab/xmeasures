@@ -278,7 +278,7 @@ constexpr ptrdiff_t bsObjsDest(typename T::const_reference obj
 //! \param val const typename T::value_type::CallT  - comparing value
 //! \return ptrdiff_t  - comparison result: cv - v
 template <typename T>
-constexpr ptrdiff_t bsObjsOp(typename T::const_reference obj
+inline ptrdiff_t bsObjsOp(typename T::const_reference obj
 	, const typename T::value_type::CallT val) noexcept(typename T::value_type()())
 // ATTENTION: without casting difference will be incorrect for the types with size
 // different from ptrdiff_t and for the unsigned types
@@ -286,6 +286,23 @@ constexpr ptrdiff_t bsObjsOp(typename T::const_reference obj
 	static_assert(sizeof(typename T::value_type::CallT) <= sizeof(ptrdiff_t)
 		, "bsObjsOp(), argument type constraints failed");
 	return bsVal<const typename T::value_type::CallT>(obj(), val);
+}
+
+//! \brief Element operator() comparison (binary find callback)
+//! \note Items in the container are assumed to be ordered in acs order by bsVal().
+//!
+//! \tparam T  - object type
+//! \param obj const T&  - object
+//! \param val const typename T::CallT  - comparing value
+//! \return ptrdiff_t  - comparison result: cv - v
+template <typename T>
+inline ptrdiff_t bsObjOp(const T& obj, const typename T::CallT val) noexcept
+// ATTENTION: without casting difference will be incorrect for the types with size
+// different from ptrdiff_t and for the unsigned types
+{
+	static_assert(sizeof(typename T::CallT) <= sizeof(ptrdiff_t)
+		, "bsObjOp(), argument type constraints failed");
+	return bsVal<const typename T::CallT>(obj(), val);
 }
 
 ////! \brief Element dest comparison (binary find callback)

@@ -19,17 +19,17 @@ using namespace daoc;
 
 // SparseMatrix definitions ----------------------------------------------------
 template<typename Index, typename Value>
-SparseMatrix<Index, Value>::SparseMatrix(Index rows)
+SparseMatrix<Index, Value>::SparseMatrix(Id rows)
 {
 	if(rows)
-		BaseT::reserve(rows);
+		BaseT::reserve(rows);  // Preallocate hash map
 }
 
 template<typename Index, typename Value>
 Value& SparseMatrix<Index, Value>::operator ()(Index i, Index j)
 {
 	auto& rowi = (*this)[i];
-	auto ir = fast_ifind(rowi, j, bsObjsOp<Index>);
+	auto ir = fast_ifind(rowi, j, bsObjOp<RowVecItem<Index, Value>>);
 	if(ir == rowi.end() || ir->pos != j)
 		ir = rowi.emplace(ir, j);  // Transparently Insert a new element
 	return ir->val;
@@ -43,12 +43,12 @@ Value SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
 	auto irowi = BaseT::find(i);
 	if(irowi == BaseT::end())
 		fprintf(stderr, "ERROR operator(), row #%u does not exist\n", i);
-	auto ie = fast_ifind(*irowi, j, bsObjsOp<Index>)->val;
+	auto ie = fast_ifind(*irowi, j, bsObjOp<RowVecItem<Index, Value>>)->val;
 	if(irowi == BaseT::end())
 		fprintf(stderr, "ERROR operator(), element #u in the row #%u does not exist\n", j, i);
 	return ie->val;
 #else
-	return fast_ifind(*find(i), j, bsObjsOp<Index>)->val;
+	return fast_ifind(*find(i), j, bsObjOp<RowVecItem<Index, Value>>)->val;
 #endif // VALIDATE
 }
 
@@ -60,12 +60,12 @@ const Value& SparseMatrix<Index, Value>::operator()(Index i, Index j) const noex
 	auto irowi = BaseT::find(i);
 	if(irowi == BaseT::end())
 		fprintf(stderr, "ERROR operator() 2, row #%u does not exist\n", i);
-	auto ie = fast_ifind(*irowi, j, bsObjsOp<Index>)->val;
+	auto ie = fast_ifind(*irowi, j, bsObjOp<RowVecItem<Index, Value>>)->val;
 	if(irowi == BaseT::end())
 		fprintf(stderr, "ERROR operator(), element #u in the row #%u does not exist\n", j, i);
 	return ie->val;
 #else
-	return fast_ifind(*find(i), j, bsObjsOp<Index>)->val;
+	return fast_ifind(*find(i), j, bsObjOp<RowVecItem<Index, Value>>)->val;
 #endif // VALIDATE
 }
 
@@ -74,7 +74,7 @@ template <typename T, enable_if_t<sizeof(T) <= sizeof(void*)>*>
 Value SparseMatrix<Index, Value>::at(Index i, Index j)
 {
 	auto& rowi = BaseT::at(i);
-	auto ie = fast_ifind(rowi, j, bsObjsOp<Index>);
+	auto ie = fast_ifind(rowi, j, bsObjOp<RowVecItem<Index, Value>>);
 	if(ie == rowi.end() || ie->pos != j)
 		throw out_of_range("at(), attempt to access nonexistent element #"
 			+ to_string(j) + " at the row #" + to_string(i) + "\n");
@@ -86,7 +86,7 @@ template <typename T, enable_if_t<(sizeof(T) > sizeof(void*)), bool>*>
 const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 {
 	auto& rowi = BaseT::at(i);
-	auto ie = fast_ifind(rowi, j, bsObjsOp<Index>);
+	auto ie = fast_ifind(rowi, j, bsObjOp<RowVecItem<Index, Value>>);
 	if(ie == rowi.end() || ie->pos != j)
 		throw out_of_range("at() 2, element #" + to_string(j) + " in the row #"
 			+ to_string(i) + " does not exist\n");
@@ -220,15 +220,6 @@ Collection Collection::load(const char* filename, float membership)
 	return cn;
 }
 
-Prob Collection::nmi(const Collection& cn1, const Collection& cn2)
-{
-	if(!cn1.clusters() || !cn2.clusters())
-		return 0;
-	ClustersMatching  clsmm(cn1.clusters());
-	// Note: use e as base, not 2.
-	return 0;
-}
-
 Prob Collection::f1mah(const Collection& cn1, const Collection& cn2, bool weighted)
 {
 #if TRACE >= 3
@@ -255,7 +246,7 @@ AccProb Collection::f1MaxAvg(const Collection& cn, bool weighted) const
 		assert(f1maxs.size() == clsnum
 			&& "f1MaxAvg(), F1s are not synchronized with the clusters");
 #endif // VALIDATE
-		uint64_t  csizesSum = 0;
+		AccId  csizesSum = 0;
 		auto icl = m_cls.begin();
 		for(size_t i = 0; i < clsnum; ++i) {
 			auto csize = (*icl++)->members.size();
@@ -278,16 +269,11 @@ AccProb Collection::f1MaxAvg(const Collection& cn, bool weighted) const
 
 F1s Collection::clsF1Max(const Collection& cn) const
 {
-//	// Note: crels defined outside the cycle to avoid reallocations
-//	ClusterPtrs  crels;  // Cluster relations from the evaluating one to the foreign collection clusters
-//	crels.reserve(sqrt(cn.m_cls.size()));  // Preallocate the space
-
 	F1s  f1maxs;  // Max F1 for each cluster [of this collection, self]; Uses NRVO return value optimization
 	f1maxs.reserve(m_cls.size());  // Preallocate the space
 
 	// Traverse all clusters in the collection
 	for(const auto& cl: m_cls) {
-		//const Id  csize = cl->size();
 		Prob  f1max = 0;
 		// Traverse all members (node ids)
 		for(auto nid: cl->members) {
@@ -298,8 +284,7 @@ F1s Collection::clsF1Max(const Collection& cn) const
 				continue;
 			for(auto mcl: imcls->second) {
 				mcl->counter(cl.get());
-				// Note: need targ clusters for NMI, but only the max value for F1
-				//accBest(cands, f1max, *imc, relF1(mcl->counter(), csize, mcl->size()), csize)
+				// Note: only the max value for F1 is sufficient
 				const Prob  cf1 = cl->f1(mcl->counter(), mcl->members.size());
 				if(f1max < cf1)  // Note: <  usage is fine here
 					f1max = cf1;
@@ -314,4 +299,135 @@ F1s Collection::clsF1Max(const Collection& cn) const
 	fputs("\n", stderr);
 #endif // TRACE
 	return f1maxs;
+}
+
+Prob Collection::nmi(const Collection& cn1, const Collection& cn2)
+{
+	if(!cn1.clusters() || !cn2.clusters())
+		return 0;
+
+	auto nmi1 = cn1.nmi(cn2);
+#if VALIDATE >= 2
+	// Check NMI value for the inverse order of collections
+	auto nmi2 = cn2.nmi(cn1);
+	fprintf(stderr, "nmi(), nmi1: %G, nmi2: %G,  dnmi: %G\n", nmi1, nmi2, nmi1 - nmi2);
+	assert(equal(nmi1, nmi2, (cn1.clusters() + cn2.clusters()) / 2)
+		&& "nmi(), nmi is not symmetric");
+#endif // VALIDATE
+	return 0;
+}
+
+Prob Collection::nmi(const Collection& cn) const
+{
+#if VALIDATE >= 2
+	// Note: the processing is also fine (but redundant) for the empty collections
+	assert(m_cls.size() && cn.clusters() && "nmi(), non-empty collections expected");
+#endif // VALIDATE
+
+	using ClustersMatching = SparseMatrix<Cluster*, Id>;  //!< Clusters matching matrix
+	using Counts = vector<Id>;  //!< Counts of the clusters
+	using IndexedCounts = unordered_map<Cluster*, Id>;  //!< Indexed counts of the clusters
+//	using Probabilities = vector<Prob>;  //!< Probabilities of the clusters
+
+	ClustersMatching  clsmm = ClustersMatching(m_cls.size());  // Note: default max_load_factor is 1
+	Counts  c1cts(clsmm.size(), 0);  // Counts of this collection (c1)
+	IndexedCounts  c2icts(cn.clusters());  // Indexed counts of cn collection (c2)
+
+	// Traverse all clusters in the collection
+	Id  ic1 = 0;  // c1 index
+	for(const auto& cl: m_cls) {
+		// Traverse all members (node ids)
+		for(auto nid: cl->members) {
+			// Find Matching clusters (containing the same member node id) in the foreign collection
+			const auto imcls = cn.m_ndcs.find(nid);
+			// Consider the case of unequal node base, i.e. missed node
+			if(imcls == cn.m_ndcs.end())
+				continue;
+			c1cts
+#if VALIDATE >= 2
+				.at(ic1)
+#else
+				[ic1]
+#endif // VALIDATE
+				+= 1;
+			for(auto mcl: imcls->second) {
+				clsmm(cl.get(), mcl) += 1;
+				c2icts[mcl] += 1;
+			}
+		}
+		++ic1;
+	}
+
+	// Evaluate sum of vector counts to evaluate probabilities
+	// Note: to have symmetric values normalization should be done by the max values in the row / col
+	AccId c1csum = 0;
+	for(auto c1cnt: c1cts)
+		c1csum += c1cnt;
+
+	AccId c2csum = 0;
+	for(auto& c2ict: c2icts)
+		c2csum += c2ict.second;
+
+	// Evaluate probabilities
+//	Probabilities  c1probs(c1cts.size(), 0);
+//	Probabilities  c2probs(c2icts.size(), 0);
+
+	// Traverse matrix of the mutual information evaluate total mutual probability and
+	// mutual probabilities for each collection
+	AccProb  mi = 0;  // Accumulated mutual probability over the matrix, I(cn1, cn2) in exp base
+	AccProb  h1 = 0;  // H(cn1) - information size of the cn1 in exp base
+	ic1 = 0;  // c1 index
+	for(auto& icm: clsmm) {
+		// Travers row
+			auto  c1cnorm = c1cts  // Accumulated value of the current cluster from cn1
+#if VALIDATE >= 2
+				.at(ic1)
+#else
+				[ic1]
+#endif // VALIDATE
+			;
+		// Consider that the cluster may not have any matches at all, with can be
+		// possible only if the node base is not synchronized
+		if(!c1cnorm) {
+#if VALIDATE >= 2
+			assert(nodes() != cn.nodes() && "nmi(), node bases are expected to be distinct");
+#endif // VALIDATE
+			continue;
+		}
+
+		for(auto& icmr: icm.second) {
+			if(!icmr.val)
+				continue;
+			// Evaluate mutual probability of the cluster (divide by multiplication of counts of both clusters)
+			AccProb  mcprob = AccProb(icmr.val) / (c1cnorm * AccId(c2icts.at(icmr.pos)));
+			// Accumulate total normalized mutual information
+			// Note: e base is used instead of 2 to have absolute entropy instead of bits length
+			mi -= mcprob * log(mcprob);
+		}
+
+		// Evaluate information size of the ic1 cluster in the cn1
+		AccProb  cprob = AccProb(c1cnorm) / c1csum;
+		h1 -= cprob * log(cprob);
+
+		// Update c1cts index
+		++ic1;
+	}
+//	c1cts.clear();
+//	c1cts.shrink_to_fit();
+
+	// Evaluate information size cn2 clusters
+	AccProb  h2 = 0;  // H(cn2) - information size of the cn1 in exp base
+	for(auto& c2ict: c2icts) {
+		if(!c2ict.second)
+			continue;
+		AccProb  cprob = AccProb(c2ict.second) / c2csum;
+		h2 -= cprob * log(cprob);
+	}
+
+	Prob  nmi = mi / (h1 >= h2 ? h1 : h2);
+#if TRACE >= 2
+	fprintf(stderr, "nmi(),  mi: %G,  h1: %G, h2: %G,  nmi: %G\n", mi, h1, h2, nmi);
+#endif // TRACE
+
+	return nmi;
 }

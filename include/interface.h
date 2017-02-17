@@ -24,12 +24,22 @@ using std::unordered_set;
 using std::unordered_map;
 using std::unique_ptr;
 using std::is_integral;
+using std::is_pointer;
 //using std::enable_if;
 using std::enable_if_t;
 
 
 // Data Types ------------------------------------------------------------------
+//! Node id type
 using Id = uint32_t;
+
+//! Accumulated Id type
+// Note: Size should a magnitude larger than Id to hold Id*Id
+using AccId = uint64_t;
+
+////! Size type to hold accumulated
+//// Note: Size should a magnitude larger than Id to hold Id*Id
+//using Size = uint64_t;
 
 using RawIds = vector<Id>;  //!< Node ids
 
@@ -112,9 +122,9 @@ using F1s = vector<Prob>;
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
 template<typename Index, typename Value>
-struct SparseMatrixRowVecItem {
-	static_assert(is_integral<Index>::value
-		, "SparseMatrixRowVecItem, Index should be an integral type");
+struct RowVecItem {
+	static_assert(is_integral<Index>::value || is_pointer<Index>::value
+		, "RowVecItem, Index should be an integral type");
 
 	using CallT = Index;  //!< Type of the functor call
 
@@ -126,7 +136,7 @@ struct SparseMatrixRowVecItem {
     //! \param i=Index() Index  - index of value in the row
     //! \param v=Value() Value  - payload value
 	template <typename T=Value, enable_if_t<sizeof(T) <= sizeof(void*)>* = nullptr>
-	SparseMatrixRowVecItem(Index i=Index(), Value v=Value()) noexcept(Value())
+	RowVecItem(Index i=Index(), Value v=Value()) noexcept(Value())
 	: pos(i), val(v)  {}
 
 	//! Constructor in case of the compound value
@@ -134,7 +144,7 @@ struct SparseMatrixRowVecItem {
     //! \param i=Index() Index  - index of value in the row
     //! \param v=Value() Value  - payload value
 	template <typename T=Value, enable_if_t<(sizeof(T) > sizeof(void*)), bool>* = nullptr>
-	SparseMatrixRowVecItem(Index i=Index(), Value&& v=Value()) noexcept(Value())
+	RowVecItem(Index i=Index(), Value&& v=Value()) noexcept(Value())
 	: pos(i), val(move(v))  {}
 
     //! \brief Functor (call) operator
@@ -149,7 +159,7 @@ struct SparseMatrixRowVecItem {
 
 //! Row vector for the SparseMatrix
 template<typename Index, typename Value>
-using SparseMatrixRowVec = vector<SparseMatrixRowVecItem<Index, Value>>;
+using SparseMatrixRowVec = vector<RowVecItem<Index, Value>>;
 
 //! Base type of the SparseMatrix (can be unordered_map, map, vector)
 template<typename Index, typename Value>
@@ -168,8 +178,8 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
 
     //! \brief Default constructor
     //!
-    //! \param rows=0 Index  - initial number of rows
-	SparseMatrix(Index rows=0);
+    //! \param rows=0 Id  - initial number of rows
+	SparseMatrix(Id rows=0);
 
     //! \brief Access specified element inserting it if not exists
     //!
@@ -215,7 +225,7 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
 	using BaseT::at;  //!< Provide direct access to the matrix row
 };
 
-using ClustersMatching = SparseMatrix<Id, Id>;  //!< Clusters matching matrix
+using ClustersProbs = SparseMatrix<Cluster*, Prob>;  //!< Clusters NMI matrix
 
 // Collection ------------------------------------------------------------------
 //! Collection describing cluster-node relations
@@ -226,6 +236,16 @@ protected:
     //! Default constructor
 	Collection(): m_cls(), m_ndcs()  {}
 public:
+    //! \brief Clusters count
+    //!
+    //! \return Id  - the number of clusters in the collection
+	Id clusters() const noexcept  { return m_cls.size(); }
+
+    //! \brief Nodes count
+    //!
+    //! \return Id  - the number of nodes in the collection
+	Id nodes() const noexcept  { return m_ndcs.size(); }
+
 	//! \brief Load collection from the CNL file
 	//! \pre All clusters in the file are expected to be unique and not validated for
 	//! the mutual match
@@ -253,16 +273,6 @@ public:
 	//! \param cn2 const Collection&  - second collection
 	//! \return Prob  - resulting F1_MAH
 	static Prob nmi(const Collection& cn1, const Collection& cn2);
-
-    //! \brief Clusters count
-    //!
-    //! \return Id  - the number of clusters in the collection
-	Id clusters() const noexcept  { return m_cls.size(); }
-
-    //! \brief Nodes count
-    //!
-    //! \return Id  - the number of nodes in the collection
-	Id nodes() const noexcept  { return m_ndcs.size(); }
 protected:
     //! \brief F1 Max Average relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping
@@ -292,6 +302,15 @@ protected:
 //    //! \param cn const Collection&  - collection to compare with
 //    //! \return F1s - resulting max F1 for each member node
 //	F1s clsNmiMax(const Collection& cn) const;
+
+    //! \brief Evaluate matrix of the mutual information
+    //! \note MI matrix evaluated for this collection, it differs for (cn1, cn2)
+    //! and (cn2, cn1)
+    //!
+    //! \param cn const Collection&  - collections to compare with
+    //! \return ClustersProbs  - resulting matrix of MI
+    // TODO: update description
+	Prob nmi(const Collection& cn) const;
 };
 
 // Function Interfaces ---------------------------------------------------------
