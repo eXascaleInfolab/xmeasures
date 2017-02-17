@@ -28,6 +28,12 @@
 
 namespace daoc {
 
+// Internal MACROSES:
+//	- INSORTED_NONUNIQUE  - insorted() does not validate that the inserting
+//	element is not present
+//
+// NOTE: undefined maro definition is interpreted as having value 0
+
 using std::ptrdiff_t;
 using std::numeric_limits;
 using std::iterator_traits;
@@ -59,18 +65,18 @@ constexpr void traceType()
 //! \return constexpr bool  - the type is iterator
 template <typename T, typename Category=std::input_iterator_tag
 	, enable_if_t<is_base_of<Category, typename iterator_traits<T>::iterator_category>::value>* = nullptr>
-constexpr bool is_iterator()
+constexpr bool is_iterator() noexcept
 { return true; }
 
 template <typename T, typename Category=std::input_iterator_tag
 	, enable_if_t<!is_base_of<Category, typename iterator_traits<T>::iterator_category>::value, bool*>* = nullptr>
-constexpr bool is_iterator()
+constexpr bool is_iterator() noexcept
 { return false; }
 
 // Accessory math functions ---------------------------------------------------
 //! \brief Precision limit (error) for the specified floating type
 template <typename ValT>
-constexpr ValT precision_limit()
+constexpr ValT precision_limit() noexcept
 {
 	static_assert(is_floating_point<ValT>::value, "precision_limit() type should be fractional");
 	// Note: much lower epsilon does not impact convergence,
@@ -87,7 +93,7 @@ constexpr ValT precision_limit()
 //! 	to consider accumulation error
 //! \return bool  - val1 < val2
 template <typename ValT, enable_if_t<is_floating_point<ValT>::value, float>* = nullptr>
-constexpr bool less(const ValT a, const ValT b=ValT(0), const size_t size=1)
+constexpr bool less(const ValT a, const ValT b=ValT(0), const size_t size=1) noexcept
 {
 	static_assert(is_floating_point<ValT>::value, "less(), value type should be fractional");
 	// a < b   <= For x > 0:  a + x < b =>  For y > 0:  a - b + y * abs(a+b) < 0
@@ -100,7 +106,7 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const size_t size=1)
 
 //! \brief Strict less for integral numbers
 template <typename ValT, enable_if_t<is_integral<ValT>::value, int>* = nullptr>
-constexpr bool less(const ValT a, const ValT b=ValT(0), const size_t size=1)
+constexpr bool less(const ValT a, const ValT b=ValT(0), const size_t size=1) noexcept
 {
 	static_assert(is_integral<ValT>::value, "less(), value type should be integral");
 	return a < b;
@@ -119,7 +125,7 @@ constexpr
 //#else
 //inline
 //#endif // VALIDATE
-bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1)
+bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1) noexcept
 {
 	static_assert(is_floating_point<ValT>::value, "equal(), value type should be fractional");
 //#if VALIDATE >= 2
@@ -145,7 +151,7 @@ bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1)
 
 //! \brief Strict equal for integral numbers
 template <typename ValT, enable_if_t<is_integral<ValT>::value, int>* = nullptr>
-bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1)
+constexpr bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1) noexcept
 {
 	static_assert(is_integral<ValT>::value, "equal(), value type should be integral");
 	return a == b;
@@ -170,7 +176,7 @@ inline ValAT rdiv(const ValAT a, const ValBT b)
 //! Comparison function for the arguments
 // Note: ptrdiff_t casting is required otherwise binary_find() is error prone
 template <typename ValT>
-constexpr bool cmpBase(const ValT a, const ValT b)
+constexpr bool cmpBase(const ValT a, const ValT b) noexcept
 {
 //	using ValT = common_type<Val1T, Val2T>::type;
 //	// Note: scalar includes pointer
@@ -184,7 +190,7 @@ constexpr bool cmpBase(const ValT a, const ValT b)
 //! Comparison function for objects sorting by dest attribute
 //! \note Uses cmpBase()
 template <typename T>
-constexpr bool cmpDest(const T& a, const T& b)
+constexpr bool cmpDest(const T& a, const T& b) noexcept
 { return cmpBase(a.dest, b.dest); }
 
 // Binary search --------------------------------------------------------------
@@ -198,7 +204,7 @@ constexpr int  BINSEARCH_MARGIN = 9;  // Min size of an array when bin search is
 //! \param v T  - control value
 //! \return ptrdiff_t  - comparison result: cv - v
 template <typename T>  //, enable_if_t<sizeof(T) <= sizeof(ptrdiff_t)>* = nullptr>
-constexpr ptrdiff_t bsVal(const T cv, const T v)
+constexpr ptrdiff_t bsVal(const T cv, const T v) noexcept
 // ATTENTION: without casting difference will be incorrect for the types with size
 // different from ptrdiff_t and for the unsigned types
 {
@@ -243,26 +249,44 @@ constexpr ptrdiff_t bsVal(const T cv, const T v)
 //! \param v T  - control value
 //! \return ptrdiff_t  - comparison result
 template <typename T>
-constexpr ptrdiff_t bsDest(const T& a, const T& b)
+constexpr ptrdiff_t bsDest(const T& a, const T& b) noexcept
 { return bsVal(a.dest, b.dest); }
 
 //! \brief Elements dest comparison (binary find callback)
 //! \note Items in the container are assumed to be ordered in acs order by bsVal().
-//! 	Uses bsVal() for the comparison
 //!
+//! \tparam T  - container type
 //! \param obj typename T::const_reference  - object
 //! \param dest const typename T::value_type::DestT*  - dest attribute
 //! \return ptrdiff_t  - comparison result
 template <typename T, enable_if_t<(sizeof(typename T::value_type::DestT) > sizeof(void*))>* = nullptr>
 constexpr ptrdiff_t bsObjsDest(typename T::const_reference obj
-	, const typename T::value_type::DestT* dest)
+	, const typename T::value_type::DestT* dest) noexcept
 { return bsVal<const typename T::value_type::DestT*>(obj.dest, dest); }
 
 //! \copydoc bsObjsDest<typename T, enable_if_t<(sizeof(typename T::value_type::DestT) > sizeof(void*))>* = nullptr>
 template <typename T, enable_if_t<sizeof(typename T::value_type::DestT) <= sizeof(void*), bool>* = nullptr>
 constexpr ptrdiff_t bsObjsDest(typename T::const_reference obj
-	, const typename T::value_type::DestT dest)
+	, const typename T::value_type::DestT dest) noexcept
 { return bsVal<const typename T::value_type::DestT>(obj.dest, dest); }
+
+//! \brief Elements operator() comparison (binary find callback)
+//! \note Items in the container are assumed to be ordered in acs order by bsVal().
+//!
+//! \tparam T  - container type
+//! \param obj typename T::const_reference  - object
+//! \param val const typename T::value_type::CallT  - comparing value
+//! \return ptrdiff_t  - comparison result: cv - v
+template <typename T>
+constexpr ptrdiff_t bsObjsOp(typename T::const_reference obj
+	, const typename T::value_type::CallT val) noexcept(typename T::value_type()())
+// ATTENTION: without casting difference will be incorrect for the types with size
+// different from ptrdiff_t and for the unsigned types
+{
+	static_assert(sizeof(typename T::value_type::CallT) <= sizeof(ptrdiff_t)
+		, "bsObjsOp(), argument type constraints failed");
+	return bsVal<const typename T::value_type::CallT>(obj(), val);
+}
 
 ////! \brief Element dest comparison (binary find callback)
 ////! \note Items in the container are assumed to be ordered in acs order by bsVal().
@@ -282,7 +306,7 @@ constexpr ptrdiff_t bsObjsDest(typename T::const_reference obj
 //! \param v T  - control value
 //! \return ptrdiff_t  - comparison result
 template <typename T>
-constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v)
+constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v) noexcept(noexcept(cv.get()) && noexcept(v.get()))
 { return bsVal(cv.get(), v.get()); }
 
 //! \brief Lambda function of struct comparison by the attr
@@ -292,7 +316,7 @@ constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v)
 //! \param T  - type of the struct to be compared
 //! \param attr  - comparison field (attribute)
 #define BS_STRUCT(T, attr)  \
-	[](const T& cv, const T& v) -> ptrdiff_t \
+	[](const T& cv, const T& v) noexcept -> ptrdiff_t \
 	{  \
 		using TAttr = decltype(v.attr);  \
 		static_assert(!is_floating_point<TAttr>::value  \
@@ -309,7 +333,7 @@ constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v)
 //! \param T  - type of the struct
 //! \param attr  - comparison field (attribute)
 #define BS_OBJ_ATTR(T, attr)  \
-	[](const T& el, const decltype(declval<T>().attr) ea) -> ptrdiff_t \
+	[](const T& el, const decltype(declval<T>().attr) ea) noexcept -> ptrdiff_t \
 	{  \
 		using TAttr = decltype(el.attr);  \
 		static_assert(!is_floating_point<TAttr>::value  \
@@ -334,6 +358,9 @@ constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v)
 template <typename T, typename RandIT, typename CompareF>
 RandIT binary_ifind(RandIT begin, const RandIT end, const T val
 	, CompareF cmp=bsVal<typename iterator_traits<RandIT>::value_type>)
+#if VALIDATE < 2
+	noexcept(CompareF())
+#endif // VALIDATE
 {
 	static_assert(sizeof(T) <= sizeof(void*)
 		, "binary_ifind(), T should not increase the address type size");
@@ -369,7 +396,7 @@ RandIT binary_ifind(RandIT begin, const RandIT end, const T val
 //! Binary search in the ordered range with random iterators
 template <typename T, typename RandIT, typename CompareF>
 inline RandIT binary_find(RandIT begin, const RandIT end, const T val
-	, CompareF cmp=bsVal<typename iterator_traits<RandIT>::value_type>)
+	, CompareF cmp=bsVal<typename iterator_traits<RandIT>::value_type>) noexcept(CompareF())
 {
 	static_assert(sizeof(T) <= sizeof(void*)
 		, "binary_find(), T should not increase the address type size");
@@ -391,7 +418,7 @@ inline RandIT binary_find(RandIT begin, const RandIT end, const T val
 template <typename T, typename IT, typename CompareF
 	, enable_if_t<sizeof(T) <= sizeof(void*)>* = nullptr>
 IT linear_ifind(IT begin, const IT end, const T val
-	, CompareF cmp=bsVal<typename iterator_traits<IT>::value_type>)
+	, CompareF cmp=bsVal<typename iterator_traits<IT>::value_type>) noexcept(CompareF())
 {
 	static_assert(sizeof(T) <= sizeof(void*)
 		, "linear_ifind(), T should not increase the address type size");
@@ -406,7 +433,7 @@ IT linear_ifind(IT begin, const IT end, const T val
 template <typename T, typename IT, typename CompareF
 	, enable_if_t<(sizeof(T) > sizeof(void*)), bool>* = nullptr>
 IT linear_ifind(IT begin, const IT end, const T& val
-	, CompareF cmp=bsVal<typename iterator_traits<IT>::value_type>)
+	, CompareF cmp=bsVal<typename iterator_traits<IT>::value_type>) noexcept(CompareF())
 {
 	static_assert(sizeof(T) > sizeof(void*)
 		, "linear_ifind(), compound type T is expected");
@@ -421,7 +448,7 @@ IT linear_ifind(IT begin, const IT end, const T& val
 //! Linear search in the specified range
 template <typename T, typename IT, typename CompareF>
 inline IT linear_find(IT begin, const IT end, const T val
-	, CompareF cmp=bsVal<typename iterator_traits<IT>::value_type>)
+	, CompareF cmp=bsVal<typename iterator_traits<IT>::value_type>) noexcept(CompareF())
 {
 	static_assert(sizeof(T) <= sizeof(void*)
 		, "linear_find(), T should not increase the address type size");
@@ -429,10 +456,20 @@ inline IT linear_find(IT begin, const IT end, const T val
 	return begin != end && !cmp(*begin, val) ? begin : end;
 }
 
+//! Linear index find in the sorted dataset
+template <typename T, typename Container, typename CompareF>
+inline typename Container::iterator linear_ifind(Container& cnt, const T val
+	, CompareF cmp=bsVal<typename Container::value_type>) noexcept(CompareF())
+{
+	static_assert(is_iterator<typename Container::iterator, std::random_access_iterator_tag>()
+		, "linear_ifind(), Container iterator must be a random iterator type");
+	return linear_ifind(cnt.begin(), cnt.end(), val, cmp);
+}
+
 //! Fast index find in the sorted dataset using either binary or linear search
 template <typename T, typename RandIT, typename CompareF>
 inline RandIT fast_ifind(RandIT begin, const RandIT end, const T val
-	, CompareF cmp=bsVal<typename iterator_traits<RandIT>::value_type>)
+	, CompareF cmp=bsVal<typename iterator_traits<RandIT>::value_type>) noexcept(CompareF())
 {
 	static_assert(sizeof(T) <= sizeof(void*)
 		, "fast_ifind(), T should not increase the address type size");
@@ -443,10 +480,20 @@ inline RandIT fast_ifind(RandIT begin, const RandIT end, const T val
 		: binary_ifind(begin, end, val, cmp);
 }
 
+//! Fast index find in the sorted dataset using either binary or linear search
+template <typename T, typename Container, typename CompareF>
+inline typename Container::iterator fast_ifind(Container& cnt, const T val
+	, CompareF cmp=bsVal<typename Container::value_type>) noexcept(CompareF())
+{
+	static_assert(is_iterator<typename Container::iterator, std::random_access_iterator_tag>()
+		, "fast_ifind(), Container iterator must be a random iterator type");
+	return fast_ifind(cnt.begin(), cnt.end(), val, cmp);
+}
+
 //! Fast find in the sorted dataset using either binary or linear search
 template <typename T, typename RandIT, typename CompareF>
 inline RandIT fast_find(RandIT begin, const RandIT end, const T val
-	, CompareF cmp=bsVal<typename iterator_traits<RandIT>::value_type>)
+	, CompareF cmp=bsVal<typename iterator_traits<RandIT>::value_type>) noexcept(CompareF())
 {
 	static_assert(sizeof(T) <= sizeof(void*)
 		, "fast_find(), T should not increase the address type size");
@@ -455,6 +502,26 @@ inline RandIT fast_find(RandIT begin, const RandIT end, const T val
 	return (end - begin) < BINSEARCH_MARGIN
 		? linear_find(begin, end, val, cmp)
 		: binary_find(begin, end, val, cmp);
+}
+
+//! Fast find in the sorted dataset using either binary or linear search
+template <typename T, typename Container, typename CompareF>
+inline typename Container::iterator fast_find(Container& cnt, const T val
+	, CompareF cmp=bsVal<typename Container::value_type>) noexcept(CompareF())
+{
+	static_assert(is_iterator<typename Container::iterator, std::random_access_iterator_tag>()
+		, "fast_find(), Container iterator must be a random iterator type");
+	return fast_find(cnt.begin(), cnt.end(), val, cmp);
+}
+
+//! Fast find in the sorted dataset using either binary or linear search
+template <typename T, typename Container, typename CompareF>
+inline typename Container::const_iterator fast_find(const Container& cnt, const T val
+	, CompareF cmp=bsVal<typename Container::value_type>) noexcept(CompareF())
+{
+	static_assert(is_iterator<typename Container::const_iterator, std::random_access_iterator_tag>()
+		, "fast_find(), Container iterator must be a random iterator type");
+	return fast_find(cnt.begin(), cnt.end(), val, cmp);
 }
 
 // Operations with containers -------------------------------------------------
@@ -503,11 +570,14 @@ inline RandIT fast_find(RandIT begin, const RandIT end, const T val
 template <typename IterT, typename CompareF>
 bool sorted(IterT begin, const IterT end
 	, CompareF cmp=bsVal<typename iterator_traits<IterT>::value_type>, bool unique=true)
+#if VALIDATE < 2
+	noexcept(CompareF())
+#endif // VALIDATE
 {
 	static_assert(is_same<decltype(cmp(*begin, *begin)), decltype(bsVal(nullptr, nullptr))>::value
 		, "sorted(), cmp() must return the same type as bsVal()");
 	static_assert(is_iterator<IterT>(), "sorted(), IterT must be a forward iterator type");
-#if VALIDATE >= 1
+#if VALIDATE >= 2
 	assert(begin != end && "sorted(), empty container is being checked");
 #endif // VALIDATE
 	if(begin == end)
@@ -522,7 +592,9 @@ bool sorted(IterT begin, const IterT end
 }
 
 //! \brief Index of the specified element in the sorted elements
-//! \pre Elements are ordered, unique and does not contain the searching el
+//! \pre Elements are ordered and unique
+//! \note If not INSORTED_NONUNIQUE and VALIDATE >= 1 then the elements are validated
+//! 	to not contain the searching el
 //!
 //! \tparam ContainerT  - container type
 //! \tparam ItemT  - anchor type
@@ -534,6 +606,9 @@ bool sorted(IterT begin, const IterT end
 //! \return typename ContainerT::iterator  - iterator to els where dest should be inserted/emplaced
 template <typename ContainerT, typename ItemT, typename CompareF>
 typename ContainerT::iterator insorted(ContainerT& els, const ItemT el, CompareF cmp=bsVal<ItemT>)
+#if VALIDATE < 3 && (!defined(INSORTED_NONUNIQUE) || VALIDATE < 1)
+	noexcept(CompareF())
+#endif // VALIDATE
 {
 	static_assert(sizeof(ItemT) <= sizeof(void*)
 		, "insorted(), ItemT should not increase the address type size");
@@ -549,7 +624,9 @@ typename ContainerT::iterator insorted(ContainerT& els, const ItemT el, CompareF
 		fprintf(stderr, "  >>>>>>> insorted(), #%u (%p) is already among %lu members\n"
 			, el->id, el, els.size());
 #endif // TRACE
+#ifndef INSORTED_NONUNIQUE
 	assert((iel == els.end() || cmp(*iel, el) != 0) && "insorted(), elements must be unique");
+#endif // INSORTED_NONUNIQUE
 #endif // VALIDATE
 	return iel;
 }
@@ -569,6 +646,9 @@ typename ContainerT::iterator insorted(ContainerT& els, const ItemT el, CompareF
 template <typename ContainerT, typename ItemT, typename CompareF>
 inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT el
 	, CompareF cmp=bsVal<ItemT>)
+#if !defined(INSORTED_NONUNIQUE) || VALIDATE < 1
+	noexcept(CompareF())
+#endif // VALIDATE
 {
 	static_assert(sizeof(ItemT) <= sizeof(void*)
 		, "insortedLight(), ItemT should not increase the address type size");
@@ -584,7 +664,9 @@ inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT 
 		fprintf(stderr, "  >>>>>>> insortedLight(), #%u (%p) is already among %lu members\n"
 			, el->id, el, els.size());
 #endif // TRACE
+#ifndef INSORTED_NONUNIQUE
 	assert((iel == els.end() || cmp(*iel, el) != 0) && "insortedLight(), elements must be unique");
+#endif // INSORTED_NONUNIQUE
 #endif // VALIDATE
 	return iel;
 }

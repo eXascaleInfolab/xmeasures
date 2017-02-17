@@ -14,8 +14,86 @@
 #include "interface.h"
 
 
+using std::out_of_range;
 using namespace daoc;
 
+// SparseMatrix definitions ----------------------------------------------------
+template<typename Index, typename Value>
+SparseMatrix<Index, Value>::SparseMatrix(Index rows)
+{
+	if(rows)
+		reserve(rows);
+}
+
+template<typename Index, typename Value>
+Value& SparseMatrix<Index, Value>::operator ()(Index i, Index j)
+{
+	auto& rowi = (*this)[i];
+	auto ir = fast_ifind(rowi, j, bsObjsOp<Index>);
+	if(ir == rowi.end() || ir->pos != j)
+		ir = rowi.emplace(ir, j);  // Transparently Insert a new element
+	return ir->val;
+}
+
+template<typename Index, typename Value>
+template <enable_if_t<sizeof(Value) <= sizeof(void*)>*>
+Value SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
+{
+#if VALIDATE >= 2
+	auto irowi = BaseT::find(i);
+	if(irowi == BaseT::end())
+		fprintf(stderr, "ERROR operator(), row #%u does not exist\n", i);
+	auto ie = fast_ifind(*irowi, j, bsObjsOp<Index>)->val;
+	if(irowi == BaseT::end())
+		fprintf(stderr, "ERROR operator(), element #u in the row #%u does not exist\n", j, i);
+	return ie->val;
+#else
+	return fast_ifind(*find(i), j, bsObjsOp<Index>)->val;
+#endif // VALIDATE
+}
+
+template<typename Index, typename Value>
+template <enable_if_t<(sizeof(Value) > sizeof(void*)), bool>*>
+const Value& SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
+{
+#if VALIDATE >= 2
+	auto irowi = BaseT::find(i);
+	if(irowi == BaseT::end())
+		fprintf(stderr, "ERROR operator() 2, row #%u does not exist\n", i);
+	auto ie = fast_ifind(*irowi, j, bsObjsOp<Index>)->val;
+	if(irowi == BaseT::end())
+		fprintf(stderr, "ERROR operator(), element #u in the row #%u does not exist\n", j, i);
+	return ie->val;
+#else
+	return fast_ifind(*find(i), j, bsObjsOp<Index>)->val;
+#endif // VALIDATE
+}
+
+template<typename Index, typename Value>
+template <enable_if_t<sizeof(Value) <= sizeof(void*)>*>
+Value SparseMatrix<Index, Value>::at(Index i, Index j)
+{
+	auto& rowi = BaseT::at(i);
+	auto ie = fast_ifind(rowi, j, bsObjsOp<Index>);
+	if(ie == rowi.end() || ie->pos != j)
+		throw out_of_range("at(), attempt to access nonexistent element #"
+			+ to_string(j) + " at the row #" + to_string(i) + "\n");
+	return ie->val;
+}
+
+template<typename Index, typename Value>
+template <enable_if_t<(sizeof(Value) > sizeof(void*)), bool>*>
+const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
+{
+	auto& rowi = BaseT::at(i);
+	auto ie = fast_ifind(rowi, j, bsObjsOp<Index>);
+	if(ie == rowi.end() || ie->pos != j)
+		throw out_of_range("at() 2, element #" + to_string(j) + " in the row #"
+			+ to_string(i) + " does not exist\n");
+	return ie->val;
+}
+
+// Collection definitions ------------------------------------------------------
 Collection Collection::load(const char* filename, float membership)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
@@ -231,5 +309,6 @@ F1s Collection::clsF1Max(const Collection& cn) const
 
 Prob evalNmi(const Collection& cn1, const Collection& cn2)
 {
+	// Note: use e as base, not 2.
 	return 0;
 }
