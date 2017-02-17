@@ -22,7 +22,7 @@ template<typename Index, typename Value>
 SparseMatrix<Index, Value>::SparseMatrix(Index rows)
 {
 	if(rows)
-		reserve(rows);
+		BaseT::reserve(rows);
 }
 
 template<typename Index, typename Value>
@@ -36,7 +36,7 @@ Value& SparseMatrix<Index, Value>::operator ()(Index i, Index j)
 }
 
 template<typename Index, typename Value>
-template <enable_if_t<sizeof(Value) <= sizeof(void*)>*>
+template <typename T, enable_if_t<sizeof(T) <= sizeof(void*)>*>
 Value SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
 {
 #if VALIDATE >= 2
@@ -53,7 +53,7 @@ Value SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
 }
 
 template<typename Index, typename Value>
-template <enable_if_t<(sizeof(Value) > sizeof(void*)), bool>*>
+template <typename T, enable_if_t<(sizeof(T) > sizeof(void*)), bool>*>
 const Value& SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
 {
 #if VALIDATE >= 2
@@ -70,7 +70,7 @@ const Value& SparseMatrix<Index, Value>::operator()(Index i, Index j) const noex
 }
 
 template<typename Index, typename Value>
-template <enable_if_t<sizeof(Value) <= sizeof(void*)>*>
+template <typename T, enable_if_t<sizeof(T) <= sizeof(void*)>*>
 Value SparseMatrix<Index, Value>::at(Index i, Index j)
 {
 	auto& rowi = BaseT::at(i);
@@ -82,7 +82,7 @@ Value SparseMatrix<Index, Value>::at(Index i, Index j)
 }
 
 template<typename Index, typename Value>
-template <enable_if_t<(sizeof(Value) > sizeof(void*)), bool>*>
+template <typename T, enable_if_t<(sizeof(T) > sizeof(void*)), bool>*>
 const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 {
 	auto& rowi = BaseT::at(i);
@@ -220,6 +220,15 @@ Collection Collection::load(const char* filename, float membership)
 	return cn;
 }
 
+Prob Collection::nmi(const Collection& cn1, const Collection& cn2)
+{
+	if(!cn1.clusters() || !cn2.clusters())
+		return 0;
+	ClustersMatching  clsmm(cn1.clusters());
+	// Note: use e as base, not 2.
+	return 0;
+}
+
 Prob Collection::f1mah(const Collection& cn1, const Collection& cn2, bool weighted)
 {
 #if TRACE >= 3
@@ -305,10 +314,4 @@ F1s Collection::clsF1Max(const Collection& cn) const
 	fputs("\n", stderr);
 #endif // TRACE
 	return f1maxs;
-}
-
-Prob evalNmi(const Collection& cn1, const Collection& cn2)
-{
-	// Note: use e as base, not 2.
-	return 0;
 }

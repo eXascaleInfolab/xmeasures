@@ -24,6 +24,7 @@ using std::unordered_set;
 using std::unordered_map;
 using std::unique_ptr;
 using std::is_integral;
+//using std::enable_if;
 using std::enable_if_t;
 
 
@@ -108,6 +109,7 @@ using NodeClusters = unordered_map<Id, ClusterPtrs>;  //!< Node to clusters rela
 //! Resulting F1_MAH-s for 2 input collections of clusters in a single direction
 using F1s = vector<Prob>;
 
+// NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
 template<typename Index, typename Value>
 struct SparseMatrixRowVecItem {
@@ -123,7 +125,7 @@ struct SparseMatrixRowVecItem {
     //!
     //! \param i=Index() Index  - index of value in the row
     //! \param v=Value() Value  - payload value
-	template <enable_if_t<sizeof(Value) <= sizeof(void*)>* = nullptr>
+	template <typename T=Value, enable_if_t<sizeof(T) <= sizeof(void*)>* = nullptr>
 	SparseMatrixRowVecItem(Index i=Index(), Value v=Value()) noexcept(Value())
 	: pos(i), val(v)  {}
 
@@ -131,7 +133,7 @@ struct SparseMatrixRowVecItem {
     //!
     //! \param i=Index() Index  - index of value in the row
     //! \param v=Value() Value  - payload value
-	template <enable_if_t<(sizeof(Value) > sizeof(void*)), bool>* = nullptr>
+	template <typename T=Value, enable_if_t<(sizeof(T) > sizeof(void*)), bool>* = nullptr>
 	SparseMatrixRowVecItem(Index i=Index(), Value&& v=Value()) noexcept(Value())
 	: pos(i), val(move(v))  {}
 
@@ -159,7 +161,7 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
 	using IndexT = Index;  //!< Indexes type, integral
 	using ValueT = Value;  //!< Value type
 	using BaseT = SparseMatrixBase<IndexT, ValueT>;  //!< SparseMatrixBase type
-	using RowT = typename BaseT::value_type;  //!< Matrix row type
+	using RowT = typename BaseT::mapped_type;  //!< Matrix row type
 	//! Matrix row element type, which contains the value and might have
 	//! additional attributes
 	using RowItemT = typename RowT::value_type;
@@ -182,7 +184,7 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
     //! \param i Index  - row index
     //! \param j Index  - column index
     //! \return Value& operator  - value of the element
-	template <enable_if_t<sizeof(Value) <= sizeof(void*)>* = nullptr>
+	template <typename T=Value, enable_if_t<sizeof(T) <= sizeof(void*)>* = nullptr>
 	Value operator ()(Index i, Index j) const noexcept; //  { return this->at(i) }
 
     //! \brief Access specified element without bounds checking
@@ -191,7 +193,7 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
     //! \param i Index  - row index
     //! \param j Index  - column index
     //! \return Value& operator  - value of the element
-	template <enable_if_t<(sizeof(Value) > sizeof(void*)), bool>* = nullptr>
+	template <typename T=Value, enable_if_t<(sizeof(T) > sizeof(void*)), bool>* = nullptr>
 	const Value& operator ()(Index i, Index j) const noexcept; //  { return this->at(i) }
 
     //! \brief Access specified element checking the bounds
@@ -199,7 +201,7 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
     //! \param i Index  - row index
     //! \param j Index  - column index
     //! \return Value& operator  - value of the element
-	template <enable_if_t<sizeof(Value) <= sizeof(void*)>* = nullptr>
+	template <typename T=Value, enable_if_t<sizeof(T) <= sizeof(void*)>* = nullptr>
 	Value at(Index i, Index j); //  { return this->at(i) }
 
     //! \brief Access specified element checking the bounds
@@ -207,12 +209,15 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
     //! \param i Index  - row index
     //! \param j Index  - column index
     //! \return Value& operator  - value of the element
-	template <enable_if_t<(sizeof(Value) > sizeof(void*)), bool>* = nullptr>
+	template <typename T=Value, enable_if_t<(sizeof(T) > sizeof(void*)), bool>* = nullptr>
 	const Value& at(Index i, Index j); //  { return this->at(i) }
 
 	using BaseT::at;  //!< Provide direct access to the matrix row
 };
 
+using ClustersMatching = SparseMatrix<Id, Id>;  //!< Clusters matching matrix
+
+// Collection ------------------------------------------------------------------
 //! Collection describing cluster-node relations
 class Collection {
 	Clusters  m_cls;  //!< Clusters
@@ -239,6 +244,15 @@ public:
     //! \param weighted=false bool  - weighted average by cluster size
 	//! \return Prob  - resulting F1_MAH
 	static Prob f1mah(const Collection& cn1, const Collection& cn2, bool weighted=false);
+
+	//! \brief NMI considering overlaps, multi-resolution and possibly unequal
+	//! node base
+	//! \note Undirected (symmetric) evaluation
+	//!
+	//! \param cn1 const Collection&  - first collection
+	//! \param cn2 const Collection&  - second collection
+	//! \return Prob  - resulting F1_MAH
+	static Prob nmi(const Collection& cn1, const Collection& cn2);
 
     //! \brief Clusters count
     //!
@@ -270,14 +284,14 @@ protected:
     //! \return F1s - resulting max F1 for each member node
 	F1s clsF1Max(const Collection& cn) const;
 
-    //! \brief Max NMI (normalized by max cluster size) for each cluster
-    //! \note External cn collection can have unequal node base and overlapping
-    //! clusters on multiple resolutions
-    //! \attention Directed (non-symmetric) evaluation
-    //!
-    //! \param cn const Collection&  - collection to compare with
-    //! \return F1s - resulting max F1 for each member node
-	F1s clsNmiMax(const Collection& cn) const;
+//    //! \brief Max NMI (normalized by max cluster size) for each cluster
+//    //! \note External cn collection can have unequal node base and overlapping
+//    //! clusters on multiple resolutions
+//    //! \attention Directed (non-symmetric) evaluation
+//    //!
+//    //! \param cn const Collection&  - collection to compare with
+//    //! \return F1s - resulting max F1 for each member node
+//	F1s clsNmiMax(const Collection& cn) const;
 };
 
 // Function Interfaces ---------------------------------------------------------

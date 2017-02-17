@@ -69,7 +69,7 @@ constexpr bool is_iterator() noexcept
 { return true; }
 
 template <typename T, typename Category=std::input_iterator_tag
-	, enable_if_t<!is_base_of<Category, typename iterator_traits<T>::iterator_category>::value, bool*>* = nullptr>
+	, enable_if_t<!is_base_of<Category, typename iterator_traits<T>::iterator_category>::value, bool>* = nullptr>
 constexpr bool is_iterator() noexcept
 { return false; }
 
