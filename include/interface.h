@@ -30,24 +30,18 @@ using std::enable_if_t;
 
 
 // Data Types ------------------------------------------------------------------
-//! Node id type
-using Id = uint32_t;
+using Id = uint32_t;  //!< Node id type
 
 //! Accumulated Id type
 // Note: Size should a magnitude larger than Id to hold Id*Id
 using AccId = uint64_t;
 
-////! Size type to hold accumulated
-//// Note: Size should a magnitude larger than Id to hold Id*Id
-//using Size = uint64_t;
-
 using RawIds = vector<Id>;  //!< Node ids
-
-//using RawCollection = vector<RawIds>;  //!< Clusters of nodes
 
 struct Cluster;
 
 //! Cluster matching counter
+//! \note Required only for F1 evaluation
 class Counter {
 	Cluster*  m_orig;  //!<  Originator cluster
 	Id  m_count;  //!<  Occurrences counter
@@ -225,8 +219,6 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
 	using BaseT::at;  //!< Provide direct access to the matrix row
 };
 
-using ClustersProbs = SparseMatrix<Cluster*, Prob>;  //!< Clusters NMI matrix
-
 // Collection ------------------------------------------------------------------
 //! Collection describing cluster-node relations
 class Collection {
@@ -255,7 +247,7 @@ public:
     //! \return bool  - the collection is loaded successfully
 	static Collection load(const char* filename, float membership=1);
 
-	//! \brief F1 Max Average Harmonic Mean considering overlaps,
+	//! \brief F1 Max Average Harmonic Mean evaluation considering overlaps,
 	//! multi-resolution and possibly unequal node base
 	//! \note Undirected (symmetric) evaluation
 	//!
@@ -265,14 +257,16 @@ public:
 	//! \return Prob  - resulting F1_MAH
 	static Prob f1mah(const Collection& cn1, const Collection& cn2, bool weighted=false);
 
-	//! \brief NMI considering overlaps, multi-resolution and possibly unequal
-	//! node base
+	//! \brief NMI evaluation considering overlaps, multi-resolution and possibly
+	//! unequal node base
 	//! \note Undirected (symmetric) evaluation
 	//!
 	//! \param cn1 const Collection&  - first collection
 	//! \param cn2 const Collection&  - second collection
+    //! \param expbase=true bool  - use ln (exp base) or log2 (Shannon entropy, bits)
+    //! for the information measuring
 	//! \return Prob  - resulting F1_MAH
-	static Prob nmi(const Collection& cn1, const Collection& cn2);
+	static Prob nmi(const Collection& cn1, const Collection& cn2, bool expbase=true);
 protected:
     //! \brief F1 Max Average relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping
@@ -294,32 +288,15 @@ protected:
     //! \return F1s - resulting max F1 for each member node
 	F1s clsF1Max(const Collection& cn) const;
 
-//    //! \brief Max NMI (normalized by max cluster size) for each cluster
-//    //! \note External cn collection can have unequal node base and overlapping
-//    //! clusters on multiple resolutions
-//    //! \attention Directed (non-symmetric) evaluation
-//    //!
-//    //! \param cn const Collection&  - collection to compare with
-//    //! \return F1s - resulting max F1 for each member node
-//	F1s clsNmiMax(const Collection& cn) const;
-
-    //! \brief Evaluate matrix of the mutual information
-    //! \note MI matrix evaluated for this collection, it differs for (cn1, cn2)
-    //! and (cn2, cn1)
+	//! \brief NMI evaluation considering overlaps, multi-resolution and possibly
+	//! unequal node base
+	//! \note Undirected (symmetric) evaluation
     //!
-    //! \param cn const Collection&  - collections to compare with
-    //! \return ClustersProbs  - resulting matrix of MI
-    // TODO: update description
-	Prob nmi(const Collection& cn) const;
+    //! \param cn const Collection&  - collection to compare with
+    //! \param expbase=true bool  - use ln (exp base) or log2 (Shannon entropy, bits)
+    //! for the information measuring
+    //! \return Prob  - resulting NMI
+	Prob nmi(const Collection& cn, bool expbase=true) const;
 };
-
-// Function Interfaces ---------------------------------------------------------
-//! \brief NMI evaluation considering overlaps, multi-resolution and possibly
-//! unequal node base
-//!
-//! \param cn1 const Collection&  - first collection
-//! \param cn2 const Collection&  - second collection
-//! \return float  - resulting NMI
-float evalNmi(const Collection& cn1, const Collection& cn2);
 
 #endif // INTERFACE_H

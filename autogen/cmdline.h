@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "1.1"
+#define CMDLINE_PARSER_VERSION "2.0"
 #endif
 
 /** @brief Where the command line options are stored */
@@ -39,22 +39,27 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
+  float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 (default='1').  */
+  char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 original value given at command line.  */
+  const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 help description.  */
   int f1_flag;	/**< @brief evaluate F1 Max Average Harmonic Mean (default=off).  */
   const char *f1_help; /**< @brief evaluate F1 Max Average Harmonic Mean help description.  */
   int weighted_flag;	/**< @brief evaluate weighted average by cluster size (default=off).  */
   const char *weighted_help; /**< @brief evaluate weighted average by cluster size help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI help description.  */
-  float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 (default='1').  */
-  char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 original value given at command line.  */
-  const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 help description.  */
+  int log2_flag;	/**< @brief use log2 (Shannon entropy, bits) instead of ln (exp base) for the information measuring.
+  NOTE: exp base gives more discriminative average NMI values and fits better for large datasets evaluation, where is base 2 gives more discriminative high NMI values and fits better for small datasets evaluation (default=off).  */
+  const char *log2_help; /**< @brief use log2 (Shannon entropy, bits) instead of ln (exp base) for the information measuring.
+  NOTE: exp base gives more discriminative average NMI values and fits better for large datasets evaluation, where is base 2 gives more discriminative high NMI values and fits better for small datasets evaluation help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
+  unsigned int membership_given ;	/**< @brief Whether membership was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
   unsigned int weighted_given ;	/**< @brief Whether weighted was given.  */
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
-  unsigned int membership_given ;	/**< @brief Whether membership was given.  */
+  unsigned int log2_given ;	/**< @brief Whether log2 was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */

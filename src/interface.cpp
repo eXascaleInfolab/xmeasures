@@ -205,12 +205,14 @@ Collection Collection::load(const char* filename, float membership)
 	if(cn.m_ndcs.size() < cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() / 2)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
 #if TRACE >= 2
-	printf("loadNodes() [shrinked], loaded %lu clusters (reserved %lu buckets, overhead: %0.4f %%) and"
-		" %lu nodes (reserved %lu buckets, overhead: %0.4f %%) from %s\n"
+	printf("loadNodes() [shrinked], loaded %lu clusters (reserved %lu buckets, overhead: %0.2f %%) and"
+		" %lu nodes (reserved %lu buckets, overhead: %0.2f %%) from %s\n"
 		, cn.m_cls.size(), cn.m_cls.bucket_count()
-		, float(cn.m_cls.bucket_count() - cn.m_cls.size()) / cn.m_cls.bucket_count() * 100
+		, cn.m_cls.size() ? float(cn.m_cls.bucket_count() - cn.m_cls.size()) / cn.m_cls.size() * 100
+			: numeric_limits<float>::infinity()
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
-		, float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.bucket_count() * 100
+		, cn.m_ndcs.size() ? float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.size() * 100
+			: numeric_limits<float>::infinity()
 		, file.name().c_str());
 #elif TRACE >= 1
 	printf("Loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
@@ -301,15 +303,15 @@ F1s Collection::clsF1Max(const Collection& cn) const
 	return f1maxs;
 }
 
-Prob Collection::nmi(const Collection& cn1, const Collection& cn2)
+Prob Collection::nmi(const Collection& cn1, const Collection& cn2, bool expbase)
 {
 	if(!cn1.clusters() || !cn2.clusters())
 		return 0;
 
-	auto nmi1 = cn1.nmi(cn2);
+	auto nmi1 = cn1.nmi(cn2, expbase);
 #if VALIDATE >= 2
 	// Check NMI value for the inverse order of collections
-	auto nmi2 = cn2.nmi(cn1);
+	auto nmi2 = cn2.nmi(cn1, expbase);
 	fprintf(stderr, "nmi(), nmi1: %G, nmi2: %G,  dnmi: %G\n", nmi1, nmi2, nmi1 - nmi2);
 	assert(equal(nmi1, nmi2, (cn1.clusters() + cn2.clusters()) / 2)
 		&& "nmi(), nmi is not symmetric");
@@ -317,23 +319,24 @@ Prob Collection::nmi(const Collection& cn1, const Collection& cn2)
 	return 0;
 }
 
-Prob Collection::nmi(const Collection& cn) const
+Prob Collection::nmi(const Collection& cn, bool expbase) const
 {
 #if VALIDATE >= 2
 	// Note: the processing is also fine (but redundant) for the empty collections
 	assert(m_cls.size() && cn.clusters() && "nmi(), non-empty collections expected");
 #endif // VALIDATE
-
 	using ClustersMatching = SparseMatrix<Cluster*, Id>;  //!< Clusters matching matrix
 	using Counts = vector<Id>;  //!< Counts of the clusters
 	using IndexedCounts = unordered_map<Cluster*, Id>;  //!< Indexed counts of the clusters
-//	using Probabilities = vector<Prob>;  //!< Probabilities of the clusters
 
 	ClustersMatching  clsmm = ClustersMatching(m_cls.size());  // Note: default max_load_factor is 1
-	Counts  c1cts(clsmm.size(), 0);  // Counts of this collection (c1)
-	IndexedCounts  c2icts(cn.clusters());  // Indexed counts of cn collection (c2)
+	Counts  c1cts(m_cls.size(), 0);  // Counts of this collection (c1), indexed from 0
+	IndexedCounts  c2icts(cn.clusters());  // Indexed counts of cn collection (c2), indexed by cls2
 
 	// Traverse all clusters in the collection
+	// Total sum of all values of the clsmm matrix, i.e. the number of
+	// member nodes in both collections
+	AccId  cmmsum = 0;
 	Id  ic1 = 0;  // c1 index
 	for(const auto& cl: m_cls) {
 		// Traverse all members (node ids)
@@ -343,13 +346,18 @@ Prob Collection::nmi(const Collection& cn) const
 			// Consider the case of unequal node base, i.e. missed node
 			if(imcls == cn.m_ndcs.end())
 				continue;
+			const auto  mclsnum = imcls->second.size();
+#if VALIDATE >= 2
+			assert(mclsnum && "nmo(), clusters should be present");
+#endif // VALIDATE
 			c1cts
 #if VALIDATE >= 2
 				.at(ic1)
 #else
 				[ic1]
 #endif // VALIDATE
-				+= 1;
+				+= mclsnum;
+			cmmsum += mclsnum;
 			for(auto mcl: imcls->second) {
 				clsmm(cl.get(), mcl) += 1;
 				c2icts[mcl] += 1;
@@ -360,23 +368,53 @@ Prob Collection::nmi(const Collection& cn) const
 
 	// Evaluate sum of vector counts to evaluate probabilities
 	// Note: to have symmetric values normalization should be done by the max values in the row / col
+#if VALIDATE >= 2
+	assert(cmmsum % 2 == 0 && "nmi(), cmmsum should always be even");
+#if TRACE >= 3
+	fprintf(stderr, "nmi(), cls1 counts (%lu): ", c1cts.size());
+#endif // TRACE
 	AccId c1csum = 0;
-	for(auto c1cnt: c1cts)
+	for(auto c1cnt: c1cts) {
 		c1csum += c1cnt;
+#if TRACE >= 3
+		fprintf(stderr, " %u", c1cnt);
+#endif // TRACE
+	}
 
+#if TRACE >= 3
+	fprintf(stderr, "\nnmi(), cls2 counts (%lu): ", c2icts.size());
+#endif // TRACE
 	AccId c2csum = 0;
-	for(auto& c2ict: c2icts)
+	for(auto& c2ict: c2icts) {
 		c2csum += c2ict.second;
+#if TRACE >= 3
+		fprintf(stderr, " %u", c2ict.second);
+#endif // TRACE
+	}
+#if TRACE >= 3
+	fputs("\n", stderr);
+#endif // TRACE
+
+	if(c1csum != cmmsum || c2csum != cmmsum) {
+		fprintf(stderr, "nmi(), c1csum: %lu, c2csum: %lu, cmmsum: %lu\n", c1csum, c2csum, cmmsum);
+		assert(0 && "nmi(), rows accumulation is invalid");
+	}
+#endif // VALIDATE
 
 	// Evaluate probabilities
-//	Probabilities  c1probs(c1cts.size(), 0);
-//	Probabilities  c2probs(c2icts.size(), 0);
-
-	// Traverse matrix of the mutual information evaluate total mutual probability and
-	// mutual probabilities for each collection
+#if TRACE >= 2
+	fprintf(stderr, "nmi(), nmi is evaluating with base %c, %lu total member nodes\n"
+		, expbase ? 'e' : '2', cmmsum);
+#endif // TRACE
+	AccProb (*const clog)(AccProb) = expbase ? log : log2;  // log to be used
+#if VALIDATE >= 2
+	AccProb  psum = 0;  // Sum of probabilities over the whole matrix
+#endif // VALIDATE
 	AccProb  mi = 0;  // Accumulated mutual probability over the matrix, I(cn1, cn2) in exp base
 	AccProb  h1 = 0;  // H(cn1) - information size of the cn1 in exp base
 	ic1 = 0;  // c1 index
+	// Traverse matrix of the mutual information evaluate total mutual probability and
+	// mutual probabilities for each collection
 	for(auto& icm: clsmm) {
 		// Travers row
 			auto  c1cnorm = c1cts  // Accumulated value of the current cluster from cn1
@@ -399,32 +437,44 @@ Prob Collection::nmi(const Collection& cn) const
 			if(!icmr.val)
 				continue;
 			// Evaluate mutual probability of the cluster (divide by multiplication of counts of both clusters)
-			AccProb  mcprob = AccProb(icmr.val) / (c1cnorm * AccId(c2icts.at(icmr.pos)));
+			AccProb  mcprob = AccProb(icmr.val) / (c1cnorm * AccId(c2icts.at(icmr.pos))) * cmmsum;
+#if VALIDATE >= 2
+			psum += mcprob;
+			assert(mcprob > 0 && mcprob <= 1 && c2icts.at(icmr.pos)
+				&& "nmi(), invalid probability or multiplier");
+#endif // VALIDATE
 			// Accumulate total normalized mutual information
 			// Note: e base is used instead of 2 to have absolute entropy instead of bits length
-			mi -= mcprob * log(mcprob);
+			mi -= mcprob * clog(mcprob);
 		}
 
 		// Evaluate information size of the ic1 cluster in the cn1
-		AccProb  cprob = AccProb(c1cnorm) / c1csum;
-		h1 -= cprob * log(cprob);
+		AccProb  cprob = AccProb(c1cnorm) / cmmsum;
+#if VALIDATE >= 2
+		assert(cprob > 0 && cprob <= 1 && "nmi(), invalid probability");
+#endif // VALIDATE
+		h1 -= cprob * clog(cprob);
 
 		// Update c1cts index
 		++ic1;
 	}
-//	c1cts.clear();
-//	c1cts.shrink_to_fit();
+#if VALIDATE >= 2
+	fprintf(stderr, "nmi(), psum: %G\n", psum);
+#endif // VALIDATE
 
 	// Evaluate information size cn2 clusters
 	AccProb  h2 = 0;  // H(cn2) - information size of the cn1 in exp base
 	for(auto& c2ict: c2icts) {
 		if(!c2ict.second)
 			continue;
-		AccProb  cprob = AccProb(c2ict.second) / c2csum;
-		h2 -= cprob * log(cprob);
+		AccProb  cprob = AccProb(c2ict.second) / cmmsum;
+#if VALIDATE >= 2
+		assert(cprob > 0 && cprob <= 1 && "nmi() 2, invalid probability");
+#endif // VALIDATE
+		h2 -= cprob * clog(cprob);
 	}
 
-	Prob  nmi = mi / (h1 >= h2 ? h1 : h2);
+	Prob  nmi = mi / (h1 + h2);  //(h1 >= h2 ? h1 : h2);
 #if TRACE >= 2
 	fprintf(stderr, "nmi(),  mi: %G,  h1: %G, h2: %G,  nmi: %G\n", mi, h1, h2, nmi);
 #endif // TRACE

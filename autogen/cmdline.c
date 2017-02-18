@@ -27,7 +27,7 @@
 
 const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation for overlapping multiresolution clusterings with\npossible inequal node base.";
 
-const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2   clustering  - input file,\ncollection of the clusters to be evaluated";
+const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2 \n  \n  clustering  - input file, collection of the clusters to be evaluated";
 
 const char *gengetopt_args_info_versiontext = "";
 
@@ -36,12 +36,13 @@ const char *gengetopt_args_info_description = "";
 const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
+  "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1  (default=`1')",
   "\n Mode: f1\n  Evaluation of the F1 Max Average Harmonic Mean",
   "  -f, --f1                evaluate F1 Max Average Harmonic Mean  (default=off)",
   "  -w, --weighted          evaluate weighted average by cluster size\n                            (default=off)",
   "\n Mode: nmi\n  Evaluation of the Normalized Mutual Information",
   "  -n, --nmi               evaluate NMI  (default=off)",
-  "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1  (default=`1')",
+  "  -2, --log2              use log2 (Shannon entropy, bits) instead of ln (exp\n                            base) for the information measuring.\n                            NOTE: exp base gives more discriminative average\n                            NMI values and fits better for large datasets\n                            evaluation, where is base 2 gives more\n                            discriminative high NMI values and fits better for\n                            small datasets evaluation  (default=off)",
     0
 };
 
@@ -68,10 +69,11 @@ void clear_given (struct gengetopt_args_info *args_info)
 {
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
+  args_info->membership_given = 0 ;
   args_info->f1_given = 0 ;
   args_info->weighted_given = 0 ;
   args_info->nmi_given = 0 ;
-  args_info->membership_given = 0 ;
+  args_info->log2_given = 0 ;
   args_info->f1_mode_counter = 0 ;
   args_info->nmi_mode_counter = 0 ;
 }
@@ -80,11 +82,12 @@ static
 void clear_args (struct gengetopt_args_info *args_info)
 {
   FIX_UNUSED (args_info);
+  args_info->membership_arg = 1;
+  args_info->membership_orig = NULL;
   args_info->f1_flag = 0;
   args_info->weighted_flag = 0;
   args_info->nmi_flag = 0;
-  args_info->membership_arg = 1;
-  args_info->membership_orig = NULL;
+  args_info->log2_flag = 0;
   
 }
 
@@ -95,10 +98,11 @@ void init_args_info(struct gengetopt_args_info *args_info)
 
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
-  args_info->f1_help = gengetopt_args_info_help[3] ;
-  args_info->weighted_help = gengetopt_args_info_help[4] ;
-  args_info->nmi_help = gengetopt_args_info_help[6] ;
-  args_info->membership_help = gengetopt_args_info_help[7] ;
+  args_info->membership_help = gengetopt_args_info_help[2] ;
+  args_info->f1_help = gengetopt_args_info_help[4] ;
+  args_info->weighted_help = gengetopt_args_info_help[5] ;
+  args_info->nmi_help = gengetopt_args_info_help[7] ;
+  args_info->log2_help = gengetopt_args_info_help[8] ;
   
 }
 
@@ -225,14 +229,16 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "help", 0, 0 );
   if (args_info->version_given)
     write_into_file(outfile, "version", 0, 0 );
+  if (args_info->membership_given)
+    write_into_file(outfile, "membership", args_info->membership_orig, 0);
   if (args_info->f1_given)
     write_into_file(outfile, "f1", 0, 0 );
   if (args_info->weighted_given)
     write_into_file(outfile, "weighted", 0, 0 );
   if (args_info->nmi_given)
     write_into_file(outfile, "nmi", 0, 0 );
-  if (args_info->membership_given)
-    write_into_file(outfile, "membership", args_info->membership_orig, 0);
+  if (args_info->log2_given)
+    write_into_file(outfile, "log2", 0, 0 );
   
 
   i = EXIT_SUCCESS;
@@ -503,14 +509,15 @@ cmdline_parser_internal (
       static struct option long_options[] = {
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
+        { "membership",	1, NULL, 'm' },
         { "f1",	0, NULL, 'f' },
         { "weighted",	0, NULL, 'w' },
         { "nmi",	0, NULL, 'n' },
-        { "membership",	1, NULL, 'm' },
+        { "log2",	0, NULL, '2' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVfwnm:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVm:fwn2", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -526,6 +533,18 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
+        case 'm':	/* average expected membership of the nodes in the clusters, > 0, typically >= 1.  */
+        
+        
+          if (update_arg( (void *)&(args_info->membership_arg), 
+               &(args_info->membership_orig), &(args_info->membership_given),
+              &(local_args_info.membership_given), optarg, 0, "1", ARG_FLOAT,
+              check_ambiguity, override, 0, 0,
+              "membership", 'm',
+              additional_error))
+            goto failure;
+        
+          break;
         case 'f':	/* evaluate F1 Max Average Harmonic Mean.  */
           args_info->f1_mode_counter += 1;
         
@@ -559,14 +578,14 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'm':	/* average expected membership of the nodes in the clusters, > 0, typically >= 1.  */
+        case '2':	/* use log2 (Shannon entropy, bits) instead of ln (exp base) for the information measuring.
+        NOTE: exp base gives more discriminative average NMI values and fits better for large datasets evaluation, where is base 2 gives more discriminative high NMI values and fits better for small datasets evaluation.  */
+          args_info->nmi_mode_counter += 1;
         
         
-          if (update_arg( (void *)&(args_info->membership_arg), 
-               &(args_info->membership_orig), &(args_info->membership_given),
-              &(local_args_info.membership_given), optarg, 0, "1", ARG_FLOAT,
-              check_ambiguity, override, 0, 0,
-              "membership", 'm',
+          if (update_arg((void *)&(args_info->log2_flag), 0, &(args_info->log2_given),
+              &(local_args_info.log2_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "log2", '2',
               additional_error))
             goto failure;
         
@@ -588,8 +607,8 @@ cmdline_parser_internal (
   if (args_info->f1_mode_counter && args_info->nmi_mode_counter) {
     int f1_given[] = {args_info->f1_given, args_info->weighted_given,  -1};
     const char *f1_desc[] = {"--f1", "--weighted",  0};
-    int nmi_given[] = {args_info->nmi_given,  -1};
-    const char *nmi_desc[] = {"--nmi",  0};
+    int nmi_given[] = {args_info->nmi_given, args_info->log2_given,  -1};
+    const char *nmi_desc[] = {"--nmi", "--log2",  0};
     error_occurred += check_modes(f1_given, f1_desc, nmi_given, nmi_desc);
   }
   

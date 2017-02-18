@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 			, Collection::f1mah(cn1, cn2, args_info.weighted_flag));
 
 	if(args_info.nmi_flag)
-		printf(", NMI: %G\n", Collection::nmi(cn1, cn2));
+		printf(", NMI: %G\n", Collection::nmi(cn1, cn2, !args_info.log2_flag));
 	puts("");  // \n
 
     return 0;
