@@ -19,12 +19,19 @@ modeoption  "weighted" w  "evaluate weighted average by cluster size"  flag off 
 
 defmode  "nmi"  modedesc="Evaluation of the Normalized Mutual Information"
 modeoption  "nmi" n  "evaluate NMI"  flag off  mode="nmi"
-modeoption  "log2" 2  "use log2 (Shannon entropy, bits) instead of ln \
-(exp base) for the information measuring.
-NOTE: exp base gives more discriminative average NMI values and fits\
- better for large datasets evaluation, where is base 2 gives more\
- discriminative high NMI values and fits better for small datasets evaluation"
- flag off  mode="nmi"
+modeoption  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
+ for the information measuring." flag off  mode="nmi"
+#NOTE: exp base gives more discriminative average NMI values and fits\
+# better for large datasets evaluation, where is base 2 gives more\
+# discriminative high NMI values and fits better for small datasets evaluation" flag off  mode="nmi"
+
+#modeoption  "unequal" u  "penalize for the unequal node base instead of just\
+# skipping the nodes present only in one collection.
+#NOTE: requires more computations" flag off  mode="nmi"
+#modeoption  "shared" s  "use shared contribution from each node instead of\
+# the full contribution to the owner clusters
+#NOTE: 
+#"
 
 args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allow input files to be unnamed parameters
 #args "--unamed-opts=clusterings"   # Allow input files to be unnamed parameters
@@ -66,6 +73,7 @@ args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allo
 #     groupoption "opta" a "string a" group="grp1" multiple
 
 # = Changelog =
+## v2.1 - Peanalizatioun for the unequal node base added to NMI
 # v2.0 - NMI imlemented and evaluation base parameterized: exp by default
 # 	2 is optional
 # v1.1 - Weighted F1 implemented

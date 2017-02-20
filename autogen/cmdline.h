@@ -48,10 +48,8 @@ struct gengetopt_args_info
   const char *weighted_help; /**< @brief evaluate weighted average by cluster size help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI help description.  */
-  int log2_flag;	/**< @brief use log2 (Shannon entropy, bits) instead of ln (exp base) for the information measuring.
-  NOTE: exp base gives more discriminative average NMI values and fits better for large datasets evaluation, where is base 2 gives more discriminative high NMI values and fits better for small datasets evaluation (default=off).  */
-  const char *log2_help; /**< @brief use log2 (Shannon entropy, bits) instead of ln (exp base) for the information measuring.
-  NOTE: exp base gives more discriminative average NMI values and fits better for large datasets evaluation, where is base 2 gives more discriminative high NMI values and fits better for small datasets evaluation help description.  */
+  int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring. (default=off).  */
+  const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring. help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -59,7 +57,7 @@ struct gengetopt_args_info
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
   unsigned int weighted_given ;	/**< @brief Whether weighted was given.  */
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
-  unsigned int log2_given ;	/**< @brief Whether log2 was given.  */
+  unsigned int ln_given ;	/**< @brief Whether ln was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */
