@@ -526,8 +526,8 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 #endif // VALIDATE
 			// Accumulate total normalized mutual information
 			// Note: e base is used instead of 2 to have absolute entropy instead of bits length
-			const auto lval = icmr.val / (c2icts.at(icmr.pos) * c1cnorm);  // cprob
-			mi -= mcprob * clog(lval);  // Note: log(a/b) = log(a) - log(b)
+			const auto lval = icmr.val / (c2icts.at(icmr.pos) * cprob);  // cprob; c1cnorm
+			mi += mcprob * clog(lval);  // Note: log(a/b) = log(a) - log(b)
 //#ifndef TRACING_CLSMM_
 //			fprintf(stderr, "  %G * clog(%G [%G / (%G * %G)]) = %G\n", mcprob, lval
 //				, icmr.val, c2icts.at(icmr.pos), cprob, mcprob * clog(lval));
