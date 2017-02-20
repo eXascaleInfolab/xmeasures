@@ -42,7 +42,7 @@ const char *gengetopt_args_info_help[] = {
   "  -w, --weighted          evaluate weighted average by cluster size\n                            (default=off)",
   "\n Mode: nmi\n  Evaluation of the Normalized Mutual Information",
   "  -n, --nmi               evaluate NMI  (default=off)",
-  "  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,\n                            bits) for the information measuring.  (default=off)",
+  "  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,\n                            bits) for the information measuring  (default=off)",
     0
 };
 
@@ -578,7 +578,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'e':	/* use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring..  */
+        case 'e':	/* use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring.  */
           args_info->nmi_mode_counter += 1;
         
         

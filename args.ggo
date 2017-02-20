@@ -20,7 +20,8 @@ modeoption  "weighted" w  "evaluate weighted average by cluster size"  flag off 
 defmode  "nmi"  modedesc="Evaluation of the Normalized Mutual Information"
 modeoption  "nmi" n  "evaluate NMI"  flag off  mode="nmi"
 modeoption  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
- for the information measuring." flag off  mode="nmi"
+ for the information measuring" flag off  mode="nmi"
+# Note: log2 vs ln have no any influence on the resulting value
 #NOTE: exp base gives more discriminative average NMI values and fits\
 # better for large datasets evaluation, where is base 2 gives more\
 # discriminative high NMI values and fits better for small datasets evaluation" flag off  mode="nmi"

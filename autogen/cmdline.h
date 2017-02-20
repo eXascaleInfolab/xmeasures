@@ -48,8 +48,8 @@ struct gengetopt_args_info
   const char *weighted_help; /**< @brief evaluate weighted average by cluster size help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI help description.  */
-  int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring. (default=off).  */
-  const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring. help description.  */
+  int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring (default=off).  */
+  const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
