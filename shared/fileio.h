@@ -15,7 +15,7 @@
 #ifndef FILEIO_H
 #define FILEIO_H
 
-#include <cstdint>
+#include <cstdint>  // uintX_t
 #include <cstdio>  // FILE
 #include <utility>  // move
 #include <string>
@@ -35,6 +35,8 @@
 
 //#include "types.h"
 
+
+namespace daoc {
 
 using std::move;
 using std::string;
@@ -153,9 +155,9 @@ public:
 	//! \brief Move assignment
     NamedFileWrapper& operator= (NamedFileWrapper&& fw) noexcept
     {
-    	m_file = move(fw.m_file);
-    	m_name = move(fw.m_name);
-    	return *this;
+		m_file = move(fw.m_file);
+		m_name = move(fw.m_name);
+		return *this;
     }
 
     //! \brief File name
@@ -189,14 +191,7 @@ public:
     //! \param filename const char*  - new file name to be opened
     //! \param mode const char*  - opening mode, the same as fopen() has
     //! \return NamedFileWrapper&  - the newly opened file or just the old one closed
-	NamedFileWrapper& reset(const char* filename, const char* mode)
-	{
-		if(filename) {
-			m_file.reset(fopen(filename, mode));
-			m_name = filename;
-		} else m_file.reset();
-		return *this;
-	}
+	NamedFileWrapper& reset(const char* filename, const char* mode);
 
     //! \brief Release ownership of the holding file
     //!
@@ -223,33 +218,13 @@ public:
     //!
     //! \param size=spagesize size_t  - size of the buffer
     // Note: can throw bad_alloc
-	StringBuffer(size_t size=spagesize): StringBufferBase(size), m_cur(0), m_length(0)
-	{
-		if(size <= 2)
-			size = 2;
-		*data() = 0;  // Set first element to 0
-		data()[size-2] = 0;  // Set prelast reserved element to 0
-		// Note: data()[size-1] is set to 0 automatically on file read if
-		// the reading data size >= size - 1 bytes
-	}
+	StringBuffer(size_t size=spagesize);
 
     //! \brief Reset the string and it's shrink the allocated buffer
     //!
     //! \param size=spagesize size_t  - new initial size of the string buffer
     //! \return void
-	void reset(size_t size=spagesize)
-	{
-		// Reset writing position
-		m_cur = 0;
-		m_length = 0;
-		// Reset the buffer
-		resize(size);  // Note: can throw bad_alloc
-		shrink_to_fit();  // Free reserved memory
-		*data() = 0;  // Set first element to 0
-		data()[size-2] = 0;  // Set prelast reserved element to 0
-		// Note: data()[size-1] is set to 0 automatically on file read if
-		// the reading data size >= size - 1 bytes
-	}
+	void reset(size_t size=spagesize);
 
     //! \brief Length of the string including the terminating '\n' if present,
     //! 	but without the terminating '0'
@@ -286,61 +261,6 @@ public:
 	bool readline(FILE* input);
 };
 
-//// Accessory Functions ---------------------------------------------------------
-////! Processing candidates
-//template <typename CandidateT>
-//using Candidates = vector<CandidateT>;
-//
-////! \brief Accumulate best candidates and holding their max value (score)
-////!
-////! \param cands Candidates<CandidateT>&  - accumulated candidates
-////! \param vmax ValT&  - current max value (score) of the accumulated candidates
-////! \param cand CandidateT  - processing candidate
-////! \param ValT Weight  - current value for cand
-////! \param size=1 Id  - average number of components (links) used for val evaluation in
-////! 	cands and cand
-////!\if VALIDATE >= 3
-////! \param vcacc=nullptr AccWeight* - accumulated value of the candidates if not nullptr
-////!\endif  // VALIDATE
-////! \return void
-//////! \return bool  - the cands were updated
-//template <typename CandidateT, typename ValT>
-//inline void accBest(Candidates<CandidateT>& cands, ValT& vmax
-//	, CandidateT cand, ValT val, const Id size=1
-//#if VALIDATE >= 3
-//	, AccWeight* vcacc=nullptr  // accumulated value of the candidates
-//#endif // VALIDATE
-//	)
-//{
-//	// Otherwise cands should be extended using move(cand)
-//	static_assert(sizeof(CandidateT) <= sizeof(void*) || is_arithmetic<CandidateT>::value
-//		, "accBest(), CandidateT should be either arithmetic type or small object type");
-////	bool  updated = false;
-//	// Skip items with negative gain
-//	if(!less(val, vmax, size)) {
-//		if(less(vmax, val, size)) {
-//			// Reset candidates
-//			vmax = val;
-//			cands.clear();
-//#if VALIDATE >= 3
-//			if(vcacc)
-//				*vcacc = 0;
-//#endif // VALIDATE
-//		}
-//		// Update candidates
-//		cands.push_back(cand);
-//#if VALIDATE >= 3
-//		if(vcacc)
-//			*vcacc += val;
-//#endif // VALIDATE
-////		updated = true;
-//	}
-//#if TRACE >= 3
-//	fprintf(stderr, "  >>>>> accBest(), resulting vmax: %g, val: %g\n", vmax, val);
-//#endif // TRACE
-////	return updated;
-//}
-
 // File I/O functions ----------------------------------------------------------
 //! \brief Ensure existence of the specified directory
 //!
@@ -373,5 +293,7 @@ size_t estimateCnlNodes(size_t filesize, float membership=1.f) noexcept;
 //! 	> 0, typically ~= 1
 //! \return size_t  - estimated number of clusters
 size_t estimateClusters(size_t ndsnum, float membership=1.f) noexcept;
+
+}  // daoc
 
 #endif // FILEIO_H

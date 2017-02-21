@@ -16,10 +16,12 @@
 #include <memory>  // unique_ptr
 #include <type_traits>
 
+#include "coding.hpp"  // AggHash
 #define INCLUDE_STL_FS
 #include "fileio.h"
 
 
+using std::vector;
 using std::unordered_set;
 using std::unordered_map;
 using std::unique_ptr;
@@ -35,6 +37,9 @@ using Id = uint32_t;  //!< Node id type
 //! Accumulated Id type
 // Note: Size should a magnitude larger than Id to hold Id*Id
 using AccId = uint64_t;
+
+//! Aggregated Hash of the loading cluster member ids
+using AggHash = daoc::AggHash<Id, AccId>;
 
 using RawIds = vector<Id>;  //!< Node ids
 
@@ -243,9 +248,11 @@ public:
 	//! the mutual match
 	//!
 	//! \param filename const char*  - name of the input file
+    //! \param ahash=nullptr AggHash*  - resulting aggregated hash of the loaded
+    //! member ids if not nullptr
 	//! \param membership=1 float  - expected membership of nodes, >0, typically >= 1
     //! \return bool  - the collection is loaded successfully
-	static Collection load(const char* filename, float membership=1);
+	static Collection load(const char* filename, AggHash* ahash=nullptr, float membership=1);
 
 	//! \brief F1 Max Average Harmonic Mean evaluation considering overlaps,
 	//! multi-resolution and possibly unequal node base

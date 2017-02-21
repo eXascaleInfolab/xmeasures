@@ -94,7 +94,7 @@ const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 }
 
 // Collection definitions ------------------------------------------------------
-Collection Collection::load(const char* filename, float membership)
+Collection Collection::load(const char* filename, ::AggHash* ahash, float membership)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
 
@@ -157,6 +157,8 @@ Collection Collection::load(const char* filename, float membership)
 	//fprintf(stderr, "load(), ndchars: %.4G\n", ndchars);
 	assert(ndchars >= 1 && "load(), ndchars invalid");
 #endif // VALIDATE
+	const bool  evalhash = ahash;
+	::AggHash  mbhash;  // Members hash
 	do {
 		// Skip cluster id if specified and parse first node id
 		char *tok = strtok(line, mbdelim);  // const_cast<char*>(line.data())
@@ -196,6 +198,9 @@ Collection Collection::load(const char* filename, float membership)
 #endif // VALIDATE
 			members.push_back(nid);
 			cn.m_ndcs[nid].push_back(pcl);
+			// Update hash if required
+			if(evalhash)
+				mbhash.add(nid);
 		} while((tok = strtok(nullptr, mbdelim)));
 		members.shrink_to_fit();  // Free over reserved space
 	} while(line.readline(file));
@@ -206,18 +211,25 @@ Collection Collection::load(const char* filename, float membership)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
 #if TRACE >= 2
 	printf("loadNodes() [shrinked], loaded %lu clusters (reserved %lu buckets, overhead: %0.2f %%) and"
-		" %lu nodes (reserved %lu buckets, overhead: %0.2f %%) from %s\n"
+		" %lu nodes (reserved %lu buckets, overhead: %0.2f %%) with hash %lu (%s) from %s\n"
 		, cn.m_cls.size(), cn.m_cls.bucket_count()
 		, cn.m_cls.size() ? float(cn.m_cls.bucket_count() - cn.m_cls.size()) / cn.m_cls.size() * 100
 			: numeric_limits<float>::infinity()
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, cn.m_ndcs.size() ? float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.size() * 100
 			: numeric_limits<float>::infinity()
-		, file.name().c_str());
+		, mbhash.hash(), evalhash ? "evaluated" : "omitted", file.name().c_str());
 #elif TRACE >= 1
 	printf("Loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
 		, cn.m_ndcs.size(), file.name().c_str());
 #endif
+	// Assign hash to the results
+	if(evalhash) {
+#if VALIDATE >= 2
+		assert(ahash && "loadNodes(), ahash should be valid");
+#endif // VALIDATE
+		*ahash = move(mbhash);
+	}
 
 	return cn;
 }

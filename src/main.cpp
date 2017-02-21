@@ -41,13 +41,15 @@ int main(int argc, char **argv)
 	}
 
 	// Load collections as relations
-	auto cn1 = Collection::load(args_info.inputs[0], args_info.membership_arg);
-	auto cn2 = Collection::load(args_info.inputs[1], args_info.membership_arg);
+	AggHash  cn1hash, cn2hash;
+	auto cn1 = Collection::load(args_info.inputs[0], &cn1hash, args_info.membership_arg);
+	auto cn2 = Collection::load(args_info.inputs[1], &cn2hash, args_info.membership_arg);
 
 	// Check the nodebase
-	if(cn1.nodes() != cn2.nodes())
-		fprintf(stderr, "WARNING, the number of nodes in the collections differs"
-			": %u != %u\n", cn1.nodes(), cn2.nodes());
+	if(cn1hash != cn2hash)
+		fprintf(stderr, "WARNING, the nodes in the collections differ"
+			": %u nodes with hash %lu) != %u nodes with hash %lu)\n"
+			, cn1.nodes(), cn1hash.hash(), cn2.nodes(), cn2hash.hash());
 
 	// Evaluate and output measures
 	if(args_info.f1_flag)

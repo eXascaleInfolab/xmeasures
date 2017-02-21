@@ -67,6 +67,7 @@
 		</Unit>
 		<Unit filename="autogen/cmdline.h" />
 		<Unit filename="include/interface.h" />
+		<Unit filename="shared/coding.hpp" />
 		<Unit filename="shared/fileio.cpp" />
 		<Unit filename="shared/fileio.h" />
 		<Unit filename="shared/macrodef.h" />

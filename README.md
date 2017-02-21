@@ -25,7 +25,7 @@ To update/extend the input parameters modify `args.ggo` and run `GenerateArgpars
 # Usage
 Execution Options:
 ```
-$ $ ./xmeasures -h
+$ ./xmeasures -h
 xmeasures 2.0
 
 Extrinsic measures evaluation for overlapping multiresolution clusterings with
@@ -60,8 +60,8 @@ $ ./xmeasures -fw data/3cls5nds.cln data/4cls6nds.cln
 ```
 
 # Related Projects
-- [resmerge](https://github.com/eXascaleInfolab/resmerge)  - Resolution levels clustering merger with filtering. Flattens hierarchy/list of multiple resolutions levels (clusterings) into the single flat clustering with clusters on various resolution levels synchronizing the node base.
 - [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) - Overlapping NMI evaluation that is compatible with the original NMI and suitable for both overlapping and multi resolution (hierarchical) clustering evaluation.
+- [resmerge](https://github.com/eXascaleInfolab/resmerge)  - Resolution levels clustering merger with filtering. Flattens hierarchy/list of multiple resolutions levels (clusterings) into the single flat clustering with clusters on various resolution levels synchronizing the node base.
 - [ExecTime](https://bitbucket.org/lumais/exectime/)  - A lightweight resource consumption profiler.
 - [PyCABeM](https://github.com/eXascaleInfolab/PyCABeM) - Python Benchmarking Framework for the Clustering Algorithms Evaluation. Uses extrinsic (NMIs) and intrinsic (Q) measures for the clusters quality evaluation considering overlaps (nodes membership by multiple clusters).
 

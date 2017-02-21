@@ -8,7 +8,6 @@
 //! \email luart@ya.ru
 //! \date 2017-02-13
 
-#include <functional>  // hash
 #include <cstring>  // strtok
 #include <cmath>  // sqrt
 #include <cassert>
@@ -32,6 +31,7 @@ using fs::is_directory;
 using fs::exists;
 using fs::status;
 using std::logic_error;
+using namespace daoc;
 
 // File IO Types definitions ---------------------------------------------------
 size_t NamedFileWrapper::size() const noexcept
@@ -58,6 +58,41 @@ size_t NamedFileWrapper::size() const noexcept
 //	rewind(m_file);  // Set position to the begin of the file
 
 	return cmsbytes;
+}
+
+NamedFileWrapper& NamedFileWrapper::reset(const char* filename, const char* mode)
+{
+	if(filename) {
+		m_file.reset(fopen(filename, mode));
+		m_name = filename;
+	} else m_file.reset();
+	return *this;
+}
+
+// File Reading Types ----------------------------------------------------------
+StringBuffer::StringBuffer(size_t size)
+: StringBufferBase(size), m_cur(0), m_length(0)
+{
+	if(size <= 2)
+		size = 2;
+	*data() = 0;  // Set first element to 0
+	data()[size-2] = 0;  // Set prelast reserved element to 0
+	// Note: data()[size-1] is set to 0 automatically on file read if
+	// the reading data size >= size - 1 bytes
+}
+
+void StringBuffer::reset(size_t size)
+{
+	// Reset writing position
+	m_cur = 0;
+	m_length = 0;
+	// Reset the buffer
+	resize(size);  // Note: can throw bad_alloc
+	shrink_to_fit();  // Free reserved memory
+	*data() = 0;  // Set first element to 0
+	data()[size-2] = 0;  // Set prelast reserved element to 0
+	// Note: data()[size-1] is set to 0 automatically on file read if
+	// the reading data size >= size - 1 bytes
 }
 
 //size_t StringBuffer::length() const
@@ -137,6 +172,8 @@ bool StringBuffer::readline(FILE* input)
 }
 
 // File I/O functions ----------------------------------------------------------
+namespace daoc {
+
 void ensureDir(const string& dir)
 {
 #if TRACE >= 3
@@ -273,3 +310,5 @@ size_t estimateClusters(size_t ndsnum, float membership) noexcept
 		clsnum = sqrt(ndsnum * membership) + 1;  // Note: +1 to consider rounding down
 	return clsnum;
 }
+
+}  // daoc
