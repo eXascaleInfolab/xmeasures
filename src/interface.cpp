@@ -115,43 +115,43 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 
 	// Load clusters
 	// Note: CNL [CSN] format only is supported
-	size_t  clsnum = 0;  // The number of clusters
-	size_t  ndsnum = 0;  // The number of nodes
+	size_t  csnum = 0;  // The number of clusters
+	size_t  nsnum = 0;  // The number of nodes
 	// Note: strings defined out of the cycle to avoid reallocations
 	StringBuffer  line;  // Reading line
 	// Parse header and read the number of clusters if specified
-	parseCnlHeader(file, line, clsnum, ndsnum);
+	parseCnlHeader(file, line, csnum, nsnum);
 
 	// Estimate the number of nodes in the file if not specified
-	if(!ndsnum) {
+	if(!nsnum) {
 		if(fsize != FILESIZE_INVALID) {  // File length fetching failed
-			ndsnum = estimateCnlNodes(fsize, membership);
+			nsnum = estimateCnlNodes(fsize, membership);
 #if TRACE >= 2
-			fprintf(stderr, "load(), %lu estimated nodes from %lu bytes\n", ndsnum, fsize);
+			fprintf(stderr, "load(), %lu estimated nodes from %lu bytes\n", nsnum, fsize);
 #endif // TRACE
-		} else if(clsnum)
-			ndsnum = 2 * clsnum; // / membership;  // Note: use optimistic estimate instead of pessimistic (square / membership) to not overuse the memory
+		} else if(csnum)
+			nsnum = 2 * csnum; // / membership;  // Note: use optimistic estimate instead of pessimistic (square / membership) to not overuse the memory
 	}
 	// Estimate the number of clusters in the file if not specified
-	if(!clsnum && ndsnum)
-		clsnum = estimateClusters(ndsnum, membership);
+	if(!csnum && nsnum)
+		csnum = estimateClusters(nsnum, membership);
 #if TRACE >= 2
 	fprintf(stderr, "load(), expected %lu clusters, %lu nodes from %lu input bytes\n"
-		, clsnum, ndsnum, fsize);
+		, csnum, nsnum, fsize);
 #endif // TRACE
 
 	// Preallocate space for the clusters and nodes
-	if(cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() < clsnum)
-		cn.m_cls.reserve(clsnum);
-	if(cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() < ndsnum)
-		cn.m_ndcs.reserve(ndsnum);
+	if(cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() < csnum)
+		cn.m_cls.reserve(csnum);
+	if(cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() < nsnum)
+		cn.m_ndcs.reserve(nsnum);
 
 	// Parse clusters
 	// ATTENTION: without '\n' delimiter the terminating '\n' is read as an item
 	constexpr char  mbdelim[] = " \t\n";  // Delimiter for the members
 	// Estimate the number of chars per node, floating number
-	const float  ndchars = ndsnum ? (fsize != FILESIZE_INVALID
-		? fsize / float(ndsnum) : log10(float(ndsnum)) + 1)  // Note: + 1 to consider the leading space
+	const float  ndchars = nsnum ? (fsize != FILESIZE_INVALID
+		? fsize / float(nsnum) : log10(float(nsnum) + 1))  // Note: + 1 to consider the leading space
 		: 1.f;
 #if VALIDATE >= 2
 	//fprintf(stderr, "load(), ndchars: %.4G\n", ndchars);
@@ -197,10 +197,11 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 			}
 #endif // VALIDATE
 			members.push_back(nid);
-			cn.m_ndcs[nid].push_back(pcl);
+			auto& ncs = cn.m_ndcs[nid];
 			// Update hash if required
-			if(evalhash)
+			if(evalhash && ncs.empty())
 				mbhash.add(nid);
+			ncs.push_back(pcl);
 		} while((tok = strtok(nullptr, mbdelim)));
 		members.shrink_to_fit();  // Free over reserved space
 	} while(line.readline(file));
@@ -234,61 +235,64 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 	return cn;
 }
 
-Prob Collection::f1mah(const Collection& cn1, const Collection& cn2, bool weighted)
+Prob Collection::f1gm(const Collection& cn1, const Collection& cn2, bool weighted, bool prob)
 {
 #if TRACE >= 3
-	fputs("f1mah(), F1 Max Avg of the first collection\n", stderr);
+	fputs("f1gm(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
-	const AccProb  f1ma1 = cn1.f1MaxAvg(cn2, weighted);
+	const AccProb  f1ga1 = cn1.avggms(cn2, weighted, prob);
 #if TRACE >= 3
-	fputs("f1mah(), F1 Max Avg of the second collection\n", stderr);
+	fputs("f1gm(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
-	const AccProb  f1ma2 = cn2.f1MaxAvg(cn1, weighted);
+	const AccProb  f1ga2 = cn2.avggms(cn1, weighted, prob);
 #if TRACE >= 2
-	fprintf(stderr, "f1mah(),  f1ma1: %.3G,  f1ma2: %.3G\n", f1ma1, f1ma2);
+	fprintf(stderr, "f1gm(),  f1ga1: %.3G, f1ga2: %.3G\n", f1ga1, f1ga2);
 #endif // TRACE
-	return 2 * f1ma1 / (f1ma1 + f1ma2) * f1ma2;
+	return 2 * f1ga1 / (f1ga1 + f1ga2) * f1ga2;
 }
 
-AccProb Collection::f1MaxAvg(const Collection& cn, bool weighted) const
+AccProb Collection::avggms(const Collection& cn, bool weighted, bool prob) const
 {
-	AccProb  aggf1max = 0;
-	const auto  f1maxs = clsF1Max(cn);
+	AccProb  accgm = 0;
+	const auto  gmats = gmatches(cn, prob);
 	if(weighted) {
-		const Id  clsnum = m_cls.size();
+		const Id  csnum = m_cls.size();
 #if VALIDATE >= 2
-		assert(f1maxs.size() == clsnum
-			&& "f1MaxAvg(), F1s are not synchronized with the clusters");
+		assert(gmats.size() == csnum
+			&& "avggms(), matches are not synchronized with the clusters");
 #endif // VALIDATE
 		AccId  csizesSum = 0;
 		auto icl = m_cls.begin();
-		for(size_t i = 0; i < clsnum; ++i) {
+		for(size_t i = 0; i < csnum; ++i) {
 			auto csize = (*icl++)->members.size();
-			aggf1max += f1maxs[i] * csize;
+			accgm += gmats[i] * csize;
 			csizesSum += csize;
 		}
 #if VALIDATE >= 2
-		assert(csizesSum >= clsnum && "f1MaxAvg(), invalid sum of the cluster sizes");
+		assert(csizesSum >= csnum && "avggms(), invalid sum of the cluster sizes");
 #endif // VALIDATE
-		aggf1max /= csizesSum / AccProb(clsnum);
-	} else for(auto f1max: f1maxs)
-		aggf1max += f1max;
+		accgm /= csizesSum / AccProb(csnum);
+	} else for(auto gm: gmats)
+		accgm += gm;
 #if VALIDATE >= 1
-	if(aggf1max >= f1maxs.size() + 1)
-		throw std::overflow_error("f1MaxAvg(), aggf1max is invalid (larger than"
+	if(accgm >= gmats.size() + 1)
+		throw std::overflow_error("avggms(), accgm is invalid (larger than"
 			" the number of clusters)\n");
 #endif // VALIDATE
-	return aggf1max / f1maxs.size();
+	return accgm / gmats.size();
 }
 
-F1s Collection::clsF1Max(const Collection& cn) const
+Probs Collection::gmatches(const Collection& cn, bool prob) const
 {
-	F1s  f1maxs;  // Max F1 for each cluster [of this collection, self]; Uses NRVO return value optimization
-	f1maxs.reserve(m_cls.size());  // Preallocate the space
+	// Greatest matches (Max F1 or partial probability) for each cluster [of this collection, self];
+	Probs  gmats;  // Uses NRVO return value optimization
+	gmats.reserve(m_cls.size());  // Preallocate the space
+
+	auto fmatch = prob ? &Cluster::pprob : &Cluster::f1;  // Function evaluating value of the match
 
 	// Traverse all clusters in the collection
 	for(const auto& cl: m_cls) {
-		Prob  f1max = 0;
+		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
 		// Traverse all members (node ids)
 		for(auto nid: cl->members) {
 			// Find Matching clusters (containing the same member node id) in the foreign collection
@@ -298,26 +302,26 @@ F1s Collection::clsF1Max(const Collection& cn) const
 				continue;
 			for(auto mcl: imcls->second) {
 				mcl->counter(cl.get());
-				// Note: only the max value for F1 is sufficient
-				const Prob  cf1 = cl->f1(mcl->counter(), mcl->members.size());
-				if(f1max < cf1)  // Note: <  usage is fine here
-					f1max = cf1;
+				// Note: only the max value for match is sufficient
+				const Prob  match = ((*cl).*fmatch)(mcl->counter(), mcl->members.size());
+				if(gmatch < match)  // Note: <  usage is fine here
+					gmatch = match;
 			}
 		}
-		f1maxs.push_back(f1max);
+		gmats.push_back(gmatch);
 #if TRACE >= 3
-		fprintf(stderr, "  %p (%lu): %.3G", cl.get(), cl->members.size(), f1max);
+		fprintf(stderr, "  %p (%lu): %.3G", cl.get(), cl->members.size(), gmatch);
 #endif // TRACE
 	}
 #if TRACE >= 3
 	fputs("\n", stderr);
 #endif // TRACE
-	return f1maxs;
+	return gmats;
 }
 
 Prob Collection::nmi(const Collection& cn1, const Collection& cn2, bool expbase)
 {
-	if(!cn1.clusters() || !cn2.clusters())
+	if(!cn1.clsnum() || !cn2.clsnum())
 		return 0;
 
 	auto nmi1 = cn1.nmi(cn2, expbase);
@@ -325,7 +329,7 @@ Prob Collection::nmi(const Collection& cn1, const Collection& cn2, bool expbase)
 	// Check NMI value for the inverse order of collections
 	auto nmi2 = cn2.nmi(cn1, expbase);
 	fprintf(stderr, "nmi(), nmi1: %G, nmi2: %G,  dnmi: %G\n", nmi1, nmi2, nmi1 - nmi2);
-	assert(equal(nmi1, nmi2, (cn1.clusters() + cn2.clusters()) / 2)
+	assert(equal(nmi1, nmi2, (cn1.clsnum() + cn2.clsnum()) / 2)
 		&& "nmi(), nmi is not symmetric");
 #endif // VALIDATE
 	return nmi1;
@@ -335,16 +339,16 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 {
 #if VALIDATE >= 2
 	// Note: the processing is also fine (but redundant) for the empty collections
-	assert(m_cls.size() && cn.clusters() && "nmi(), non-empty collections expected");
+	assert(clsnum() && cn.clsnum() && "nmi(), non-empty collections expected");
 #endif // VALIDATE
 //	using ClustersMatching = SparseMatrix<Cluster*, Id>;  //!< Clusters matching matrix
 //	using IndexedCounts = unordered_map<Cluster*, Id>;  //!< Indexed counts of the clusters
 	using ClustersMatching = SparseMatrix<Cluster*, AccProb>;  //!< Clusters matching matrix
 	using IndexedCounts = unordered_map<Cluster*, AccProb>;  //!< Indexed counts of the clusters
 
-	ClustersMatching  clsmm = ClustersMatching(m_cls.size());  // Note: default max_load_factor is 1
-	IndexedCounts  c1icts(m_cls.size());  // Indexed counts of this collection (c1), indexed by cls1
-	IndexedCounts  c2icts(cn.clusters());  // Indexed counts of cn collection (c2), indexed by cls2
+	ClustersMatching  clsmm = ClustersMatching(clsnum());  // Note: default max_load_factor is 1
+	IndexedCounts  c1icts(clsnum());  // Indexed counts of this collection (c1), indexed by cls1
+	IndexedCounts  c2icts(cn.clsnum());  // Indexed counts of cn collection (c2), indexed by cls2
 	// Total sum of all values of the clsmm matrix, i.e. the number of
 	// member nodes in both collections
 	AccProb  cmmsum = 0;
@@ -356,20 +360,23 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 		for(auto nid: cl->members) {
 			// Find Matching clusters (containing the same member node id) in the foreign collection
 			const auto imcls = cn.m_ndcs.find(nid);
-			// Consider the case of unequal node base, i.e. missed node
+			// Consider the case of unequal node base skipping the missed node,
+			// i.e. sync the node base. An alternative solution is penalization
+			// for the missed nodes assigning all the nodes present only in one
+			// collection to an additional new cluster
 			if(imcls == cn.m_ndcs.end())
 				continue;
-			const auto clsnum = m_ndcs.find(nid)->second.size();
-			const Prob  cpart = Prob(1)/clsnum;
+			const auto csnum = m_ndcs.find(nid)->second.size();
+			const Prob  cpart = Prob(1)/csnum;
 			c1icts[cl.get()] += cpart;  // Note: contains only POSITIVE values
 			cmmsum += cpart;
-			const auto  mclsnum = imcls->second.size();
+			const auto  mcsnum = imcls->second.size();
 #if VALIDATE >= 2
-			assert(mclsnum && "nmi(), clusters should be present");
+			assert(mcsnum && "nmi(), clusters should be present");
 			Prob  cvsum = 0;
 #endif // VALIDATE
-			//const Prob  mcpart = Prob(1)/mclsnum;
-			const AccProb  mmpart = AccProb(cpart) / mclsnum;  // Contribution to the whole matrix
+			//const Prob  mcpart = Prob(1)/mcsnum;
+			const AccProb  mmpart = AccProb(cpart) / mcsnum;  // Contribution to the whole matrix
 			for(auto mcl: imcls->second) {
 #if VALIDATE >= 2
 				cvsum += mmpart;
@@ -378,9 +385,9 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 				c2icts[mcl] += mmpart;  // Note: contains only POSITIVE values
 			}
 #if VALIDATE >= 2
-			if(!equal<Prob>(cvsum, cpart, clsnum*mclsnum)) {
-				fprintf(stderr, "nmi(), cvsum: %G != %G for %lu clsnum %lu mcslnum\n"
-					, cvsum, cpart, clsnum, mclsnum);
+			if(!equal<Prob>(cvsum, cpart, csnum*mcsnum)) {
+				fprintf(stderr, "nmi(), cvsum: %G != %G for %lu csnum %lu mcslnum\n"
+					, cvsum, cpart, csnum, mcsnum);
 				assert(0 && "nmi(), accumulated value is invalid");
 			}
 #endif // VALIDATE
@@ -397,12 +404,12 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 //			// Consider the case of unequal node base, i.e. missed node
 //			if(imcls == cn.m_ndcs.end())
 //				continue;
-//			const auto  mclsnum = imcls->second.size();
+//			const auto  mcsnum = imcls->second.size();
 //#if VALIDATE >= 2
-//			assert(mclsnum && "nmi(), clusters should be present");
+//			assert(mcsnum && "nmi(), clusters should be present");
 //#endif // VALIDATE
-//			c1icts[cl.get()] += mclsnum;  // Note: contains only POSITIVE values
-//			cmmsum += mclsnum;
+//			c1icts[cl.get()] += mcsnum;  // Note: contains only POSITIVE values
+//			cmmsum += mcsnum;
 //			for(auto mcl: imcls->second) {
 //				++clsmm(cl.get(), mcl);  // Note: contains only POSITIVE values
 //				++c2icts[mcl];  // Note: contains only POSITIVE values
@@ -427,22 +434,22 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 //	// more members than overlaps. => Use equal contribution from each node by default,
 //	// which is not the precise (but rather accurate approximation) in case of
 //	// overlapping clusters on a single resolution.
-//	auto& ndcls = m_ndcs.size() <= cn.nodes() ? m_ndcs: cn.m_ndcs;
-//	auto& mcn = m_ndcs.size() <= cn.nodes() ? cn: *this;
+//	auto& ndcls = m_ndcs.size() <= cn.ndsnum() ? m_ndcs: cn.m_ndcs;
+//	auto& mcn = m_ndcs.size() <= cn.ndsnum() ? cn: *this;
 //	for(auto& ndc: ndcls) {
 //		// Find clusters corresponding to this node in the cn
 //		const auto imcls = mcn.m_ndcs.find(ndc.first);
 //		// Consider the case of unequal node base, i.e. missed node
 //		if(imcls == mcn.m_ndcs.end())
 //			continue;
-//		const auto  mclsnum = imcls->second.size();
+//		const auto  mcsnum = imcls->second.size();
 //#if VALIDATE >= 2
-//		assert(mclsnum && "nmi(), clusters should be present");
+//		assert(mcsnum && "nmi(), clusters should be present");
 //#endif // VALIDATE
-//		cmmsum += mclsnum * ndc.second.size();
+//		cmmsum += mcsnum * ndc.second.size();
 //		// Traverse all clusters of the node
 //		for(auto cl: ndc.second) {
-//			c1icts[cl] += mclsnum;  // Note: contains only POSITIVE values
+//			c1icts[cl] += mcsnum;  // Note: contains only POSITIVE values
 //			for(auto mcl: imcls->second) {
 //				++clsmm(cl, mcl);
 //				++c2icts[mcl];  // Note: contains only POSITIVE values
@@ -518,6 +525,7 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 		fprintf(stderr, "%lu; %.3G:  ", std::distance(c1icts.begin(), c1icts.find(icm.first))
 			, c1cnorm);
 #endif // TRACING_CLSMM_
+// TODO: Use full formula and ? max match to consider overlaps
 		for(auto& icmr: icm.second) {
 #if VALIDATE >= 2
 			assert(icmr.val > 0 && "nmi(), matrix of clusters matching should contain only positive values");

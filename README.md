@@ -1,5 +1,5 @@
 # xmeasures - Extrinsic Clustering Measures
-Extrinsic clustering measures evaluation for the multi-resolution clustering with overlaps (covers): F1_gwah and NMI_om.  
+Extrinsic clustering measures evaluation for the multi-resolution clustering with overlaps (covers): F1_gm and NMI (compatible to the standard NMI when applied to the single resolution non-overlapping collections of clusters).  
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark.
 
 ## Content
@@ -25,11 +25,11 @@ To update/extend the input parameters modify `args.ggo` and run `GenerateArgpars
 # Usage
 Execution Options:
 ```
-$ ./xmeasures -h
-xmeasures 2.0
+$ ./xmeasures  -h
+xmeasures 2.1
 
-Extrinsic measures evaluation for overlapping multiresolution clusterings with
-possible inequal node base.
+Extrinsic measures evaluation for overlapping multi-resolution clusterings with
+possible unequal node base: F1_gm and NMI.
 
 Usage: xmeasures [OPTIONS] clustering1 clustering2
 
@@ -41,22 +41,37 @@ Usage: xmeasures [OPTIONS] clustering1 clustering2
                             clusters, > 0, typically >= 1  (default=`1')
 
  Mode: f1
-  Evaluation of the F1 Max Average Harmonic Mean
-  -f, --f1                evaluate F1 Max Average Harmonic Mean  (default=off)
-  -w, --weighted          evaluate weighted average by cluster size
-                            (default=off)
+  F1 evaluation of the [weighted] average of the greatest (maximal) match by F1
+  or partial probability.
+   F1 evaluates clusters on multiple resolutions and applicable for overlapping
+  clustering only as approximate evaluation
+  -f, --f1f1              evaluate F1 of the [weighted] average of the greatest
+                            (maximal) match by F1  (default=off)
+  -p, --f1pp              evaluate F1 of the [weighted] average of the greatest
+                            (maximal) match by partial probability.
+                             NOTE: typically F1pp < F1f1 and fits to evaluate
+                            similar collections  (default=off)
+  -u, --unweighted        evaluate simple average of the best matches instead
+                            of weighted by the cluster size  (default=off)
 
  Mode: nmi
-  Evaluation of the Normalized Mutual Information
+  NMI (Normalized Mutual Information) evaluation.
+  Standard NMI is evaluated, which is not applicable for overlapping or
+  multi-resolution clustering
   -n, --nmi               evaluate NMI  (default=off)
   -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,
                             bits) for the information measuring  (default=off)
 ```
 
 **Examples**
-Evaluate F1_gwah (maximal [greatest] weighted average harmonic mean):
+Evaluate F1 of the weighted average of the greatest (maximal) match by partial probability:
 ```
-$ ./xmeasures -fw data/3cls5nds.cln data/4cls6nds.cln
+$ ./xmeasures -f data/3cls5nds.cnl data/4cls6nds.cnl
+```
+
+Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probability:
+```
+$ ./xmeasures -pu data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
 # Related Projects

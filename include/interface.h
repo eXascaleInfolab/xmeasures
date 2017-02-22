@@ -15,6 +15,9 @@
 #include <unordered_map>
 #include <memory>  // unique_ptr
 #include <type_traits>
+#if VALIDATE >= 2
+#include <stdexcept>
+#endif // VALIDATE
 
 #include "coding.hpp"  // AggHash
 #define INCLUDE_STL_FS
@@ -29,7 +32,9 @@ using std::is_integral;
 using std::is_pointer;
 //using std::enable_if;
 using std::enable_if_t;
-
+#if VALIDATE >= 2
+using std::invalid_argument;
+#endif // VALIDATE
 
 // Data Types ------------------------------------------------------------------
 using Id = uint32_t;  //!< Node id type
@@ -96,17 +101,50 @@ struct Cluster {
 	Cluster(): members(), counter()  {}
 
     //! \brief F1 measure
+    //! \pre Clusters should be valid, i.e. non-empty
     //!
     //! \param matches Id  - the number of matched members
     //! \param size Id  - size of the matching foreign cluster
     //! \return AccProb  - resulting F1
-	AccProb f1(Id matches, Id size) const noexcept
+	AccProb f1(Id matches, Id size) const
+#if VALIDATE < 2
+	noexcept
+#endif // VALIDATE
 	{
 		// F1 = 2 * pr * rc / (pr + rc)
 		// pr = m / c1
 		// rc = m / c2
 		// F1 = 2 * m/c1 * m/c2 / (m/c1 + m/c2) = 2 * m / (c2 + c1)
+#if VALIDATE >= 2
+		if(!size || !members.size())
+			throw invalid_argument("f1(), both clusters should be non-empty");
+#endif // VALIDATE
 		return 2 * matches / AccProb(size + members.size());  // E [0, 1]
+		// Note that partial probability (non-normalized to the remained matches,
+		// it says only how far this match from the full match) of the match is:
+		// P = AccProb(matches * matches) / AccProb(size * members.size()),
+		// where nodes contribution instead of the size should be use for overlaps.
+		// The probability is more discriminative than F1 for high values
+	}
+
+    //! \brief Partial probability of the match (non-normalized to the other matches)
+    //! \pre Clusters should be valid, i.e. non-empty
+    //!
+    //! \param matches Id  - the number of matched members
+    //! \param size Id  - size of the matching foreign cluster
+    //! \return AccProb  - resulting probability
+	AccProb pprob(Id matches, Id size) const
+#if VALIDATE < 2
+	noexcept
+#endif // VALIDATE
+	{
+		// P = P1 * P2 = m/n1 * m/n2 = m*m / (n1*n2),
+		// where nodes contribution instead of the size should be use for overlaps.
+#if VALIDATE >= 2
+		if(!size || !members.size())
+			throw invalid_argument("pprob(), both clusters should be non-empty");
+#endif // VALIDATE
+		return AccProb(matches * matches) / AccProb(size * members.size());  // E [0, 1]
 	}
 };
 
@@ -116,7 +154,7 @@ using ClusterPtrs = vector<Cluster*>;  //!< Cluster pointers, unordered
 using NodeClusters = unordered_map<Id, ClusterPtrs>;  //!< Node to clusters relations
 
 //! Resulting F1_MAH-s for 2 input collections of clusters in a single direction
-using F1s = vector<Prob>;
+using Probs = vector<Prob>;
 
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
@@ -236,12 +274,12 @@ public:
     //! \brief Clusters count
     //!
     //! \return Id  - the number of clusters in the collection
-	Id clusters() const noexcept  { return m_cls.size(); }
+	Id clsnum() const noexcept  { return m_cls.size(); }
 
     //! \brief Nodes count
     //!
     //! \return Id  - the number of nodes in the collection
-	Id nodes() const noexcept  { return m_ndcs.size(); }
+	Id ndsnum() const noexcept  { return m_ndcs.size(); }
 
 	//! \brief Load collection from the CNL file
 	//! \pre All clusters in the file are expected to be unique and not validated for
@@ -254,46 +292,49 @@ public:
     //! \return bool  - the collection is loaded successfully
 	static Collection load(const char* filename, AggHash* ahash=nullptr, float membership=1);
 
-	//! \brief F1 Max Average Harmonic Mean evaluation considering overlaps,
-	//! multi-resolution and possibly unequal node base
+	//! \brief F1 of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
+	//! for the multi-resolution clustering with possibly unequal node base
 	//! \note Undirected (symmetric) evaluation
 	//!
 	//! \param cn1 const Collection&  - first collection
 	//! \param cn2 const Collection&  - second collection
-    //! \param weighted=false bool  - weighted average by cluster size
+    //! \param weighted bool  - weighted average by cluster size
+    //! \param prob bool  - take harmonic mean of the partial probabilities instead of F1s
 	//! \return Prob  - resulting F1_MAH
-	static Prob f1mah(const Collection& cn1, const Collection& cn2, bool weighted=false);
+	static Prob f1gm(const Collection& cn1, const Collection& cn2, bool weighted, bool prob);
 
-	//! \brief NMI evaluation considering overlaps, multi-resolution and possibly
-	//! unequal node base
+	//! \brief NMI evaluation
 	//! \note Undirected (symmetric) evaluation
 	//!
 	//! \param cn1 const Collection&  - first collection
 	//! \param cn2 const Collection&  - second collection
     //! \param expbase=true bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
-	//! \return Prob  - resulting F1_MAH
+	//! \return Prob  - resulting NMI
 	static Prob nmi(const Collection& cn1, const Collection& cn2, bool expbase=true);
 protected:
-    //! \brief F1 Max Average relative to the specified collection FROM this one
+    //! \brief Average of the maximal matches (by F1 or partial probabilities)
+    //! relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping
     //! clusters on multiple resolutions
     //! \attention Directed (non-symmetric) evaluation
     //!
     //! \param cn const Collection&  - collection to compare with
-    //! \param weighted=false bool  - weighted average by cluster size
-    //! \return AccProb  - resulting max average f1 from this collection
+    //! \param weighted bool  - weighted average by cluster size
+    //! \param prob bool  - evaluate partial probability instead of F1
+    //! \return AccProb  - resulting max average match value from this collection
     //! to the specified one (DIRECTED)
-	inline AccProb f1MaxAvg(const Collection& cn, bool weighted=false) const;
+	inline AccProb avggms(const Collection& cn, bool weighted, bool prob) const;
 
-    //! \brief Max F1 for each cluster
+    //! \brief Greatest (Max) matching value (F1 or partial probability) for each cluster
     //! \note External cn collection can have unequal node base and overlapping
     //! clusters on multiple resolutions
     //! \attention Directed (non-symmetric) evaluation
     //!
     //! \param cn const Collection&  - collection to compare with
-    //! \return F1s - resulting max F1 for each member node
-	F1s clsF1Max(const Collection& cn) const;
+    //! \param prob bool  - evaluate partial probability instead of F1
+    //! \return Probs - resulting max F1 or partial probability for each member node
+	Probs gmatches(const Collection& cn, bool prob) const;
 
 	//! \brief NMI evaluation considering overlaps, multi-resolution and possibly
 	//! unequal node base

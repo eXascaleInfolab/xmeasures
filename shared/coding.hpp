@@ -16,7 +16,7 @@
 //#include <cstddef>  // size_t
 #include <string>  // uintX_t
 #include <functional>  // hash
-#include <cstring>  // memcmp
+//#include <cstring>  // memcmp
 #include <type_traits>  // is_integral
 
 
@@ -32,20 +32,20 @@ using std::is_integral;
 //! \tparam Id  - type of the member ids
 //! \tparam AccId  - type of the accumulated Ids and accumulated squares of Ids
 //! should have at least twice magnitude of the Id type (i.e. squared)
-//! \tparam Size  - type of the number of aggregating ids
-template<typename Id=uint32_t, typename AccId=uint64_t, typename Size=AccId>
+template<typename Id=uint32_t, typename AccId=uint64_t>
 class AggHash {
 	static_assert(is_integral<Id>::value && is_integral<AccId>::value
-		&& is_integral<Size>::value && sizeof(AccId) >= 2*sizeof(Id)
-		, "AggHash, types constraints are violated");
+		&& sizeof(AccId) >= 2*sizeof(Id), "AggHash, types constraints are violated");
 
-	Size  m_size;  //!< Size of the container
+	// ATTENTION: type of the m_size should not be less than of m_idsum to
+	// avoid gaps filled with trash on memory alignment
+	AccId  m_size;  //!< Size of the container
 	AccId  m_idsum;  //!< Sum of the member ids
 	AccId  m_id2sum;  //!< Sum of the squared member ids
 public:
     //! \brief Default constructor
 	AggHash() noexcept
-	: m_size(0), m_idsum(0), m_id2sum(0)  {}
+	: m_size(0), m_idsum(0), m_id2sum(0) {}
 
     //! \brief Add id to the aggregation
     //!
@@ -62,6 +62,16 @@ public:
     //!
     //! \return size_t  - number of the aggregated ids
 	size_t size() const noexcept  { return m_size; }
+
+    //! \brief Sum of the aggregated ids
+    //!
+    //! \return size_t  - sum of the aggregated ids
+	size_t idsum() const noexcept  { return m_idsum; }
+
+    //! \brief Sum of squares of the aggregated ids
+    //!
+    //! \return size_t  - sum of squares of the aggregated ids
+	size_t id2sum() const noexcept  { return m_id2sum; }
 
 //    //! \brief The hash is empty
 //    //!
@@ -111,46 +121,48 @@ public:
 };
 
 // Type Definitions ----------------------------------------------------
-template<typename Id, typename AccId, typename Size>
-void AggHash<Id, AccId, Size>::add(Id id) noexcept
+template<typename Id, typename AccId>
+void AggHash<Id, AccId>::add(Id id) noexcept
 {
 	++m_size;
 	m_idsum += id;
 	m_id2sum += id * id;
 }
 
-template<typename Id, typename AccId, typename Size>
-void AggHash<Id, AccId, Size>::clear() noexcept
+template<typename Id, typename AccId>
+void AggHash<Id, AccId>::clear() noexcept
 {
 	m_size = 0;
 	m_idsum = 0;
 	m_id2sum = 0;
 }
 
-template<typename Id, typename AccId, typename Size>
-size_t AggHash<Id, AccId, Size>::hash() const
+template<typename Id, typename AccId>
+size_t AggHash<Id, AccId>::hash() const
 {
+	// ATTENTION: requires filling with zero memory alignment trash or avoid the padding
 	return std::hash<string>()(string(reinterpret_cast<const char*>(this), sizeof *this));
 }
 
-template<typename Id, typename AccId, typename Size>
-bool AggHash<Id, AccId, Size>::operator <(const AggHash& ah) const noexcept
+template<typename Id, typename AccId>
+bool AggHash<Id, AccId>::operator <(const AggHash& ah) const noexcept
 {
 	return m_size < ah.m_size || (m_size == ah.m_size
 		&& (m_idsum < ah.m_idsum || (m_idsum == ah.m_idsum && m_id2sum < ah.m_id2sum)));
 }
 
-template<typename Id, typename AccId, typename Size>
-bool AggHash<Id, AccId, Size>::operator <=(const AggHash& ah) const noexcept
+template<typename Id, typename AccId>
+bool AggHash<Id, AccId>::operator <=(const AggHash& ah) const noexcept
 {
 	return m_size < ah.m_size || (m_size == ah.m_size
 		&& (m_idsum < ah.m_idsum || (m_idsum == ah.m_idsum && m_id2sum <= ah.m_id2sum)));
 }
 
-template<typename Id, typename AccId, typename Size>
-bool AggHash<Id, AccId, Size>::operator ==(const AggHash& ah) const noexcept
+template<typename Id, typename AccId>
+bool AggHash<Id, AccId>::operator ==(const AggHash& ah) const noexcept
 {
-	return memcmp(this, &ah, sizeof(AggHash));
+	return m_size == ah.m_size && m_idsum == ah.m_idsum && m_id2sum == ah.m_id2sum;
+	//return !memcmp(this, &ah, sizeof(AggHash));  // Note: memcmp returns 0 on full match
 }
 
 }  // daoc

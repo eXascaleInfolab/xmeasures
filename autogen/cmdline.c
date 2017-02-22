@@ -25,9 +25,9 @@
 
 #include "cmdline.h"
 
-const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation for overlapping multiresolution clusterings with\npossible inequal node base.";
+const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation for overlapping multi-resolution clusterings with\npossible unequal node base: F1_gm and NMI.";
 
-const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2 \n  \n  clustering  - input file, collection of the clusters to be evaluated";
+const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated";
 
 const char *gengetopt_args_info_versiontext = "";
 
@@ -37,10 +37,11 @@ const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1  (default=`1')",
-  "\n Mode: f1\n  Evaluation of the F1 Max Average Harmonic Mean",
-  "  -f, --f1                evaluate F1 Max Average Harmonic Mean  (default=off)",
-  "  -w, --weighted          evaluate weighted average by cluster size\n                            (default=off)",
-  "\n Mode: nmi\n  Evaluation of the Normalized Mutual Information",
+  "\n Mode: f1\n  F1 evaluation of the [weighted] average of the greatest (maximal) match by F1\n  or partial probability.\n   F1 evaluates clusters on multiple resolutions and applicable for overlapping\n  clustering only as approximate evaluation",
+  "  -f, --f1f1              evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1  (default=off)",
+  "  -p, --f1pp              evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by partial probability.\n                             NOTE: typically F1pp < F1f1 and fits to evaluate\n                            similar collections  (default=off)",
+  "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
+  "\n Mode: nmi\n  NMI (Normalized Mutual Information) evaluation.\n  Standard NMI is evaluated, which is not applicable for overlapping or\n  multi-resolution clustering",
   "  -n, --nmi               evaluate NMI  (default=off)",
   "  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,\n                            bits) for the information measuring  (default=off)",
     0
@@ -70,8 +71,9 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
   args_info->membership_given = 0 ;
-  args_info->f1_given = 0 ;
-  args_info->weighted_given = 0 ;
+  args_info->f1f1_given = 0 ;
+  args_info->f1pp_given = 0 ;
+  args_info->unweighted_given = 0 ;
   args_info->nmi_given = 0 ;
   args_info->ln_given = 0 ;
   args_info->f1_mode_counter = 0 ;
@@ -84,8 +86,9 @@ void clear_args (struct gengetopt_args_info *args_info)
   FIX_UNUSED (args_info);
   args_info->membership_arg = 1;
   args_info->membership_orig = NULL;
-  args_info->f1_flag = 0;
-  args_info->weighted_flag = 0;
+  args_info->f1f1_flag = 0;
+  args_info->f1pp_flag = 0;
+  args_info->unweighted_flag = 0;
   args_info->nmi_flag = 0;
   args_info->ln_flag = 0;
   
@@ -99,10 +102,11 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
   args_info->membership_help = gengetopt_args_info_help[2] ;
-  args_info->f1_help = gengetopt_args_info_help[4] ;
-  args_info->weighted_help = gengetopt_args_info_help[5] ;
-  args_info->nmi_help = gengetopt_args_info_help[7] ;
-  args_info->ln_help = gengetopt_args_info_help[8] ;
+  args_info->f1f1_help = gengetopt_args_info_help[4] ;
+  args_info->f1pp_help = gengetopt_args_info_help[5] ;
+  args_info->unweighted_help = gengetopt_args_info_help[6] ;
+  args_info->nmi_help = gengetopt_args_info_help[8] ;
+  args_info->ln_help = gengetopt_args_info_help[9] ;
   
 }
 
@@ -231,10 +235,12 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "version", 0, 0 );
   if (args_info->membership_given)
     write_into_file(outfile, "membership", args_info->membership_orig, 0);
-  if (args_info->f1_given)
-    write_into_file(outfile, "f1", 0, 0 );
-  if (args_info->weighted_given)
-    write_into_file(outfile, "weighted", 0, 0 );
+  if (args_info->f1f1_given)
+    write_into_file(outfile, "f1f1", 0, 0 );
+  if (args_info->f1pp_given)
+    write_into_file(outfile, "f1pp", 0, 0 );
+  if (args_info->unweighted_given)
+    write_into_file(outfile, "unweighted", 0, 0 );
   if (args_info->nmi_given)
     write_into_file(outfile, "nmi", 0, 0 );
   if (args_info->ln_given)
@@ -510,14 +516,15 @@ cmdline_parser_internal (
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
         { "membership",	1, NULL, 'm' },
-        { "f1",	0, NULL, 'f' },
-        { "weighted",	0, NULL, 'w' },
+        { "f1f1",	0, NULL, 'f' },
+        { "f1pp",	0, NULL, 'p' },
+        { "unweighted",	0, NULL, 'u' },
         { "nmi",	0, NULL, 'n' },
         { "ln",	0, NULL, 'e' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVm:fwne", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVm:fpune", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -545,24 +552,36 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'f':	/* evaluate F1 Max Average Harmonic Mean.  */
+        case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1.  */
           args_info->f1_mode_counter += 1;
         
         
-          if (update_arg((void *)&(args_info->f1_flag), 0, &(args_info->f1_given),
-              &(local_args_info.f1_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "f1", 'f',
+          if (update_arg((void *)&(args_info->f1f1_flag), 0, &(args_info->f1f1_given),
+              &(local_args_info.f1f1_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "f1f1", 'f',
               additional_error))
             goto failure;
         
           break;
-        case 'w':	/* evaluate weighted average by cluster size.  */
+        case 'p':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by partial probability.
+         NOTE: typically F1pp < F1f1 and fits to evaluate similar collections.  */
           args_info->f1_mode_counter += 1;
         
         
-          if (update_arg((void *)&(args_info->weighted_flag), 0, &(args_info->weighted_given),
-              &(local_args_info.weighted_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "weighted", 'w',
+          if (update_arg((void *)&(args_info->f1pp_flag), 0, &(args_info->f1pp_given),
+              &(local_args_info.f1pp_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "f1pp", 'p',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'u':	/* evaluate simple average of the best matches instead of weighted by the cluster size.  */
+          args_info->f1_mode_counter += 1;
+        
+        
+          if (update_arg((void *)&(args_info->unweighted_flag), 0, &(args_info->unweighted_given),
+              &(local_args_info.unweighted_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "unweighted", 'u',
               additional_error))
             goto failure;
         
@@ -604,8 +623,8 @@ cmdline_parser_internal (
 
 
   if (args_info->f1_mode_counter && args_info->nmi_mode_counter) {
-    int f1_given[] = {args_info->f1_given, args_info->weighted_given,  -1};
-    const char *f1_desc[] = {"--f1", "--weighted",  0};
+    int f1_given[] = {args_info->f1f1_given, args_info->f1pp_given, args_info->unweighted_given,  -1};
+    const char *f1_desc[] = {"--f1f1", "--f1pp", "--unweighted",  0};
     int nmi_given[] = {args_info->nmi_given, args_info->ln_given,  -1};
     const char *nmi_desc[] = {"--nmi", "--ln",  0};
     error_occurred += check_modes(f1_given, f1_desc, nmi_given, nmi_desc);

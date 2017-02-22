@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 		return err;
 
 	// Validate arguments
-	if(!args_info.f1_given && !args_info.nmi_given) {
+	if(!args_info.f1f1_given && !args_info.f1pp_given && !args_info.nmi_given) {
 		fputs("WARNING, no any measures to evaluate specified\n", stderr);
 		cmdline_parser_print_help();
 		return 1;
@@ -45,19 +45,29 @@ int main(int argc, char **argv)
 	auto cn1 = Collection::load(args_info.inputs[0], &cn1hash, args_info.membership_arg);
 	auto cn2 = Collection::load(args_info.inputs[1], &cn2hash, args_info.membership_arg);
 
+	if(!cn1.ndsnum() || ! cn2.ndsnum()) {
+		fprintf(stderr, "WARNING, at least one of the collections is empty, there is nothing"
+			" to evaluate. Collection nodes sizes: %u, %u\n", cn1.ndsnum(), cn2.ndsnum());
+		return 1;
+	}
+
 	// Check the nodebase
 	if(cn1hash != cn2hash)
-		fprintf(stderr, "WARNING, the nodes in the collections differ"
-			": %u nodes with hash %lu) != %u nodes with hash %lu)\n"
-			, cn1.nodes(), cn1hash.hash(), cn2.nodes(), cn2hash.hash());
+		fprintf(stderr, "WARNING, the nodes in the collections differ: %u nodes"
+			" with hash %lu, size: %lu, ids: %lu, id2s: %lu) != %u nodes with hash %lu"
+			", size: %lu, ids: %lu, id2s: %lu)\n"
+			, cn1.ndsnum(), cn1hash.hash(), cn1hash.size(), cn1hash.idsum(), cn1hash.id2sum()
+			, cn2.ndsnum(), cn2hash.hash(), cn2hash.size(), cn2hash.idsum(), cn2hash.id2sum());
 
 	// Evaluate and output measures
-	if(args_info.f1_flag)
-		printf("F1_%s: %G", args_info.weighted_flag ? "mwah" : "mah"
-			, Collection::f1mah(cn1, cn2, args_info.weighted_flag));
+	const bool  evalf1 = args_info.f1f1_flag || args_info.f1pp_flag;
+	if(evalf1)
+		printf("F1_gm (%s average of %s): %G", args_info.unweighted_flag ? "unweighted" : "weighed"
+			, args_info.f1pp_flag ? "partial probabilities" : "F1s"
+			, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag, args_info.f1pp_flag));
 
 	if(args_info.nmi_flag) {
-		if(args_info.f1_flag)
+		if(evalf1)
 			fputs(", ", stdout);
 		printf("NMI: %G\n", Collection::nmi(cn1, cn2, args_info.ln_flag));
 	} else puts("");  // \n
