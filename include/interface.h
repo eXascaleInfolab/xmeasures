@@ -46,7 +46,7 @@ using AccId = uint64_t;
 //! Aggregated Hash of the loading cluster member ids
 using AggHash = daoc::AggHash<Id, AccId>;
 
-using RawIds = vector<Id>;  //!< Node ids
+using RawIds = vector<Id>;  //!< Node ids, unordered
 
 struct Cluster;
 
@@ -95,10 +95,18 @@ using AccProb = double;  //!< Accumulated Probability
 
 struct Cluster {
 	RawIds  members;  //!< Node ids, unordered
-	Counter  counter;  //!< Cluster matching counter
+	union {
+		Counter  counter;  //!< Cluster matching counter
+		AccProb  mbscont;  //!< Members contribution, raw content of information
+	};
 
     //! Default constructor
-	Cluster(): members(), counter()  {}
+	Cluster();
+
+//    //! \brief Constructor
+//    //!
+//    //! \param continit bool  - init raw information content instead of the counter
+//	Cluster(bool continit);
 
     //! \brief F1 measure
     //! \pre Clusters should be valid, i.e. non-empty
@@ -148,7 +156,9 @@ struct Cluster {
 	}
 };
 
-using Clusters = unordered_set<unique_ptr<Cluster>>;  //!< Clusters storage, input collection
+using ClusterHolder = unique_ptr<Cluster>;  //!< Automatic storage for the Cluster;
+
+using Clusters = unordered_set<ClusterHolder>;  //!< Clusters storage, input collection
 
 using ClusterPtrs = vector<Cluster*>;  //!< Cluster pointers, unordered
 using NodeClusters = unordered_map<Id, ClusterPtrs>;  //!< Node to clusters relations
@@ -267,9 +277,10 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
 class Collection {
 	Clusters  m_cls;  //!< Clusters
 	NodeClusters  m_ndcs;  //!< Node clusters relations
+	mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
 protected:
     //! Default constructor
-	Collection(): m_cls(), m_ndcs()  {}
+	Collection(): m_cls(), m_ndcs(), m_dirty(false)  {}
 public:
     //! \brief Clusters count
     //!
@@ -298,21 +309,29 @@ public:
 	//!
 	//! \param cn1 const Collection&  - first collection
 	//! \param cn2 const Collection&  - second collection
-    //! \param weighted bool  - weighted average by cluster size
-    //! \param prob bool  - take harmonic mean of the partial probabilities instead of F1s
+    //! \param weighted=true bool  - weighted average by cluster size or unweighted
+    //! \param prob=false bool  - take harmonic mean of the partial probabilities
+    //! instead of F1s
 	//! \return Prob  - resulting F1_MAH
-	static Prob f1gm(const Collection& cn1, const Collection& cn2, bool weighted, bool prob);
+	static Prob f1gm(const Collection& cn1, const Collection& cn2, bool weighted=true
+		, bool prob=false);
 
 	//! \brief NMI evaluation
 	//! \note Undirected (symmetric) evaluation
 	//!
 	//! \param cn1 const Collection&  - first collection
 	//! \param cn2 const Collection&  - second collection
-    //! \param expbase=true bool  - use ln (exp base) or log2 (Shannon entropy, bits)
+    //! \param expbase=false bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
 	//! \return Prob  - resulting NMI
-	static Prob nmi(const Collection& cn1, const Collection& cn2, bool expbase=true);
+	static Prob nmi(const Collection& cn1, const Collection& cn2, bool expbase=false);
 protected:
+    //! \brief Synchronize node base
+    //!
+    //! \param cn Collection&  - collection to be synchronize with
+    //! \return void
+	void synchronize(Collection& cn) noexcept;
+
     //! \brief Average of the maximal matches (by F1 or partial probabilities)
     //! relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping
@@ -341,10 +360,10 @@ protected:
 	//! \note Undirected (symmetric) evaluation
     //!
     //! \param cn const Collection&  - collection to compare with
-    //! \param expbase=true bool  - use ln (exp base) or log2 (Shannon entropy, bits)
+    //! \param expbase bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
     //! \return Prob  - resulting NMI
-	Prob nmi(const Collection& cn, bool expbase=true) const;
+	Prob nmi(const Collection& cn, bool expbase) const;
 };
 
 #endif // INTERFACE_H

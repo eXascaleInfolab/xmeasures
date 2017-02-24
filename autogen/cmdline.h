@@ -45,9 +45,9 @@ struct gengetopt_args_info
   int f1f1_flag;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 (default=off).  */
   const char *f1f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 help description.  */
   int f1pp_flag;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by partial probability.
-   NOTE: typically F1pp < F1f1 and fits to evaluate similar collections (default=off).  */
+  NOTE: typically F1pp < F1f1 and fits to evaluate similar collections (default=off).  */
   const char *f1pp_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by partial probability.
-   NOTE: typically F1pp < F1f1 and fits to evaluate similar collections help description.  */
+  NOTE: typically F1pp < F1f1 and fits to evaluate similar collections help description.  */
   int unweighted_flag;	/**< @brief evaluate simple average of the best matches instead of weighted by the cluster size (default=off).  */
   const char *unweighted_help; /**< @brief evaluate simple average of the best matches instead of weighted by the cluster size help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (default=off).  */

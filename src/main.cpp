@@ -64,7 +64,8 @@ int main(int argc, char **argv)
 	if(evalf1)
 		printf("F1_gm (%s average of %s): %G", args_info.unweighted_flag ? "unweighted" : "weighed"
 			, args_info.f1pp_flag ? "partial probabilities" : "F1s"
-			, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag, args_info.f1pp_flag));
+			, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag
+			, args_info.f1pp_flag));
 
 	if(args_info.nmi_flag) {
 		if(evalf1)

@@ -73,6 +73,22 @@ template <typename T, typename Category=std::input_iterator_tag
 constexpr bool is_iterator() noexcept
 { return false; }
 
+template <typename T, typename Category=std::input_iterator_tag>
+constexpr bool is_iterator_v = is_iterator<T, Category>();
+
+
+//! \brief Whether the type is an unordered associative container
+//! \tparam T  - evaluating type
+template <typename T, typename Accessory=void>
+struct is_hashContainer: std::false_type  {};
+
+template <typename T>
+struct is_hashContainer<T, enable_if_t<std::is_object<typename T::hasher>::value>>
+: std::true_type  {};
+
+template <typename T>
+constexpr bool is_hashContainer_v = is_hashContainer<T>::value;
+
 // Accessory math functions ---------------------------------------------------
 //! \brief Precision limit (error) for the specified floating type
 template <typename ValT>

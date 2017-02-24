@@ -64,12 +64,12 @@ Usage: xmeasures [OPTIONS] clustering1 clustering2
 ```
 
 **Examples**
-Evaluate F1 of the weighted average of the greatest (maximal) match by partial probability:
+Evaluate F1 of the weighted average of the greatest (maximal) match by F1s:
 ```
 $ ./xmeasures -f data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
-Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probability:
+Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probabilities:
 ```
 $ ./xmeasures -pu data/3cls5nds.cnl data/4cls6nds.cnl
 ```

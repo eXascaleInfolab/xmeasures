@@ -27,7 +27,7 @@
 
 const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation for overlapping multi-resolution clusterings with\npossible unequal node base: F1_gm and NMI.";
 
-const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated";
+const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.";
 
 const char *gengetopt_args_info_versiontext = "";
 
@@ -37,11 +37,11 @@ const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1  (default=`1')",
-  "\n Mode: f1\n  F1 evaluation of the [weighted] average of the greatest (maximal) match by F1\n  or partial probability.\n   F1 evaluates clusters on multiple resolutions and applicable for overlapping\n  clustering only as approximate evaluation",
+  "\n Mode: f1\n  F1 evaluation of the [weighted] average of the greatest (maximal) match by F1\n  or partial probability.\n  F1 evaluates clusters on multiple resolutions and applicable for overlapping\n  clustering only as approximate evaluation.\n  NOTE: unequal node base in clusterings is allowed, but it penalizes the\n  match.",
   "  -f, --f1f1              evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1  (default=off)",
-  "  -p, --f1pp              evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by partial probability.\n                             NOTE: typically F1pp < F1f1 and fits to evaluate\n                            similar collections  (default=off)",
+  "  -p, --f1pp              evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by partial probability.\n                            NOTE: typically F1pp < F1f1 and fits to evaluate\n                            similar collections  (default=off)",
   "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
-  "\n Mode: nmi\n  NMI (Normalized Mutual Information) evaluation.\n  Standard NMI is evaluated, which is not applicable for overlapping or\n  multi-resolution clustering",
+  "\n Mode: nmi\n  NMI (Normalized Mutual Information) evaluation.\n  Standard NMI is evaluated, which is not applicable for overlapping or\n  multi-resolution clustering.\n  NOTE: unequal node base in clusterings is allowed, but automatically\n  syncronized, skipping the nodes belonging to a single collection.",
   "  -n, --nmi               evaluate NMI  (default=off)",
   "  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,\n                            bits) for the information measuring  (default=off)",
     0
@@ -564,7 +564,7 @@ cmdline_parser_internal (
         
           break;
         case 'p':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by partial probability.
-         NOTE: typically F1pp < F1f1 and fits to evaluate similar collections.  */
+        NOTE: typically F1pp < F1f1 and fits to evaluate similar collections.  */
           args_info->f1_mode_counter += 1;
         
         

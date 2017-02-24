@@ -9,8 +9,10 @@ purpose "Extrinsic measures evaluation for overlapping multi-resolution\
 
 usage "xmeasures [OPTIONS] clustering1 clustering2
 
-  clustering  - input file, collection of the clusters to be evaluated"
+  clustering  - input file, collection of the clusters to be evaluated."
 
+#option  "synchronize" s  "synchronize the node base skipping nodes belonging to a\
+# single collection, otherwise such collection is penalized"  flag off
 option  "membership" m  "average expected membership of the nodes in the clusters,\
  > 0, typically >= 1"  float default="1"
 #modeoption  "ovp" o  "evaluate overlapping clusters instead of multi-resolution.
@@ -18,24 +20,26 @@ option  "membership" m  "average expected membership of the nodes in the cluster
 # clusters evaluation, but not vice verse"  flag off
 # Note: ovp option requires shares evaluation/reading and processing of the directory
 # of collections in case of both multi-resolution and overlapping  clustering evaluation
-#modeoption  "sync-base" s  "synchronize node base with the specified collection"  string  mode="sync"
 
 defmode  "f1"  modedesc="F1 evaluation of the [weighted] average of the greatest\
  (maximal) match by F1 or partial probability.
- F1 evaluates clusters on multiple resolutions and applicable for overlapping\
-  clustering only as approximate evaluation"
+F1 evaluates clusters on multiple resolutions and applicable for overlapping\
+ clustering only as approximate evaluation.
+NOTE: unequal node base in clusterings is allowed, but it penalizes the match."
 modeoption  "f1f1" f  "evaluate F1 of the [weighted] average of the greatest\
  (maximal) match by F1"  flag off  mode="f1"
 modeoption  "f1pp" p  "evaluate F1 of the [weighted] average of the greatest\
  (maximal) match by partial probability.
- NOTE: typically F1pp < F1f1 and fits to evaluate similar collections"
-   flag off  mode="f1"
+NOTE: typically F1pp < F1f1 and fits to evaluate similar collections"
+  flag off  mode="f1"
 modeoption  "unweighted" u  "evaluate simple average of the best matches instead\
  of weighted by the cluster size"  flag off  mode="f1"
 
 defmode  "nmi"  modedesc="NMI (Normalized Mutual Information) evaluation.
 Standard NMI is evaluated, which is not applicable for overlapping or\
- multi-resolution clustering"
+ multi-resolution clustering.
+NOTE: unequal node base in clusterings is allowed, but automatically syncronized,\
+ skipping the nodes belonging to a single collection."
 modeoption  "nmi" n  "evaluate NMI"  flag off  mode="nmi"
 modeoption  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
  for the information measuring" flag off  mode="nmi"
