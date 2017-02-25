@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "2.1"
+#define CMDLINE_PARSER_VERSION "2.2"
 #endif
 
 /** @brief Where the command line options are stored */
@@ -39,35 +39,36 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 (default='1').  */
-  char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 original value given at command line.  */
-  const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1 help description.  */
-  int f1f1_flag;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 (default=off).  */
-  const char *f1f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 help description.  */
-  int f1pp_flag;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by partial probability.
-  NOTE: typically F1pp < F1f1 and fits to evaluate similar collections (default=off).  */
-  const char *f1pp_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by partial probability.
-  NOTE: typically F1pp < F1f1 and fits to evaluate similar collections help description.  */
+  float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. (default='1').  */
+  char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. original value given at command line.  */
+  const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. help description.  */
+  int f1_flag;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability (default=off).  */
+  const char *f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability help description.  */
+  int prob_flag;	/**< @brief use partial probability instead of the F1 for the matching.
+  NOTE: typically F1pp < F1f1 and discriminates similar collections better. (default=off).  */
+  const char *prob_help; /**< @brief use partial probability instead of the F1 for the matching.
+  NOTE: typically F1pp < F1f1 and discriminates similar collections better. help description.  */
   int unweighted_flag;	/**< @brief evaluate simple average of the best matches instead of weighted by the cluster size (default=off).  */
   const char *unweighted_help; /**< @brief evaluate simple average of the best matches instead of weighted by the cluster size help description.  */
-  int nmi_flag;	/**< @brief evaluate NMI (default=off).  */
-  const char *nmi_help; /**< @brief evaluate NMI help description.  */
+  int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
+  const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */
+  int all_flag;	/**< @brief evaluate all NMIs using avg and min denominators besides the max one (default=off).  */
+  const char *all_help; /**< @brief evaluate all NMIs using avg and min denominators besides the max one help description.  */
   int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring (default=off).  */
   const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
-  unsigned int f1f1_given ;	/**< @brief Whether f1f1 was given.  */
-  unsigned int f1pp_given ;	/**< @brief Whether f1pp was given.  */
+  unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
+  unsigned int prob_given ;	/**< @brief Whether prob was given.  */
   unsigned int unweighted_given ;	/**< @brief Whether unweighted was given.  */
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
+  unsigned int all_given ;	/**< @brief Whether all was given.  */
   unsigned int ln_given ;	/**< @brief Whether ln was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */
-  int f1_mode_counter; /**< @brief Counter for mode f1 */
-  int nmi_mode_counter; /**< @brief Counter for mode nmi */
 } ;
 
 /** @brief The additional parameters to pass to parser functions */

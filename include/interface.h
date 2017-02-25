@@ -14,7 +14,9 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>  // unique_ptr
+#include <string>
 #include <type_traits>
+#include <limits>
 #if VALIDATE >= 2
 #include <stdexcept>
 #endif // VALIDATE
@@ -28,10 +30,13 @@ using std::vector;
 using std::unordered_set;
 using std::unordered_map;
 using std::unique_ptr;
+using std::string;
 using std::is_integral;
 using std::is_pointer;
+using std::is_floating_point;
 //using std::enable_if;
 using std::enable_if_t;
+using std::numeric_limits;
 #if VALIDATE >= 2
 using std::invalid_argument;
 #endif // VALIDATE
@@ -163,12 +168,12 @@ using Clusters = unordered_set<ClusterHolder>;  //!< Clusters storage, input col
 using ClusterPtrs = vector<Cluster*>;  //!< Cluster pointers, unordered
 using NodeClusters = unordered_map<Id, ClusterPtrs>;  //!< Node to clusters relations
 
-//! Resulting F1_MAH-s for 2 input collections of clusters in a single direction
+//! Resulting greatest matches for 2 input collections of clusters in a single direction
 using Probs = vector<Prob>;
 
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 struct RowVecItem {
 	static_assert(is_integral<Index>::value || is_pointer<Index>::value
 		, "RowVecItem, Index should be an integral type");
@@ -205,15 +210,15 @@ struct RowVecItem {
 };
 
 //! Row vector for the SparseMatrix
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 using SparseMatrixRowVec = vector<RowVecItem<Index, Value>>;
 
 //! Base type of the SparseMatrix (can be unordered_map, map, vector)
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 using SparseMatrixBase = unordered_map<Index, SparseMatrixRowVec<Index, Value>>;
 
 //! Sparse Matrix
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 struct SparseMatrix: SparseMatrixBase<Index, Value> {
 	using IndexT = Index;  //!< Indexes type, integral
 	using ValueT = Value;  //!< Value type
@@ -272,15 +277,55 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
 	using BaseT::at;  //!< Provide direct access to the matrix row
 };
 
+using EvalBase = uint8_t;  //!< Base type for the Evaluation
+
+//! \brief Evaluation type
+enum struct Evaluation: EvalBase {
+	NONE = 0,
+//	HARD = 0
+	MULTIRES = 1,  //!< Multi-resolution non-overlapping clusters, compatible with hard partitioning
+	OVERLAPPING = 2,  //!< Overlapping clusters, compatible with hard partitioning
+	MULRES_OVP = 3  //!< Multi-resolution clusters with possible overlaps on each resolution level
+};
+
+//! \brief Convert Evaluation to string
+//! \relates Evaluation
+//!
+//! \param flag Evaluation  - the flag to be converted
+//! \param bitstr=false bool  - convert to bits string or to Evaluation captions
+//! \return string  - resulting flag as a string
+string to_string(Evaluation eval, bool bitstr=false);
+
+struct RawNmi {
+	Prob  mi;  //!< Mutual information of two collections
+	Prob  h1;  //!< Information content of the 1-st collection
+	Prob  h2;  //!< Information content of the 2-nd collection
+	Evaluation  eval;  //!< Evaluation type
+
+	static_assert(is_floating_point<Prob>::value, "RawNmi, Prob should be a floating point type");
+	RawNmi() noexcept: mi(0), h1(numeric_limits<Prob>::quiet_NaN())
+		, h2(numeric_limits<Prob>::quiet_NaN()), eval(Evaluation::NONE)  {}
+
+	void operator() (Prob mutinf, Prob cn1h, Prob cn2h, Evaluation cnsev) noexcept
+	{
+		mi = mutinf;
+		h1 = cn1h;
+		h2 = cn2h;
+		eval = cnsev;
+	};
+};
+
 // Collection ------------------------------------------------------------------
 //! Collection describing cluster-node relations
+//template <typename Contribs>  // Contributions: AccId (multires) or AccProb (overlapping)
 class Collection {
 	Clusters  m_cls;  //!< Clusters
 	NodeClusters  m_ndcs;  //!< Node clusters relations
-	mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
+	//mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
+	mutable AccProb  m_contsum;  //!< Sum of contributions of all members in each cluster
 protected:
     //! Default constructor
-	Collection(): m_cls(), m_ndcs(), m_dirty(false)  {}
+	Collection(): m_cls(), m_ndcs(), m_contsum(0)  {}  //, m_dirty(false)  {}
 public:
     //! \brief Clusters count
     //!
@@ -312,7 +357,7 @@ public:
     //! \param weighted=true bool  - weighted average by cluster size or unweighted
     //! \param prob=false bool  - take harmonic mean of the partial probabilities
     //! instead of F1s
-	//! \return Prob  - resulting F1_MAH
+	//! \return Prob  - resulting F1_gm
 	static Prob f1gm(const Collection& cn1, const Collection& cn2, bool weighted=true
 		, bool prob=false);
 
@@ -323,8 +368,8 @@ public:
 	//! \param cn2 const Collection&  - second collection
     //! \param expbase=false bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
-	//! \return Prob  - resulting NMI
-	static Prob nmi(const Collection& cn1, const Collection& cn2, bool expbase=false);
+	//! \return RawNmi  - resulting NMI
+	static RawNmi nmi(const Collection& cn1, const Collection& cn2, bool expbase=false);
 protected:
     //! \brief Synchronize node base
     //!
@@ -362,8 +407,8 @@ protected:
     //! \param cn const Collection&  - collection to compare with
     //! \param expbase bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
-    //! \return Prob  - resulting NMI
-	Prob nmi(const Collection& cn, bool expbase) const;
+    //! \return RawNmi  - resulting NMI
+	RawNmi nmi(const Collection& cn, bool expbase) const;
 };
 
 #endif // INTERFACE_H

@@ -32,7 +32,7 @@ using std::is_integral;
 //! \tparam Id  - type of the member ids
 //! \tparam AccId  - type of the accumulated Ids and accumulated squares of Ids
 //! should have at least twice magnitude of the Id type (i.e. squared)
-template<typename Id=uint32_t, typename AccId=uint64_t>
+template <typename Id=uint32_t, typename AccId=uint64_t>
 class AggHash {
 	static_assert(is_integral<Id>::value && is_integral<AccId>::value
 		&& sizeof(AccId) >= 2*sizeof(Id), "AggHash, types constraints are violated");
@@ -121,7 +121,7 @@ public:
 };
 
 // Type Definitions ----------------------------------------------------
-template<typename Id, typename AccId>
+template <typename Id, typename AccId>
 void AggHash<Id, AccId>::add(Id id) noexcept
 {
 	++m_size;
@@ -129,7 +129,7 @@ void AggHash<Id, AccId>::add(Id id) noexcept
 	m_id2sum += id * id;
 }
 
-template<typename Id, typename AccId>
+template <typename Id, typename AccId>
 void AggHash<Id, AccId>::clear() noexcept
 {
 	m_size = 0;
@@ -137,28 +137,28 @@ void AggHash<Id, AccId>::clear() noexcept
 	m_id2sum = 0;
 }
 
-template<typename Id, typename AccId>
+template <typename Id, typename AccId>
 size_t AggHash<Id, AccId>::hash() const
 {
 	// ATTENTION: requires filling with zero memory alignment trash or avoid the padding
 	return std::hash<string>()(string(reinterpret_cast<const char*>(this), sizeof *this));
 }
 
-template<typename Id, typename AccId>
+template <typename Id, typename AccId>
 bool AggHash<Id, AccId>::operator <(const AggHash& ah) const noexcept
 {
 	return m_size < ah.m_size || (m_size == ah.m_size
 		&& (m_idsum < ah.m_idsum || (m_idsum == ah.m_idsum && m_id2sum < ah.m_id2sum)));
 }
 
-template<typename Id, typename AccId>
+template <typename Id, typename AccId>
 bool AggHash<Id, AccId>::operator <=(const AggHash& ah) const noexcept
 {
 	return m_size < ah.m_size || (m_size == ah.m_size
 		&& (m_idsum < ah.m_idsum || (m_idsum == ah.m_idsum && m_id2sum <= ah.m_id2sum)));
 }
 
-template<typename Id, typename AccId>
+template <typename Id, typename AccId>
 bool AggHash<Id, AccId>::operator ==(const AggHash& ah) const noexcept
 {
 	return m_size == ah.m_size && m_idsum == ah.m_idsum && m_id2sum == ah.m_id2sum;

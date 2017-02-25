@@ -9,23 +9,25 @@
 //! \date 2017-02-13
 
 #include <cstring>  // strlen, strtok
+#include <bitset>
 //#include <cmath>  // sqrt
 #include "operations.hpp"
 #include "interface.h"
 
 
 using std::out_of_range;
+using std::bitset;
 using namespace daoc;
 
 // SparseMatrix definitions ----------------------------------------------------
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 SparseMatrix<Index, Value>::SparseMatrix(Id rows)
 {
 	if(rows)
 		BaseT::reserve(rows);  // Preallocate hash map
 }
 
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 Value& SparseMatrix<Index, Value>::operator ()(Index i, Index j)
 {
 	auto& rowi = (*this)[i];
@@ -35,7 +37,7 @@ Value& SparseMatrix<Index, Value>::operator ()(Index i, Index j)
 	return ir->val;
 }
 
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 template <typename T, enable_if_t<sizeof(T) <= sizeof(void*)>*>
 Value SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
 {
@@ -52,7 +54,7 @@ Value SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
 #endif // VALIDATE
 }
 
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 template <typename T, enable_if_t<(sizeof(T) > sizeof(void*)), bool>*>
 const Value& SparseMatrix<Index, Value>::operator()(Index i, Index j) const noexcept
 {
@@ -69,7 +71,7 @@ const Value& SparseMatrix<Index, Value>::operator()(Index i, Index j) const noex
 #endif // VALIDATE
 }
 
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 template <typename T, enable_if_t<sizeof(T) <= sizeof(void*)>*>
 Value SparseMatrix<Index, Value>::at(Index i, Index j)
 {
@@ -81,7 +83,7 @@ Value SparseMatrix<Index, Value>::at(Index i, Index j)
 	return ie->val;
 }
 
-template<typename Index, typename Value>
+template <typename Index, typename Value>
 template <typename T, enable_if_t<(sizeof(T) > sizeof(void*)), bool>*>
 const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 {
@@ -99,6 +101,34 @@ Cluster::Cluster(): members(), counter()
 #if VALIDATE >= 1
 	assert(!mbscont && "Cluster(), contin should be 0");  // Note: ! is fine here
 #endif // VALIDATE
+}
+
+string to_string(Evaluation eval, bool bitstr)
+{
+	static_assert(sizeof(Evaluation) == sizeof(EvalBase)
+		, "to_string(), Evaluation type must be the same size as EvalBase");
+	// Convert to bit string
+	if(bitstr)
+		return bitset<sizeof(Evaluation) * 8>(static_cast<EvalBase>(eval))
+			.to_string().insert(0, "0b");
+
+	// Convert to semantic string
+	string  val;
+	switch(eval) {
+	case Evaluation::MULTIRES:
+		val = "MULTIRES";
+		break;
+	case Evaluation::OVERLAPPING:
+		val = "OVERLAPPING";
+		break;
+	case Evaluation::MULRES_OVP:
+		val = "MULRES_OVP";
+		break;
+	case Evaluation::NONE:
+	default:
+		val = "NONE";
+	}
+	return val;
 }
 
 // Collection definitions ------------------------------------------------------
@@ -328,23 +358,25 @@ Probs Collection::gmatches(const Collection& cn, bool prob) const
 	return gmats;
 }
 
-Prob Collection::nmi(const Collection& cn1, const Collection& cn2, bool expbase)
+RawNmi Collection::nmi(const Collection& cn1, const Collection& cn2, bool expbase)
 {
+	RawNmi  rnmi1;
 	if(!cn1.clsnum() || !cn2.clsnum())
-		return 0;
+		return rnmi1;
 
-	auto nmi1 = cn1.nmi(cn2, expbase);
+	rnmi1 = cn1.nmi(cn2, expbase);
 #if VALIDATE >= 2
 	// Check NMI value for the inverse order of collections
-	auto nmi2 = cn2.nmi(cn1, expbase);
-	fprintf(stderr, "nmi(), nmi1: %G, nmi2: %G,  dnmi: %G\n", nmi1, nmi2, nmi1 - nmi2);
-	assert(equal(nmi1, nmi2, (cn1.clsnum() + cn2.clsnum()) / 2)
-		&& "nmi(), nmi is not symmetric");
+	auto rnmi2 = cn2.nmi(cn1, expbase);
+	fprintf(stderr, "nmi(), mi1: %G, mi2: %G,  dmi: %G\n", rnmi1.mi, rnmi2.mi
+		, rnmi1.mi - rnmi2.mi);
+	assert(equal(rnmi1.mi, rnmi2.mi, (cn1.clsnum() + cn2.clsnum()) / 2)
+		&& "nmi(), rnmi is not symmetric");
 #endif // VALIDATE
-	return nmi1;
+	return rnmi1;
 }
 
-Prob Collection::nmi(const Collection& cn, bool expbase) const
+RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 {
 #if VALIDATE >= 2
 	// Note: the processing is also fine (but redundant) for the empty collections
@@ -355,24 +387,40 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 	using ClustersMatching = SparseMatrix<Cluster*, AccProb>;  //!< Clusters matching matrix
 
 	// Reset member contributions if not zero
-	auto clearup = [](const Collection& cn) {
-		if(cn.m_dirty) {
-			for(const auto& cl: cn.m_cls)
-				cl->mbscont = 0;
-			cn.m_dirty = false;
-		}
+	auto initconts = [](const Collection& cn) {
+		if(!cn.m_contsum)  // Note: ! is fine here
+			return;
+		for(const auto& cl: cn.m_cls)
+			cl->mbscont = 0;
+		cn.m_contsum = 0;
 	};
-	clearup(*this);
-	clearup(cn);
+	initconts(*this);
+	initconts(cn);
+
+//	// Traverse all members (nodes) and evaluate their contribution to each cluster.
+//	// Total contribution should be equal to the number of nodes
+//	auto mbsconts = [](const Collection& cn) {
+//		for(auto& ncs: cn.m_ndcs) {
+//			// Note: in case of fuzzy (unequal) overlaps the shares are unequal and
+//			// should be stored in the Collection (ncs clusters member or a map)
+//			const AccProb  share = 1 / AccProb(ncs.second.size());
+//			for(auto cl: ncs.second)
+//				cl->mbscont += share;
+//		}
+//	};
+////	AccProb  c1sum = m_ndcs.size();
+////	AccProb  c2sum = cn.m_ndcs.size();
+//	//mbsconts(*this);
+//	mbsconts(cn);
 
 	ClustersMatching  clsmm = ClustersMatching(clsnum());  // Note: default max_load_factor is 1
 	// Total sum of all values of the clsmm matrix, i.e. the number of
 	// member nodes in both collections
 	AccProb  cmmsum = 0;
+//	//for
 
-	// Mark collections as dirty
-	m_dirty = true;
-	cn.m_dirty = true;
+
+
 	// Traverse all clusters in the collection filling clusters matching matrix
 	// and aggregated number of matches for each cluster in the collections (rows, cols)
 	for(const auto& cl: m_cls) {
@@ -422,10 +470,11 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 		}
 	}
 
+	RawNmi  rnmi;  // Resulting raw nmi, initially equal to 0
 	if(clsmm.empty()) {
 		fputs("WARNING nmi(), collection nodes have no any intersection"
 			", the collections are totally different", stderr);
-		return 0;
+		return rnmi;
 	}
 
 //	// Traverse all clusters in the collection filling clusters matching matrix
@@ -495,24 +544,22 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 	// Validate sum of vector counts to evaluate probabilities
 	// Note: to have symmetric values normalization should be done by the max values in the row / col
 	//assert(cmmsum % 2 == 0 && "nmi(), cmmsum should always be even");
-#if TRACE >= 3
+#if TRACE >= 2
 	#define TRACING_CLSCOUNTS_
 	fprintf(stderr, "nmi(), cls1 counts (%lu): ", m_cls.size());
 #endif // TRACE
-	AccProb c1csum = 0;
 	for(const auto& c1: m_cls) {
-		c1csum += c1->mbscont;
+		m_contsum += c1->mbscont;
 #ifdef TRACING_CLSCOUNTS_
 		fprintf(stderr, " %G", c1->mbscont);
 #endif // TRACING_CLSCOUNTS_
 	}
 
 #ifdef TRACING_CLSCOUNTS_
-	fprintf(stderr, "nmi(), cls2 counts (%lu): ", cn.m_cls.size());
+	fprintf(stderr, "\nnmi(), cls2 counts (%lu): ", cn.m_cls.size());
 #endif // TRACING_CLSCOUNTS_
-	AccProb c2csum = 0;
 	for(const auto& c2: cn.m_cls) {
-		c2csum += c2->mbscont;
+		cn.m_contsum += c2->mbscont;
 #ifdef TRACING_CLSCOUNTS_
 		fprintf(stderr, " %G", c2->mbscont);
 #endif // TRACING_CLSCOUNTS_
@@ -521,9 +568,9 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 	fputs("\n", stderr);
 #endif // TRACING_CLSCOUNTS_
 
-	if(!equal<AccProb>(c1csum, cmmsum, m_cls.size())
-	&& !equal<AccProb>(c2csum, cmmsum, cn.m_cls.size())) {  // Note: cmmsum should much to either of the sums
-		fprintf(stderr, "nmi(), c1csum: %G, c2csum: %G, cmmsum: %G\n", c1csum, c2csum, cmmsum);
+	if(!equal<AccProb>(m_contsum, cmmsum, m_cls.size())
+	&& !equal<AccProb>(cn.m_contsum, cmmsum, cn.m_cls.size())) {  // Note: cmmsum should much to either of the sums
+		fprintf(stderr, "nmi(), c1csum: %G, c2csum: %G, cmmsum: %G\n", m_contsum, cn.m_contsum, cmmsum);
 		assert(0 && "nmi(), rows accumulation is invalid");
 	}
 #endif // VALIDATE
@@ -537,7 +584,7 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 #if VALIDATE >= 2
 	AccProb  psum = 0;  // Sum of probabilities over the whole matrix
 #endif // VALIDATE
-	AccProb  mi = 0;  // Accumulated mutual probability over the matrix, I(cn1, cn2) in exp base
+	AccProb  h12 = 0;  // Accumulated mutual probability over the matrix, I(cn1, cn2) in exp base
 	AccProb  h1 = 0;  // H(cn1) - information size of the cn1 in exp base
 	// Traverse matrix of the mutual information evaluate total mutual probability
 	// and mutual probabilities for each collection
@@ -579,8 +626,8 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 			// Accumulate total normalized mutual information
 			// Note: e base is used instead of 2 to have absolute entropy instead of bits length
 			//const auto lval = icmr.val / (icmr.pos->mbscont * cprob);  // cprob; c1cnorm
-			//mi += mcprob * clog(lval);  // Note: log(a/b) = log(a) - log(b)
-			mi -= mcprob * clog(mcprob);  // clog(lval);  // Note: log(a/b) = log(a) - log(b)
+			//mi += mcprob * clog(lval);  // mi = h1 + h2 - h12;  Note: log(a/b) = log(a) - log(b)
+			h12 -= mcprob * clog(mcprob);  // clog(lval);  // Note: log(a/b) = log(a) - log(b)
 //#ifndef TRACING_CLSMM_
 //			fprintf(stderr, "  %G * clog(%G [%G / (%G * %G)]) = %G\n", mcprob, lval
 //				, icmr.val, icmr.pos->mbscont, cprob, mcprob * clog(lval));
@@ -605,10 +652,11 @@ Prob Collection::nmi(const Collection& cn, bool expbase) const
 		h2 -= cprob * clog(cprob);
 	}
 
-	Prob  nmi = (h1 + h2 - mi) / (h1 >= h2 ? h1 : h2);
+	rnmi(h1 + h2 - h12, h1, h2, Evaluation::OVERLAPPING);
 #if TRACE >= 2
-	fprintf(stderr, "nmi(),  mi: %G,  h1: %G, h2: %G,  nmi: %G\n", mi, h1, h2, nmi);
+	Prob  nmix = (h1 + h2 - h12) / (h1 >= h2 ? h1 : h2);
+	fprintf(stderr, "nmi(),  mi: %G,  h1: %G, h2: %G,  NMI_max: %G\n", rnmi.mi, h1, h2, nmix);
 #endif // TRACE
 
-	return nmi;
+	return rnmi;
 }

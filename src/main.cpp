@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 		return err;
 
 	// Validate arguments
-	if(!args_info.f1f1_given && !args_info.f1pp_given && !args_info.nmi_given) {
+	if(!args_info.f1_given && !args_info.nmi_given) {
 		fputs("WARNING, no any measures to evaluate specified\n", stderr);
 		cmdline_parser_print_help();
 		return 1;
@@ -60,18 +60,23 @@ int main(int argc, char **argv)
 			, cn2.ndsnum(), cn2hash.hash(), cn2hash.size(), cn2hash.idsum(), cn2hash.id2sum());
 
 	// Evaluate and output measures
-	const bool  evalf1 = args_info.f1f1_flag || args_info.f1pp_flag;
-	if(evalf1)
-		printf("F1_gm (%s average of %s): %G", args_info.unweighted_flag ? "unweighted" : "weighed"
-			, args_info.f1pp_flag ? "partial probabilities" : "F1s"
+	if(args_info.f1_given)
+		printf("F1_gm (%s avg of %s): %G", args_info.unweighted_flag
+			? "unweighted" : "weighed", args_info.prob_flag ? "PPs" : "F1s"
 			, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag
-			, args_info.f1pp_flag));
+			, args_info.prob_flag));
 
 	if(args_info.nmi_flag) {
-		if(evalf1)
+		if(args_info.f1_given)
 			fputs(", ", stdout);
-		printf("NMI: %G\n", Collection::nmi(cn1, cn2, args_info.ln_flag));
-	} else puts("");  // \n
+		auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag);
+		const auto  nmix = rnmi.mi / (rnmi.h1 >= rnmi.h2 ? rnmi.h1 : rnmi.h2);
+		if(args_info.all_flag)
+			printf("NMI_max: %G, NMI_avg: %G, NMI_min: %G", nmix, 2 * rnmi.mi
+				/ (rnmi.h1 + rnmi.h2), rnmi.mi / (rnmi.h1 < rnmi.h2 ? rnmi.h1 : rnmi.h2));
+		else printf("NMI_max: %G", nmix);
+	}
+	puts("");  // \n
 
     return 0;
 }

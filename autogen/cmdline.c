@@ -31,18 +31,19 @@ const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "";
+const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another collection, which is typically the ground-truth.\nEvaluating measures are:\n  - F1_gm  - F1 of the [weighted] average greatest match evaluated by F1 or\npartial probability\n  - NMI  - Normalized Mutual Information, normalized by max or also avg and\nmininformation content denominators. NMI_avg is fully compatible with the\nstandard\nNMI for hard partitioning (non-overlapping clustering, but also applicable for\nthe overlapping and multi-resolution clusterings.\nNOTE: unequal node base in the clusterings is allowed, it penalizes the match.";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
-  "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1  (default=`1')",
-  "\n Mode: f1\n  F1 evaluation of the [weighted] average of the greatest (maximal) match by F1\n  or partial probability.\n  F1 evaluates clusters on multiple resolutions and applicable for overlapping\n  clustering only as approximate evaluation.\n  NOTE: unequal node base in clusterings is allowed, but it penalizes the\n  match.",
-  "  -f, --f1f1              evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1  (default=off)",
-  "  -p, --f1pp              evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by partial probability.\n                            NOTE: typically F1pp < F1f1 and fits to evaluate\n                            similar collections  (default=off)",
+  "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1. Used only for the\n                            containers preallocation facilitating estimation of\n                            the nodes number if not specified in the file\n                            header.  (default=`1')",
+  "\nF1 Options:",
+  "  -f, --f1                evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability\n                            (default=off)",
+  "  -p, --prob              use partial probability instead of the F1 for the\n                            matching.\n                            NOTE: typically F1pp < F1f1 and discriminates\n                            similar collections better.  (default=off)",
   "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
-  "\n Mode: nmi\n  NMI (Normalized Mutual Information) evaluation.\n  Standard NMI is evaluated, which is not applicable for overlapping or\n  multi-resolution clustering.\n  NOTE: unequal node base in clusterings is allowed, but automatically\n  syncronized, skipping the nodes belonging to a single collection.",
-  "  -n, --nmi               evaluate NMI  (default=off)",
+  "\nNMI Options:",
+  "  -n, --nmi               evaluate NMI (Normalized Mutual Information)\n                            (default=off)",
+  "  -a, --all               evaluate all NMIs using avg and min denominators\n                            besides the max one  (default=off)",
   "  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,\n                            bits) for the information measuring  (default=off)",
     0
 };
@@ -61,6 +62,8 @@ static int
 cmdline_parser_internal (int argc, char **argv, struct gengetopt_args_info *args_info,
                         struct cmdline_parser_params *params, const char *additional_error);
 
+static int
+cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *prog_name, const char *additional_error);
 
 static char *
 gengetopt_strdup (const char *s);
@@ -71,13 +74,12 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
   args_info->membership_given = 0 ;
-  args_info->f1f1_given = 0 ;
-  args_info->f1pp_given = 0 ;
+  args_info->f1_given = 0 ;
+  args_info->prob_given = 0 ;
   args_info->unweighted_given = 0 ;
   args_info->nmi_given = 0 ;
+  args_info->all_given = 0 ;
   args_info->ln_given = 0 ;
-  args_info->f1_mode_counter = 0 ;
-  args_info->nmi_mode_counter = 0 ;
 }
 
 static
@@ -86,10 +88,11 @@ void clear_args (struct gengetopt_args_info *args_info)
   FIX_UNUSED (args_info);
   args_info->membership_arg = 1;
   args_info->membership_orig = NULL;
-  args_info->f1f1_flag = 0;
-  args_info->f1pp_flag = 0;
+  args_info->f1_flag = 0;
+  args_info->prob_flag = 0;
   args_info->unweighted_flag = 0;
   args_info->nmi_flag = 0;
+  args_info->all_flag = 0;
   args_info->ln_flag = 0;
   
 }
@@ -102,11 +105,12 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
   args_info->membership_help = gengetopt_args_info_help[2] ;
-  args_info->f1f1_help = gengetopt_args_info_help[4] ;
-  args_info->f1pp_help = gengetopt_args_info_help[5] ;
+  args_info->f1_help = gengetopt_args_info_help[4] ;
+  args_info->prob_help = gengetopt_args_info_help[5] ;
   args_info->unweighted_help = gengetopt_args_info_help[6] ;
   args_info->nmi_help = gengetopt_args_info_help[8] ;
-  args_info->ln_help = gengetopt_args_info_help[9] ;
+  args_info->all_help = gengetopt_args_info_help[9] ;
+  args_info->ln_help = gengetopt_args_info_help[10] ;
   
 }
 
@@ -235,14 +239,16 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "version", 0, 0 );
   if (args_info->membership_given)
     write_into_file(outfile, "membership", args_info->membership_orig, 0);
-  if (args_info->f1f1_given)
-    write_into_file(outfile, "f1f1", 0, 0 );
-  if (args_info->f1pp_given)
-    write_into_file(outfile, "f1pp", 0, 0 );
+  if (args_info->f1_given)
+    write_into_file(outfile, "f1", 0, 0 );
+  if (args_info->prob_given)
+    write_into_file(outfile, "prob", 0, 0 );
   if (args_info->unweighted_given)
     write_into_file(outfile, "unweighted", 0, 0 );
   if (args_info->nmi_given)
     write_into_file(outfile, "nmi", 0, 0 );
+  if (args_info->all_given)
+    write_into_file(outfile, "all", 0, 0 );
   if (args_info->ln_given)
     write_into_file(outfile, "ln", 0, 0 );
   
@@ -340,9 +346,51 @@ cmdline_parser2 (int argc, char **argv, struct gengetopt_args_info *args_info, i
 int
 cmdline_parser_required (struct gengetopt_args_info *args_info, const char *prog_name)
 {
-  FIX_UNUSED (args_info);
-  FIX_UNUSED (prog_name);
-  return EXIT_SUCCESS;
+  int result = EXIT_SUCCESS;
+
+  if (cmdline_parser_required2(args_info, prog_name, 0) > 0)
+    result = EXIT_FAILURE;
+
+  if (result == EXIT_FAILURE)
+    {
+      cmdline_parser_free (args_info);
+      exit (EXIT_FAILURE);
+    }
+  
+  return result;
+}
+
+int
+cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *prog_name, const char *additional_error)
+{
+  int error_occurred = 0;
+  FIX_UNUSED (additional_error);
+
+  /* checks for required options */
+  
+  /* checks for dependences among options */
+  if (args_info->prob_given && ! args_info->f1_given)
+    {
+      fprintf (stderr, "%s: '--prob' ('-p') option depends on option 'f1'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->unweighted_given && ! args_info->f1_given)
+    {
+      fprintf (stderr, "%s: '--unweighted' ('-u') option depends on option 'f1'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->all_given && ! args_info->nmi_given)
+    {
+      fprintf (stderr, "%s: '--all' ('-a') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->ln_given && ! args_info->nmi_given)
+    {
+      fprintf (stderr, "%s: '--ln' ('-e') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+
+  return error_occurred;
 }
 
 
@@ -453,29 +501,6 @@ int update_arg(void *field, char **orig_field,
 }
 
 
-static int check_modes(
-  int given1[], const char *options1[],
-                       int given2[], const char *options2[])
-{
-  int i = 0, j = 0, errors = 0;
-  
-  while (given1[i] >= 0) {
-    if (given1[i]) {
-      while (given2[j] >= 0) {
-        if (given2[j]) {
-          ++errors;
-          fprintf(stderr, "%s: option %s conflicts with option %s\n",
-                  package_name, options1[i], options2[j]);
-        }
-        ++j;
-      }
-    }
-    ++i;
-  }
-  
-  return errors;
-}
-
 int
 cmdline_parser_internal (
   int argc, char **argv, struct gengetopt_args_info *args_info,
@@ -516,15 +541,16 @@ cmdline_parser_internal (
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
         { "membership",	1, NULL, 'm' },
-        { "f1f1",	0, NULL, 'f' },
-        { "f1pp",	0, NULL, 'p' },
+        { "f1",	0, NULL, 'f' },
+        { "prob",	0, NULL, 'p' },
         { "unweighted",	0, NULL, 'u' },
         { "nmi",	0, NULL, 'n' },
+        { "all",	0, NULL, 'a' },
         { "ln",	0, NULL, 'e' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVm:fpune", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVm:fpunae", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -540,7 +566,7 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
-        case 'm':	/* average expected membership of the nodes in the clusters, > 0, typically >= 1.  */
+        case 'm':	/* average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header..  */
         
         
           if (update_arg( (void *)&(args_info->membership_arg), 
@@ -552,31 +578,28 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1.  */
-          args_info->f1_mode_counter += 1;
+        case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.  */
         
         
-          if (update_arg((void *)&(args_info->f1f1_flag), 0, &(args_info->f1f1_given),
-              &(local_args_info.f1f1_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "f1f1", 'f',
+          if (update_arg((void *)&(args_info->f1_flag), 0, &(args_info->f1_given),
+              &(local_args_info.f1_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "f1", 'f',
               additional_error))
             goto failure;
         
           break;
-        case 'p':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by partial probability.
-        NOTE: typically F1pp < F1f1 and fits to evaluate similar collections.  */
-          args_info->f1_mode_counter += 1;
+        case 'p':	/* use partial probability instead of the F1 for the matching.
+        NOTE: typically F1pp < F1f1 and discriminates similar collections better..  */
         
         
-          if (update_arg((void *)&(args_info->f1pp_flag), 0, &(args_info->f1pp_given),
-              &(local_args_info.f1pp_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "f1pp", 'p',
+          if (update_arg((void *)&(args_info->prob_flag), 0, &(args_info->prob_given),
+              &(local_args_info.prob_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "prob", 'p',
               additional_error))
             goto failure;
         
           break;
         case 'u':	/* evaluate simple average of the best matches instead of weighted by the cluster size.  */
-          args_info->f1_mode_counter += 1;
         
         
           if (update_arg((void *)&(args_info->unweighted_flag), 0, &(args_info->unweighted_given),
@@ -586,8 +609,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'n':	/* evaluate NMI.  */
-          args_info->nmi_mode_counter += 1;
+        case 'n':	/* evaluate NMI (Normalized Mutual Information).  */
         
         
           if (update_arg((void *)&(args_info->nmi_flag), 0, &(args_info->nmi_given),
@@ -597,8 +619,17 @@ cmdline_parser_internal (
             goto failure;
         
           break;
+        case 'a':	/* evaluate all NMIs using avg and min denominators besides the max one.  */
+        
+        
+          if (update_arg((void *)&(args_info->all_flag), 0, &(args_info->all_given),
+              &(local_args_info.all_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "all", 'a',
+              additional_error))
+            goto failure;
+        
+          break;
         case 'e':	/* use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring.  */
-          args_info->nmi_mode_counter += 1;
         
         
           if (update_arg((void *)&(args_info->ln_flag), 0, &(args_info->ln_given),
@@ -622,14 +653,10 @@ cmdline_parser_internal (
 
 
 
-  if (args_info->f1_mode_counter && args_info->nmi_mode_counter) {
-    int f1_given[] = {args_info->f1f1_given, args_info->f1pp_given, args_info->unweighted_given,  -1};
-    const char *f1_desc[] = {"--f1f1", "--f1pp", "--unweighted",  0};
-    int nmi_given[] = {args_info->nmi_given, args_info->ln_given,  -1};
-    const char *nmi_desc[] = {"--nmi", "--ln",  0};
-    error_occurred += check_modes(f1_given, f1_desc, nmi_given, nmi_desc);
-  }
-  
+  if (check_required)
+    {
+      error_occurred += cmdline_parser_required2 (args_info, argv[0], additional_error);
+    }
 
   cmdline_parser_release (&local_args_info);
 
