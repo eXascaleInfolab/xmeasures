@@ -1,7 +1,7 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "2.2"
+version "2.3"
 
 purpose "Extrinsic measures evaluation for overlapping multi-resolution\
  clusterings with possible unequal node base: F1_gm and NMI."
@@ -28,8 +28,10 @@ usage "xmeasures [OPTIONS] clustering1 clustering2
 # clusters evaluation, but not vice verse"  flag off
 # Note: ovp option requires shares evaluation/reading and processing of the directory
 # of collections in case of both multi-resolution and overlapping  clustering evaluation
-#option  "sync" s  "synchronize the node base skipping nodes belonging to a single\
-# collection, otherwise such collection is penalized"  string
+option  "sync" s  "synchronize with the node base, skipping the non-matching nodes.
+NOTE: the node base can be either a separate, or an evaluating CNL file, in the\
+ latter case this option should precede the evaluating filename not repeating it"
+  string  typestr="filename"
 option  "membership" m  "average expected membership of the nodes in the clusters,\
  > 0, typically >= 1. Used only for the containers preallocation facilitating\ 
  estimation of the nodes number if not specified in the file header."  float default="1"
@@ -54,19 +56,13 @@ option  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
 # better for large datasets evaluation, where is base 2 gives more\
 # discriminative high NMI values and fits better for small datasets evaluation" flag off  dependon="nmi"
 
-#option  "unequal" u  "penalize for the unequal node base instead of just\
-# skipping the nodes present only in one collection.
-#NOTE: requires more computations" flag off  dependon="nmi"
-#option  "shared" s  "use shared contribution from each node instead of\
-# the full contribution to the owner clusters
-#NOTE:
-#"
 
 args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allow input files to be unnamed parameters
 #args "--unamed-opts=clusterings"   # Allow input files to be unnamed parameters
 
 
 # = Changelog =
+# v2.3 - Node base synchronization added
 # v2.2 - Input arguments redesigned
 # v2.1 - F1 of partial probabilities implemented besides F1 of f1s
 # v2.0 - Standard NMI implemented and evaluation base parameterized (exp, 2)

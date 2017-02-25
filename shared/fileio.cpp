@@ -1,4 +1,4 @@
-//! \brief File IO utils.
+//! \brief File IO utils
 //!
 //! \license Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0.html
 //! > 	Simple explanation: https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)
@@ -8,8 +8,6 @@
 //! \email luart@ya.ru
 //! \date 2017-02-13
 
-#include <cstring>  // strtok
-#include <cmath>  // sqrt
 #include <cassert>
 #include <system_error>  // error_code
 //#include <stdexcept>
@@ -19,10 +17,9 @@
 #endif // __unix__
 
 #define INCLUDE_STL_FS
-#include "fileio.h"
+#include "fileio.hpp"
 
 
-using std::string;
 using std::error_code;
 using std::to_string;
 using fs::path;

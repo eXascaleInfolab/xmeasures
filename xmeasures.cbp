@@ -69,7 +69,7 @@
 		<Unit filename="include/interface.h" />
 		<Unit filename="shared/coding.hpp" />
 		<Unit filename="shared/fileio.cpp" />
-		<Unit filename="shared/fileio.h" />
+		<Unit filename="shared/fileio.hpp" />
 		<Unit filename="shared/macrodef.h" />
 		<Unit filename="shared/operations.hpp" />
 		<Unit filename="src/interface.cpp" />

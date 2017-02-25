@@ -11,7 +11,6 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
-#include <unordered_set>
 #include <unordered_map>
 #include <memory>  // unique_ptr
 #include <string>
@@ -21,9 +20,8 @@
 #include <stdexcept>
 #endif // VALIDATE
 
-#include "coding.hpp"  // AggHash
 #define INCLUDE_STL_FS
-#include "fileio.h"
+#include "fileio.hpp"
 
 
 using std::vector;
@@ -316,9 +314,57 @@ struct RawNmi {
 };
 
 // Collection ------------------------------------------------------------------
+//! Node base interface
+struct NodeBaseI {
+    //! \brief Default virtual destructor
+	virtual ~NodeBaseI()=default;
+
+    //! \brief Whether the node base is actual (non-empty)
+    //!
+    //! \return bool  - the node base is non-empty
+	operator bool() const noexcept  { return ndsnum(); };
+
+    //! \brief The number of nodes
+    //!
+    //! \return Id  - the number of nodes in the collection
+	virtual Id ndsnum() const noexcept = 0;
+
+    //! \brief Whether exists the specified node
+    //!
+    //! \param nid  - node id
+    //! \return bool  - specified node id exists
+	virtual bool nodeExists(Id nid) const noexcept = 0;
+};
+
+//! Unique ids (node ids)
+using UniqIds = unordered_set<Id>;
+
+//! Node base interface
+struct NodeBase: UniqIds, NodeBaseI {
+	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
+	Id ndsnum() const noexcept  { return size(); }
+
+	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
+	bool nodeExists(Id nid) const noexcept  { return count(nid); }
+
+	//! \brief Load nodes from the CNL file with optional filtering by the cluster size
+	//!
+	//! \param filename const char*  - name of the input file
+    //! \param ahash=nullptr AggHash*  - resulting aggregated hash of the loaded
+    //! node ids if not nullptr
+	//! \param membership=1 float  - expected membership of the nodes, >0, typically >= 1.
+	//! Used only for the node container preallocation to estimate the number of nodes
+	//! if not specified in the file header
+	//! \param cmin=0 size_t  - min allowed cluster size
+	//! \param cmax=0 size_t  - max allowed cluster size, 0 means any size
+    //! \return bool  - the collection is loaded successfully
+	static NodeBase load(const char* filename, float membership=1
+		, AggHash* ahash=nullptr, size_t cmin=0, size_t cmax=0);
+};
+
 //! Collection describing cluster-node relations
 //template <typename Contribs>  // Contributions: AccId (multires) or AccProb (overlapping)
-class Collection {
+class Collection: public NodeBaseI {
 	Clusters  m_cls;  //!< Clusters
 	NodeClusters  m_ndcs;  //!< Node clusters relations
 	//mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
@@ -327,15 +373,18 @@ protected:
     //! Default constructor
 	Collection(): m_cls(), m_ndcs(), m_contsum(0)  {}  //, m_dirty(false)  {}
 public:
-    //! \brief Clusters count
+    //! \brief The number of clusters
     //!
     //! \return Id  - the number of clusters in the collection
 	Id clsnum() const noexcept  { return m_cls.size(); }
 
-    //! \brief Nodes count
+    //! \brief The number of nodes
     //!
     //! \return Id  - the number of nodes in the collection
 	Id ndsnum() const noexcept  { return m_ndcs.size(); }
+
+	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
+	bool nodeExists(Id nid) const noexcept  { return m_ndcs.count(nid); }
 
 	//! \brief Load collection from the CNL file
 	//! \pre All clusters in the file are expected to be unique and not validated for
@@ -344,9 +393,13 @@ public:
 	//! \param filename const char*  - name of the input file
     //! \param ahash=nullptr AggHash*  - resulting aggregated hash of the loaded
     //! member ids if not nullptr
-	//! \param membership=1 float  - expected membership of nodes, >0, typically >= 1
+	//! \param membership=1 float  - expected membership of the nodes, >0, typically >= 1.
+	//! Used only for the node container preallocation to estimate the number of nodes
+	//! if not specified in the file header
+	//! \param const nodebase=nullptr NodeBaseI*  - node base to filter-out nodes if required
     //! \return bool  - the collection is loaded successfully
-	static Collection load(const char* filename, AggHash* ahash=nullptr, float membership=1);
+	static Collection load(const char* filename, AggHash* ahash=nullptr
+		, float membership=1, const NodeBaseI* nodebase=nullptr);
 
 	//! \brief F1 of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
 	//! for the multi-resolution clustering with possibly unequal node base

@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "2.2"
+#define CMDLINE_PARSER_VERSION "2.3"
 #endif
 
 /** @brief Where the command line options are stored */
@@ -39,6 +39,12 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
+  char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
+  NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+  char * sync_orig;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
+  NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
+  const char *sync_help; /**< @brief synchronize with the node base, skipping the non-matching nodes.
+  NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
   float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. (default='1').  */
   char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. original value given at command line.  */
   const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. help description.  */
@@ -59,6 +65,7 @@ struct gengetopt_args_info
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
+  unsigned int sync_given ;	/**< @brief Whether sync was given.  */
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
   unsigned int prob_given ;	/**< @brief Whether prob was given.  */

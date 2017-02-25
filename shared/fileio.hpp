@@ -1,6 +1,6 @@
-//! \brief File IO utils.
+//! \brief File IO utils
 //!
-//!	Interface macro
+//!	Interface macro definitions:
 //! INCLUDE_STL_FS  - include STL filesystem library under fs namespace. This macros is
 //! 	defined to avoid repetitive conditional inclusion of the STL FS.
 //!
@@ -20,6 +20,10 @@
 #include <utility>  // move
 #include <string>
 #include <vector>
+#include <unordered_set>
+// For the template definitions
+#include <cstring>  // strtok
+#include <cmath>  // sqrt
 
 #ifdef INCLUDE_STL_FS
 #if defined(__has_include) && __has_include(<filesystem>)
@@ -33,6 +37,8 @@
 #endif // __has_include
 #endif // INCLUDE_STL_FS
 
+#include "coding.hpp"
+
 //#include "types.h"
 
 
@@ -41,6 +47,7 @@ namespace daoc {
 using std::move;
 using std::string;
 using std::vector;
+using std::unordered_set;
 
 // File Wrapping Types ---------------------------------------------------------
 //! \brief Wrapper around the FILE* to prevent hanging file descriptors
@@ -129,13 +136,17 @@ class NamedFileWrapper {
 	FileWrapper  m_file;  //!< File descriptor
 	string  m_name;  //!< File name
 public:
+    //! \brief Default Constructor
+    // Note: Required tor return empty objects using NRVO optimization
+	NamedFileWrapper() noexcept: m_file(), m_name()  {}
+
     //! \brief Constructor
     //! \pre Parent directory must exists
     //!
     //! \param filename const char*  - new file name to be opened
     //! \param mode const char*  - opening mode, the same as fopen() has
-	NamedFileWrapper(const char* filename=nullptr, const char* mode=nullptr)
-	: m_file(filename ? fopen(filename, mode) : nullptr)
+	NamedFileWrapper(const char* filename, const char* mode)
+	: m_file(filename && mode ? fopen(filename, mode) : nullptr)
 	, m_name(filename ? filename : "")  {}
 
     //! \brief Copy constructor
@@ -261,7 +272,7 @@ public:
 	bool readline(FILE* input);
 };
 
-// File I/O functions ----------------------------------------------------------
+// File I/O functions declaration ----------------------------------------------
 //! \brief Ensure existence of the specified directory
 //!
 //! \param dir const string&  - directory to be created if has not existed
@@ -278,6 +289,24 @@ void ensureDir(const string& dir);
 //! \return void
 void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum);
 
+//! \brief Load nodes from the CNL file with optional filtering by the cluster size
+//!
+//! \tparam Id  - Node id type
+//! \tparam AccId  - Accumulated node ids type
+//!
+//! \param file NamedFileWrapper&  - input collection of clusters in the CNL format
+//! \param membership=1 float  - expected membership of the nodes, >0, typically >= 1.
+//! Used only for the node container preallocation to estimate the number of nodes
+//! if not specified in the file header
+//! \param ahash=nullptr AggHash<Id, AccId>*  - resulting aggregated hash of the loaded
+//! node ids if not nullptr
+//! \param cmin=0 size_t  - min allowed cluster size
+//! \param cmax=0 size_t  - max allowed cluster size, 0 means any size
+//! \return bool  - the collection is loaded successfully
+template <typename Id, typename AccId>
+unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership=1
+	, AggHash<Id, AccId>* ahash=nullptr, size_t cmin=0, size_t cmax=0);
+
 //! \brief Estimate the number of nodes from the CNL file size
 //!
 //! \param filesize size_t  - the number of bytes in the CNL file
@@ -293,6 +322,120 @@ size_t estimateCnlNodes(size_t filesize, float membership=1.f) noexcept;
 //! 	> 0, typically ~= 1
 //! \return size_t  - estimated number of clusters
 size_t estimateClusters(size_t ndsnum, float membership=1.f) noexcept;
+
+// File I/O templates definition -----------------------------------------------
+
+template <typename Id, typename AccId>
+unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
+	, AggHash<Id, AccId>* ahash, size_t cmin, size_t cmax)
+{
+	unordered_set<Id>  nodebase;  // Node base;  Note: returned using NRVO optimization
+
+	if(!file)
+		return nodebase;
+
+	// Note: CNL [CSN] format only is supported
+	size_t  clsnum = 0;  // The number of clusters
+	size_t  ndsnum = 0;  // The number of nodes
+
+	// Note: strings defined out of the cycle to avoid reallocations
+	StringBuffer  line;  // Reading line
+	// Parse header and read the number of clusters if specified
+	parseCnlHeader(file, line, clsnum, ndsnum);
+
+	// Estimate the number of nodes in the file if not specified
+	if(!ndsnum) {
+		size_t  cmsbytes = file.size();
+		if(cmsbytes != size_t(-1))  // File length fetching failed
+			ndsnum = estimateCnlNodes(cmsbytes, membership);
+		else if(clsnum)
+			ndsnum = 2 * clsnum; // / membership;  // Note: use optimistic estimate instead of pessimistic (square / membership) to not overuse the memory
+#if TRACE >= 2
+		fprintf(stderr, "loadNodes(), estimated %lu nodes\n", ndsnum);
+#endif // TRACE
+	}
+#if TRACE >= 2
+	else fprintf(stderr, "loadNodes(), specified %lu nodes\n", ndsnum);
+#endif // TRACE
+
+	// Preallocate space for nodes
+	if(ndsnum)
+		nodebase.reserve(ndsnum);
+
+	// Load clusters
+	// ATTENTION: without '\n' delimiter the terminating '\n' is read as an item
+	constexpr char  mbdelim[] = " \t\n";  // Delimiter for the members
+	vector<Id>  cnds;  // Cluster nodes. Note: a dedicated container is required to filter clusters by size
+	cnds.reserve(sqrt(ndsnum));  // Note: typically cluster size does not increase the square root of the number of nodes
+#if TRACE >= 2
+	size_t  totmbs = 0;  // The number of read member nodes from the file including repetitions
+	size_t  fclsnum = 0;  // The number of read clusters from the file
+#endif // TRACE
+	do {
+		char *tok = strtok(line, mbdelim);  // const_cast<char*>(line.data())
+
+		// Skip comments
+		if(!tok || tok[0] == '#')
+			continue;
+		// Skip the cluster id if present
+		if(tok[strlen(tok) - 1] == '>') {
+			const char* cidstr = tok;
+			tok = strtok(nullptr, mbdelim);
+			// Skip empty clusters, which actually should not exist
+			if(!tok) {
+				fprintf(stderr, "WARNING loadNodes(), empty cluster"
+					" exists: '%s', skipped\n", cidstr);
+				continue;
+			}
+		}
+		do {
+			// Note: only node id is parsed, share part is skipped if exists,
+			// but potentially can be considered in NMI and F1 evaluation.
+			// In the latter case abs diff of shares instead of co occurrence
+			// counting should be performed.
+			Id  nid = strtoul(tok, nullptr, 10);
+#if VALIDATE >= 2
+			if(!nid && tok[0] != '0') {
+				fprintf(stderr, "WARNING loadNodes(), conversion error of '%s' into 0: %s\n"
+					, tok, strerror(errno));
+				continue;
+			}
+#endif // VALIDATE
+#if TRACE >= 2
+			++totmbs;  // Update the total number of read members
+#endif // TRACE
+			cnds.push_back(nid);
+		} while((tok = strtok(nullptr, mbdelim)));
+#if TRACE >= 2
+		++fclsnum;  // The number of valid read lines, i.e. clusters
+#endif // TRACE
+
+		// Filter read cluster by size
+		if(cnds.size() >= cmin && (!cmax || cnds.size() <= cmax))
+			nodebase.insert(cnds.begin(), cnds.end());
+		// Prepare outer vars for the next iteration
+		cnds.clear();
+	} while(line.readline(file));
+//	// Rehash the nodes decreasing the allocated space if required
+//	if(nodebase.size() <= nodebase.bucket_count() * nodebase.max_load_factor() / 3)
+//		nodebase.reserve(nodebase.size());
+#if TRACE >= 2
+	printf("loadNodes(). the loaded base has %lu nodes from the input %lu members and %lu clusters\n"
+		, nodebase.size(), totmbs, fclsnum);
+#elif TRACE >= 1
+	printf("The loaded nodebase: %lu\n", nodebase.size());
+#endif // TRACE
+
+	// Evaluate nodes hash if required
+	if(ahash && nodebase.size()) {
+		AggHash<Id, AccId>  ndsh;
+		for(auto nid: nodebase)
+			ndsh.add(nid);
+		*ahash = move(ndsh);
+	}
+
+	return nodebase;
+}
 
 }  // daoc
 

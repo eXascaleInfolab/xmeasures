@@ -36,6 +36,7 @@ const char *gengetopt_args_info_description = "Extrinsic measures are evaluated,
 const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
+  "  -s, --sync=filename     synchronize with the node base, skipping the\n                            non-matching nodes.\n                            NOTE: the node base can be either a separate, or an\n                            evaluating CNL file, in the latter case this option\n                            should precede the evaluating filename not\n                            repeating it",
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1. Used only for the\n                            containers preallocation facilitating estimation of\n                            the nodes number if not specified in the file\n                            header.  (default=`1')",
   "\nF1 Options:",
   "  -f, --f1                evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability\n                            (default=off)",
@@ -50,6 +51,7 @@ const char *gengetopt_args_info_help[] = {
 
 typedef enum {ARG_NO
   , ARG_FLAG
+  , ARG_STRING
   , ARG_FLOAT
 } cmdline_parser_arg_type;
 
@@ -73,6 +75,7 @@ void clear_given (struct gengetopt_args_info *args_info)
 {
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
+  args_info->sync_given = 0 ;
   args_info->membership_given = 0 ;
   args_info->f1_given = 0 ;
   args_info->prob_given = 0 ;
@@ -86,6 +89,8 @@ static
 void clear_args (struct gengetopt_args_info *args_info)
 {
   FIX_UNUSED (args_info);
+  args_info->sync_arg = NULL;
+  args_info->sync_orig = NULL;
   args_info->membership_arg = 1;
   args_info->membership_orig = NULL;
   args_info->f1_flag = 0;
@@ -104,13 +109,14 @@ void init_args_info(struct gengetopt_args_info *args_info)
 
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
-  args_info->membership_help = gengetopt_args_info_help[2] ;
-  args_info->f1_help = gengetopt_args_info_help[4] ;
-  args_info->prob_help = gengetopt_args_info_help[5] ;
-  args_info->unweighted_help = gengetopt_args_info_help[6] ;
-  args_info->nmi_help = gengetopt_args_info_help[8] ;
-  args_info->all_help = gengetopt_args_info_help[9] ;
-  args_info->ln_help = gengetopt_args_info_help[10] ;
+  args_info->sync_help = gengetopt_args_info_help[2] ;
+  args_info->membership_help = gengetopt_args_info_help[3] ;
+  args_info->f1_help = gengetopt_args_info_help[5] ;
+  args_info->prob_help = gengetopt_args_info_help[6] ;
+  args_info->unweighted_help = gengetopt_args_info_help[7] ;
+  args_info->nmi_help = gengetopt_args_info_help[9] ;
+  args_info->all_help = gengetopt_args_info_help[10] ;
+  args_info->ln_help = gengetopt_args_info_help[11] ;
   
 }
 
@@ -197,6 +203,8 @@ static void
 cmdline_parser_release (struct gengetopt_args_info *args_info)
 {
   unsigned int i;
+  free_string_field (&(args_info->sync_arg));
+  free_string_field (&(args_info->sync_orig));
   free_string_field (&(args_info->membership_orig));
   
   
@@ -237,6 +245,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "help", 0, 0 );
   if (args_info->version_given)
     write_into_file(outfile, "version", 0, 0 );
+  if (args_info->sync_given)
+    write_into_file(outfile, "sync", args_info->sync_orig, 0);
   if (args_info->membership_given)
     write_into_file(outfile, "membership", args_info->membership_orig, 0);
   if (args_info->f1_given)
@@ -428,6 +438,7 @@ int update_arg(void *field, char **orig_field,
   char *stop_char = 0;
   const char *val = value;
   int found;
+  char **string_field;
   FIX_UNUSED (field);
 
   stop_char = 0;
@@ -463,6 +474,14 @@ int update_arg(void *field, char **orig_field,
     break;
   case ARG_FLOAT:
     if (val) *((float *)field) = (float)strtod (val, &stop_char);
+    break;
+  case ARG_STRING:
+    if (val) {
+      string_field = (char **)field;
+      if (!no_free && *string_field)
+        free (*string_field); /* free previous string */
+      *string_field = gengetopt_strdup (val);
+    }
     break;
   default:
     break;
@@ -540,6 +559,7 @@ cmdline_parser_internal (
       static struct option long_options[] = {
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
+        { "sync",	1, NULL, 's' },
         { "membership",	1, NULL, 'm' },
         { "f1",	0, NULL, 'f' },
         { "prob",	0, NULL, 'p' },
@@ -550,7 +570,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVm:fpunae", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVs:m:fpunae", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -566,6 +586,19 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
+        case 's':	/* synchronize with the node base, skipping the non-matching nodes.
+        NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+        
+        
+          if (update_arg( (void *)&(args_info->sync_arg), 
+               &(args_info->sync_orig), &(args_info->sync_given),
+              &(local_args_info.sync_given), optarg, 0, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "sync", 's',
+              additional_error))
+            goto failure;
+        
+          break;
         case 'm':	/* average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header..  */
         
         

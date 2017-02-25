@@ -132,7 +132,20 @@ string to_string(Evaluation eval, bool bitstr)
 }
 
 // Collection definitions ------------------------------------------------------
-Collection Collection::load(const char* filename, ::AggHash* ahash, float membership)
+NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
+	, size_t cmin, size_t cmax)
+{
+	NodeBase  nb;  // Return using NRVO optimization
+	NamedFileWrapper  finp(filename, "r");
+	if(finp)
+		static_cast<UniqIds&>(nb) = loadNodes<Id, AccId>(finp, membership, ahash, cmin, cmax);
+	else perror((string("WARNING load(), can't open ") += filename).c_str());
+
+	return nb;
+}
+
+Collection Collection::load(const char* filename, ::AggHash* ahash, float membership
+	, const NodeBaseI* nodebase)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
 
@@ -195,7 +208,6 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 	//fprintf(stderr, "load(), ndchars: %.4G\n", ndchars);
 	assert(ndchars >= 1 && "load(), ndchars invalid");
 #endif // VALIDATE
-	const bool  evalhash = ahash;
 	::AggHash  mbhash;  // Members hash
 	do {
 		// Skip cluster id if specified and parse first node id
@@ -234,10 +246,13 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 				continue;
 			}
 #endif // VALIDATE
+			// Filter out nodes if required
+			if(nodebase && !nodebase->nodeExists(nid))
+				continue;
 			members.push_back(nid);
 			auto& ncs = cn.m_ndcs[nid];
 			// Update hash if required
-			if(evalhash && ncs.empty())
+			if(ahash && ncs.empty())
 				mbhash.add(nid);
 			ncs.push_back(pcl);
 		} while((tok = strtok(nullptr, mbdelim)));
@@ -257,13 +272,13 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, cn.m_ndcs.size() ? float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.size() * 100
 			: numeric_limits<float>::infinity()
-		, mbhash.hash(), evalhash ? "evaluated" : "omitted", file.name().c_str());
+		, mbhash.hash(), ahash ? "evaluated" : "omitted", file.name().c_str());
 #elif TRACE >= 1
 	printf("Loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
 		, cn.m_ndcs.size(), file.name().c_str());
 #endif
 	// Assign hash to the results
-	if(evalhash) {
+	if(ahash) {
 #if VALIDATE >= 2
 		assert(ahash && "loadNodes(), ahash should be valid");
 #endif // VALIDATE
