@@ -323,8 +323,13 @@ size_t estimateCnlNodes(size_t filesize, float membership=1.f) noexcept;
 //! \return size_t  - estimated number of clusters
 size_t estimateClusters(size_t ndsnum, float membership=1.f) noexcept;
 
-// File I/O templates definition -----------------------------------------------
+//! \brief Convert bool to c-string
+//!
+//! \param val bool  - boolean to be converted
+//! \return constexpr const char*  - resulting c-string
+constexpr const char* to_cstr(bool val) noexcept  { return val ? "yes" : "no"; }
 
+// File I/O templates definition -----------------------------------------------
 template <typename Id, typename AccId>
 unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
 	, AggHash<Id, AccId>* ahash, size_t cmin, size_t cmax)

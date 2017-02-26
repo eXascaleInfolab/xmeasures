@@ -17,6 +17,8 @@
 
 using std::out_of_range;
 using std::bitset;
+using std::min;
+using std::max;
 using namespace daoc;
 
 // SparseMatrix definitions ----------------------------------------------------
@@ -144,7 +146,7 @@ NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
 	return nb;
 }
 
-Collection Collection::load(const char* filename, ::AggHash* ahash, float membership
+Collection Collection::load(const char* filename, float membership, ::AggHash* ahash
 	, const NodeBaseI* nodebase)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
@@ -208,7 +210,7 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 	//fprintf(stderr, "load(), ndchars: %.4G\n", ndchars);
 	assert(ndchars >= 1 && "load(), ndchars invalid");
 #endif // VALIDATE
-	::AggHash  mbhash;  // Members hash
+	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
 	do {
 		// Skip cluster id if specified and parse first node id
 		char *tok = strtok(line, mbdelim);  // const_cast<char*>(line.data())
@@ -252,7 +254,7 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 			members.push_back(nid);
 			auto& ncs = cn.m_ndcs[nid];
 			// Update hash if required
-			if(ahash && ncs.empty())
+			if(ncs.empty())
 				mbhash.add(nid);
 			ncs.push_back(pcl);
 		} while((tok = strtok(nullptr, mbdelim)));
@@ -263,27 +265,24 @@ Collection Collection::load(const char* filename, ::AggHash* ahash, float member
 		cn.m_cls.reserve(cn.m_cls.size());
 	if(cn.m_ndcs.size() < cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() / 2)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
+	// Assign hash to the results
+	cn.m_ndshash = mbhash.hash();  // Note: required to identify the unequal node base in processing collections
+	if(ahash)
+		*ahash = move(mbhash);
 #if TRACE >= 2
 	printf("loadNodes() [shrinked], loaded %lu clusters (reserved %lu buckets, overhead: %0.2f %%) and"
-		" %lu nodes (reserved %lu buckets, overhead: %0.2f %%) with hash %lu (%s) from %s\n"
+		" %lu nodes (reserved %lu buckets, overhead: %0.2f %%) with hash %lu from %s\n"
 		, cn.m_cls.size(), cn.m_cls.bucket_count()
 		, cn.m_cls.size() ? float(cn.m_cls.bucket_count() - cn.m_cls.size()) / cn.m_cls.size() * 100
 			: numeric_limits<float>::infinity()
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, cn.m_ndcs.size() ? float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.size() * 100
 			: numeric_limits<float>::infinity()
-		, mbhash.hash(), ahash ? "evaluated" : "omitted", file.name().c_str());
+		, cn.m_ndshash, file.name().c_str());
 #elif TRACE >= 1
 	printf("Loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
 		, cn.m_ndcs.size(), file.name().c_str());
 #endif
-	// Assign hash to the results
-	if(ahash) {
-#if VALIDATE >= 2
-		assert(ahash && "loadNodes(), ahash should be valid");
-#endif // VALIDATE
-		*ahash = move(mbhash);
-	}
 
 	return cn;
 }
@@ -402,7 +401,7 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 	using ClustersMatching = SparseMatrix<Cluster*, AccProb>;  //!< Clusters matching matrix
 
 	// Reset member contributions if not zero
-	auto initconts = [](const Collection& cn) {
+	constexpr auto initconts = [](const Collection& cn) noexcept {
 		if(!cn.m_contsum)  // Note: ! is fine here
 			return;
 		for(const auto& cl: cn.m_cls)
@@ -412,13 +411,41 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 	initconts(*this);
 	initconts(cn);
 
+    //! \brief Contribution from the member of overlapping clusters
+    //!
+    //! \param owners  - the number of owner clusters of the member
+    //! \return AccProb - resulting contribution to a single owner
+	// ATTENTION: in case of fuzzy (unequal) overlaps the shares are unequal and
+	// should be stored in the Collection (ncs clusters member or a map)
+	constexpr auto ovpCont = [](size_t owners) -> AccProb  {
+#if VALIDATE >= 3
+		assert(owners >= 1 && "ovpCont(), owners should be positive");
+#endif // VALIDATE
+		return 1 / AccProb(owners);
+	};
+
+    //! \brief Contribution from the member of multi-resolution clusters
+    //!
+    //! \param owners  - the number of owner clusters of the member
+    //! \return AccProb - resulting contribution to a single owner
+    // Note: in contribute equally to each upper cluster on each resolution, where
+    // only one relevant cluster on each resolution should exists. Multi-resolution
+    // structure should have the same node base of each resolution, otherwise
+    // overlapping evaluation is more fair. In fact overlaps is generalization of
+    // the multi-resolution evaluation, but can't be directly applied to the
+    // case of multi-resolution overlapping case, where 2-level (by levels and
+	// by overlaps in each level) evaluations are required.
+	constexpr auto mresCont = [](size_t owners) -> AccProb  { return 1; };
+
+	const bool  overlaps = true;
+    //! \brief Contribution from a single member of the clusters
+	auto mbcont = overlaps ? ovpCont : mresCont;
+
 //	// Traverse all members (nodes) and evaluate their contribution to each cluster.
 //	// Total contribution should be equal to the number of nodes
 //	auto mbsconts = [](const Collection& cn) {
 //		for(auto& ncs: cn.m_ndcs) {
-//			// Note: in case of fuzzy (unequal) overlaps the shares are unequal and
-//			// should be stored in the Collection (ncs clusters member or a map)
-//			const AccProb  share = 1 / AccProb(ncs.second.size());
+//			const AccProb  share = mbcont(ncs.second.size());
 //			for(auto cl: ncs.second)
 //				cl->mbscont += share;
 //		}
@@ -428,62 +455,117 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 //	//mbsconts(*this);
 //	mbsconts(cn);
 
+    //! \brief  Update contribution of to the member-related clusters
+    //!
+    //! \param cls const ClusterPtrs&  - clusters to be updated
+    //! \return AccProb  - contributing value (share in case of overlaps in a single resolution)
+	auto updateCont = [mbcont](const ClusterPtrs& cls) -> AccProb {
+		const AccProb  share = mbcont(cls.size());
+		for(auto cl: cls)
+			cl->mbscont += share;
+		return share;
+	};
+
 	ClustersMatching  clsmm = ClustersMatching(clsnum());  // Note: default max_load_factor is 1
 	// Total sum of all values of the clsmm matrix, i.e. the number of
 	// member nodes in both collections
 	AccProb  cmmsum = 0;
-//	//for
+	// Evaluate contributions to the clusters of each collection and to the
+	// mutual matrix of clusters matching
+	// Note: in most cases collections has the same node base, or it was synchronized
+	// explicitly in advance, so handle unequal node base as a rare case
+	for(auto& ncs: m_ndcs) {
+		// Note: always evaluate contributions to the clusters of this collection
+		const AccProb  share1 = mbcont(ncs.second.size());
+		// Evaluate contribution to the second collection if any
+		auto incs2 = cn.m_ndcs.find(ncs.first);
+		const auto  cls2num = incs2 != cn.m_ndcs.end() ? incs2->second.size() : 0;
+		AccProb  share;
+		if(cls2num)
+			share = (updateCont(incs2->second) * share1);
+			//share = min(updateCont(incs2->second), share1) / cls2num;
+		for(auto cl: ncs.second) {
+			cl->mbscont += share1;
+			// Update clusters matching matrix
+			if(cls2num) {
+				cmmsum += share * cls2num;
+				for(auto cl2: incs2->second)
+					clsmm(cl, cl2) += share;  // Note: contains only POSITIVE values
+			}
+		}
 
-
-
-	// Traverse all clusters in the collection filling clusters matching matrix
-	// and aggregated number of matches for each cluster in the collections (rows, cols)
-	for(const auto& cl: m_cls) {
-		// Traverse all members (node ids)
-		for(auto nid: cl->members) {
-			const auto imcls = cn.m_ndcs.find(nid);
-// NOTE: this automatically synchronizes node bases without any penalty ?
-			// Consider the case of unequal node base skipping the missed node,
-			// i.e. sync the node base. An alternative solution is penalization
-			// for the missed nodes assigning all the nodes present only in one
-			// collection to an additional new cluster
-			if(imcls == cn.m_ndcs.end())
+//		// Evaluate contributions to the clusters of this collection
+//		// Note: even when the node is not present in the foreign collection, update
+//		// contribution to the clusters of this collection
+//		AccProb  share = updateCont(ncs.second);
+//		auto incs2 = cn.m_ndcs.find(ncs.first);
+//		if(incs2 == cn.m_ndcs.end())
+//			continue;
+//		// Take intersection of the node contributions to the clusters, i.e. min share
+//		share = min(share, updateCont(incs2->second));
+	}
+	// Consider the case of unequal node base, contribution from the missed nodes
+	if((m_ndshash && cn.m_ndshash && m_ndshash != cn.m_ndshash) || ndsnum() != cn.ndsnum()) {
+		for(auto& ncs: cn.m_ndcs) {
+			// Skip processed nodes
+			if(m_ndcs.count(ncs.first))
 				continue;
-			const auto csnum = m_ndcs.at(nid).size();
-			const Prob  cpart = Prob(1)/csnum;
-			cl->mbscont += cpart;  // Note: contains only POSITIVE values
-			cmmsum += cpart;
+			updateCont(ncs.second);
+		}
+	} else if(!m_ndshash || !cn.m_ndshash)
+		fputs("WARNING nmi(), collection(s) hashes were not evaluated (%lu, %lu)"
+			", so some unequal nodes might be skipped on evaluation, which cause"
+			" approximate results\n", stderr);
+
+
+//	// Traverse all clusters in the collection filling clusters matching matrix
+//	// and aggregated number of matches for each cluster in the collections (rows, cols)
+//	for(const auto& cl: m_cls) {
+//		// Traverse all members (node ids)
+//		for(auto nid: cl->members) {
 //			const auto imcls = cn.m_ndcs.find(nid);
+//// NOTE: this automatically synchronizes node bases without any penalty ?
 //			// Consider the case of unequal node base skipping the missed node,
 //			// i.e. sync the node base. An alternative solution is penalization
 //			// for the missed nodes assigning all the nodes present only in one
 //			// collection to an additional new cluster
 //			if(imcls == cn.m_ndcs.end())
 //				continue;
-			// Find Matching clusters (containing the same member node id) in the foreign collection
-			const auto  mcsnum = imcls->second.size();
-#if VALIDATE >= 2
-			assert(mcsnum && "nmi(), clusters should be present");
-			Prob  cvsum = 0;
-#endif // VALIDATE
-			//const Prob  mcpart = Prob(1)/mcsnum;
-			const AccProb  mmpart = AccProb(cpart) / mcsnum;  // Contribution to the whole matrix
-			for(auto mcl: imcls->second) {
-#if VALIDATE >= 2
-				cvsum += mmpart;
-#endif // VALIDATE
-				clsmm(cl.get(), mcl) += mmpart;  // Note: contains only POSITIVE values
-				mcl->mbscont += mmpart;  // Note: contains only POSITIVE values
-			}
-#if VALIDATE >= 2
-			if(!equal<Prob>(cvsum, cpart, csnum*mcsnum)) {
-				fprintf(stderr, "nmi(), cvsum: %G != %G for %lu csnum %lu mcslnum\n"
-					, cvsum, cpart, csnum, mcsnum);
-				assert(0 && "nmi(), accumulated value is invalid");
-			}
-#endif // VALIDATE
-		}
-	}
+//			const auto csnum = m_ndcs.at(nid).size();
+//			const Prob  cpart = Prob(1)/csnum;
+//			cl->mbscont += cpart;  // Note: contains only POSITIVE values
+//			cmmsum += cpart;
+////			const auto imcls = cn.m_ndcs.find(nid);
+////			// Consider the case of unequal node base skipping the missed node,
+////			// i.e. sync the node base. An alternative solution is penalization
+////			// for the missed nodes assigning all the nodes present only in one
+////			// collection to an additional new cluster
+////			if(imcls == cn.m_ndcs.end())
+////				continue;
+//			// Find Matching clusters (containing the same member node id) in the foreign collection
+//			const auto  mcsnum = imcls->second.size();
+//#if VALIDATE >= 2
+//			assert(mcsnum && "nmi(), clusters should be present");
+//			Prob  cvsum = 0;
+//#endif // VALIDATE
+//			//const Prob  mcpart = Prob(1)/mcsnum;
+//			const AccProb  mmpart = AccProb(cpart) / mcsnum;  // Contribution to the whole matrix
+//			for(auto mcl: imcls->second) {
+//#if VALIDATE >= 2
+//				cvsum += mmpart;
+//#endif // VALIDATE
+//				clsmm(cl.get(), mcl) += mmpart;  // Note: contains only POSITIVE values
+//				mcl->mbscont += mmpart;  // Note: contains only POSITIVE values
+//			}
+//#if VALIDATE >= 2
+//			if(!equal<Prob>(cvsum, cpart, csnum*mcsnum)) {
+//				fprintf(stderr, "nmi(), cvsum: %G != %G for %lu csnum %lu mcslnum\n"
+//					, cvsum, cpart, csnum, mcsnum);
+//				assert(0 && "nmi(), accumulated value is invalid");
+//			}
+//#endif // VALIDATE
+//		}
+//	}
 
 	RawNmi  rnmi;  // Resulting raw nmi, initially equal to 0
 	if(clsmm.empty()) {
@@ -510,46 +592,6 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 //			cmmsum += mcsnum;
 //			for(auto mcl: imcls->second) {
 //				++clsmm(cl.get(), mcl);  // Note: contains only POSITIVE values
-//				++c2icts[mcl];  // Note: contains only POSITIVE values
-//			}
-//		}
-//	}
-//
-//	// Traverse over all nodes to have equal contribution from overlapping and non-overlapping
-//	// nodes to each cluster, otherwise overlapping nodes contributes k times more
-//	// Note: in case of unequal node base use the smallest set of vertices because anyway
-//	// the non-matching nodes are not considered
-//	//
-//	// For the overlapping nodes should we add 1 / ownerClsNum, or just 1?
-//	// 	<=> Should we decrease per-cluster contribution of each overlapping node,
-//	// 	or decrease a bit relative weight of all nodes considering overlapping parts
-//	// 	as new nodes?
-//	// Partial membership seems to be more fair, i.e. 1 / ownerClsNum contribution
-//	// in case of overlaps, but full contribution should be in case of the multi-
-//	// resolution clusters. So it should be parameterized.
-//	// What should we do in case of flattened multi-resolution collection with
-//	// overlapping clusters? - be biased to the resolutions, which include much
-//	// more members than overlaps. => Use equal contribution from each node by default,
-//	// which is not the precise (but rather accurate approximation) in case of
-//	// overlapping clusters on a single resolution.
-//	auto& ndcls = m_ndcs.size() <= cn.ndsnum() ? m_ndcs: cn.m_ndcs;
-//	auto& mcn = m_ndcs.size() <= cn.ndsnum() ? cn: *this;
-//	for(auto& ndc: ndcls) {
-//		// Find clusters corresponding to this node in the cn
-//		const auto imcls = mcn.m_ndcs.find(ndc.first);
-//		// Consider the case of unequal node base, i.e. missed node
-//		if(imcls == mcn.m_ndcs.end())
-//			continue;
-//		const auto  mcsnum = imcls->second.size();
-//#if VALIDATE >= 2
-//		assert(mcsnum && "nmi(), clusters should be present");
-//#endif // VALIDATE
-//		cmmsum += mcsnum * ndc.second.size();
-//		// Traverse all clusters of the node
-//		for(auto cl: ndc.second) {
-//			c1icts[cl] += mcsnum;  // Note: contains only POSITIVE values
-//			for(auto mcl: imcls->second) {
-//				++clsmm(cl, mcl);
 //				++c2icts[mcl];  // Note: contains only POSITIVE values
 //			}
 //		}
@@ -583,11 +625,11 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 	fputs("\n", stderr);
 #endif // TRACING_CLSCOUNTS_
 
-	if(!equal<AccProb>(m_contsum, cmmsum, m_cls.size())
-	&& !equal<AccProb>(cn.m_contsum, cmmsum, cn.m_cls.size())) {  // Note: cmmsum should much to either of the sums
+//	if(!equal<AccProb>(m_contsum, cmmsum, m_cls.size())
+//	&& !equal<AccProb>(cn.m_contsum, cmmsum, cn.m_cls.size())) {  // Note: cmmsum should match to either of the sums
 		fprintf(stderr, "nmi(), c1csum: %G, c2csum: %G, cmmsum: %G\n", m_contsum, cn.m_contsum, cmmsum);
-		assert(0 && "nmi(), rows accumulation is invalid");
-	}
+//		assert(0 && "nmi(), rows accumulation is invalid");
+//	}
 #endif // VALIDATE
 
 	// Evaluate probabilities using the clusters matching matrix
@@ -596,31 +638,46 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 		, expbase ? 'e' : '2', cmmsum);
 #endif // TRACE
 	AccProb (*const clog)(AccProb) = expbase ? log : log2;  // log to be used
+
+    //! \brief Information content
+    //! \pre val > 0, capacity >= val
+    //!
+    //! \param val AccProb  - contributing value
+    //! \param capacity AccProb  - total capacity
+    //! \return AccProb  - resulting information content H(val, capacity)
+	auto infocont = [clog](AccProb val, AccProb capacity) -> AccProb {
 #if VALIDATE >= 2
-	AccProb  psum = 0;  // Sum of probabilities over the whole matrix
+		assert(val > 0 && capacity >= val  // && prob > 0 && prob <= 1
+			&& "infocont(), invalid input values");
 #endif // VALIDATE
+		//if(!val)
+		//	return 0;
+		const AccProb  prob = val / capacity;
+		return prob * clog(prob);
+	};
+
 	AccProb  h12 = 0;  // Accumulated mutual probability over the matrix, I(cn1, cn2) in exp base
 	AccProb  h1 = 0;  // H(cn1) - information size of the cn1 in exp base
 	// Traverse matrix of the mutual information evaluate total mutual probability
 	// and mutual probabilities for each collection
+#if VALIDATE >= 2
+	AccProb  psum = 0;  // Sum of probabilities over the whole matrix
+#endif // VALIDATE
 #if TRACE >= 2
 	#define TRACING_CLSMM_  // Note: local / private macroses are ended with '_'
 	fprintf(stderr, "nmi(), clsmm:\n");
 #endif // TRACE
 	for(const auto& icm: clsmm) {
 		const auto  c1cnorm = icm.first->mbscont;  // Accumulated value of the current cluster from cn1
-		// Evaluate information size of the current cluster in the cn1
-		const AccProb  cprob = AccProb(c1cnorm) / cmmsum;
-#if VALIDATE >= 2
-		assert(cprob > 0 && cprob <= 1 && "nmi(), invalid probability");
-#endif // VALIDATE
-		h1 -= cprob * clog(cprob);
+		// Evaluate information size (content) of the current cluster in the cn1
+		h1 -= infocont(c1cnorm, ndsnum());  // ndsnum(), cmmsum
+		//h1 -= infocont(c1cnorm, cmmsum);  // ndsnum(), cmmsum
+		//h1 -= infocont(c1cnorm, cmmsum) + infocont(cmmsum - c1cnorm, cmmsum);  // ndsnum(), cmmsum
 
 		// Travers row
 #ifdef TRACING_CLSMM_
 		fprintf(stderr, "%.3G:  ", c1cnorm);
 #endif // TRACING_CLSMM_
-// TODO: Use full formula and ? max match to consider overlaps
 		for(auto& icmr: icm.second) {
 #if VALIDATE >= 2
 			assert(icmr.val > 0 && "nmi(), matrix of clusters matching should contain only positive values");
@@ -628,25 +685,18 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 #ifdef TRACING_CLSMM_
 			fprintf(stderr, " %G[%.3G]", icmr.val, icmr.pos->mbscont);
 #endif // TRACING_CLSMM_
-			// Evaluate mutual probability of the cluster (divide by multiplication of counts of both clusters)
-			// Note: in the original NMI: AccProb(icmr.val) / nodesNum [ = cmmsum]
-			AccProb  mcprob = AccProb(icmr.val) / cmmsum;  // (c1cnorm * AccId(icmr.pos->mbscont));  // This evaluation is used in gecmi
-			//fprintf(stderr, "nmi(),  mcprob: %G (val: %G), v1: %G, v2: %G\n"
-			//	, mcprob, icmr.val, c1cnorm, icmr.pos->mbscont);
 #if VALIDATE >= 2
-			psum += mcprob;
-			assert(mcprob > 0 && mcprob <= 1 && icmr.pos->mbscont > 0
-				&& "nmi(), invalid probability or multiplier");
+			// Evaluate mutual probability of the cluster (divide by multiplication of counts of both clusters)
+			psum += AccProb(icmr.val) / cmmsum;
 #endif // VALIDATE
 			// Accumulate total normalized mutual information
 			// Note: e base is used instead of 2 to have absolute entropy instead of bits length
 			//const auto lval = icmr.val / (icmr.pos->mbscont * cprob);  // cprob; c1cnorm
 			//mi += mcprob * clog(lval);  // mi = h1 + h2 - h12;  Note: log(a/b) = log(a) - log(b)
-			h12 -= mcprob * clog(mcprob);  // clog(lval);  // Note: log(a/b) = log(a) - log(b)
-//#ifndef TRACING_CLSMM_
-//			fprintf(stderr, "  %G * clog(%G [%G / (%G * %G)]) = %G\n", mcprob, lval
-//				, icmr.val, icmr.pos->mbscont, cprob, mcprob * clog(lval));
-//#endif // TRACING_CLSMM_
+
+			// Note: in the original NMI: AccProb(icmr.val) / nodesNum [ = cmmsum]
+			h12 -= infocont(icmr.val, cmmsum);
+			//h12 -= infocont(icmr.val, cmmsum) + infocont(cmmsum - icmr.val, cmmsum);
 		}
 #ifdef TRACING_CLSMM_
 		fputs("\n", stderr);
@@ -659,17 +709,15 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 
 	// Evaluate information size cn2 clusters
 	AccProb  h2 = 0;  // H(cn2) - information size of the cn1 in exp base
-	for(const auto& c2: cn.m_cls) {
-		AccProb  cprob = AccProb(c2->mbscont) / cmmsum;
-#if VALIDATE >= 2
-		assert(cprob > 0 && cprob <= 1 && "nmi() 2, invalid probability");
-#endif // VALIDATE
-		h2 -= cprob * clog(cprob);
-	}
+	for(const auto& c2: cn.m_cls)
+		h2 -= infocont(c2->mbscont, cn.ndsnum());  // cn.ndsnum(), cmmsum
+		//h2 -= infocont(c2->mbscont, cmmsum);  // cn.ndsnum(), cmmsum
+		//h2 -= infocont(c2->mbscont, cmmsum) + infocont(cmmsum - c2->mbscont, cmmsum);  // cn.ndsnum(), cmmsum
 
-	rnmi(h1 + h2 - h12, h1, h2, Evaluation::OVERLAPPING);
+	rnmi(h1 + h2 - h12, h1, h2, Evaluation::OVERLAPPING);  // h1 + h2 - h12;  h12
+	//rnmi(h12, h1, h2, Evaluation::OVERLAPPING);  // h1 + h2 - h12;  h12
 #if TRACE >= 2
-	Prob  nmix = (h1 + h2 - h12) / (h1 >= h2 ? h1 : h2);
+	Prob  nmix = rnmi.mi / max(h1, h2);
 	fprintf(stderr, "nmi(),  mi: %G,  h1: %G, h2: %G,  NMI_max: %G\n", rnmi.mi, h1, h2, nmix);
 #endif // TRACE
 

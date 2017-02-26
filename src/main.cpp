@@ -52,15 +52,24 @@ int main(int argc, char **argv)
 
 	// Load node base if required
 	NodeBase  ndbase;
+	AggHash  nbhash;
 	if(args_info.sync_given && args_info.inputs_num == 2)
-		ndbase = NodeBase::load(args_info.sync_arg);
+		ndbase = NodeBase::load(args_info.sync_arg, args_info.membership_arg, &nbhash);
 
 	// Load collections as relations
 	AggHash  cn1hash, cn2hash;
-	auto cn1 = Collection::load(args_info.inputs[0], &cn1hash, args_info.membership_arg
+	auto cn1 = Collection::load(args_info.inputs[0], args_info.membership_arg, &cn1hash
 		, ndbase ? &ndbase : nullptr);
-	ndbase.clear();
-	auto cn2 = Collection::load(args_info.inputs[1], &cn2hash, args_info.membership_arg
+	if(ndbase) {
+		if(nbhash != cn1hash) {
+			fprintf(stderr, "ERROR, nodebase hash %lu (%lu nodes) != filtered"
+				" collection nodes hash %lu (%lu)\n", nbhash.hash(), nbhash.size()
+				, cn1hash.hash(), cn1hash.size());
+			return 1;
+		}
+		ndbase.clear();
+	}
+	auto cn2 = Collection::load(args_info.inputs[1], args_info.membership_arg, &cn2hash
 		, args_info.sync_given ? &cn1 : nullptr);
 
 	if(!cn1.ndsnum() || ! cn2.ndsnum()) {
@@ -69,13 +78,19 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// Check the nodebase
-	if(cn1hash != cn2hash)
+	// Check the collections' nodebase
+	if(cn1hash != cn2hash) {
 		fprintf(stderr, "WARNING, the nodes in the collections differ: %u nodes"
 			" with hash %lu, size: %lu, ids: %lu, id2s: %lu) != %u nodes with hash %lu"
-			", size: %lu, ids: %lu, id2s: %lu)\n"
+			", size: %lu, ids: %lu, id2s: %lu);  synchronize: %s\n"
 			, cn1.ndsnum(), cn1hash.hash(), cn1hash.size(), cn1hash.idsum(), cn1hash.id2sum()
-			, cn2.ndsnum(), cn2hash.hash(), cn2hash.size(), cn2hash.idsum(), cn2hash.id2sum());
+			, cn2.ndsnum(), cn2hash.hash(), cn2hash.size(), cn2hash.idsum(), cn2hash.id2sum()
+			, daoc::to_cstr(args_info.sync_given));
+		if(args_info.sync_given) {
+			fputs("ERROR, the nodes base had to be synchronized\n", stderr);
+			return 1;
+		}
+	}
 
 	// Evaluate and output measures
 	if(args_info.f1_given)
@@ -89,10 +104,10 @@ int main(int argc, char **argv)
 		if(args_info.f1_given)
 			fputs("; ", stdout);
 		auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag);
-		const auto  nmix = rnmi.mi / (rnmi.h1 >= rnmi.h2 ? rnmi.h1 : rnmi.h2);
+		const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
 		if(args_info.all_flag)
 			printf("NMI_max: %G, NMI_avg: %G, NMI_min: %G", nmix, 2 * rnmi.mi
-				/ (rnmi.h1 + rnmi.h2), rnmi.mi / (rnmi.h1 < rnmi.h2 ? rnmi.h1 : rnmi.h2));
+				/ (rnmi.h1 + rnmi.h2), rnmi.mi / std::min(rnmi.h1, rnmi.h2));
 		else printf("NMI_max: %G", nmix);
 		printf(" for %s evaluation", to_string(rnmi.eval).c_str());
 	}

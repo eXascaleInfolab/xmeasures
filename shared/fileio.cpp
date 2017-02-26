@@ -196,7 +196,7 @@ void ensureDir(const string& dir)
 void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum) {
     //! Parse count value
     //! \return  - id value of 0 in case of parsing errors
-	auto parseCount = []() -> size_t {
+	auto parseCount = []() noexcept -> size_t {
 		char* tok = strtok(nullptr, " \t,");  // Note: the value can't be ended with ':'
 		//errno = 0;
 		const auto val = strtoul(tok, nullptr, 10);

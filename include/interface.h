@@ -367,11 +367,12 @@ struct NodeBase: UniqIds, NodeBaseI {
 class Collection: public NodeBaseI {
 	Clusters  m_cls;  //!< Clusters
 	NodeClusters  m_ndcs;  //!< Node clusters relations
+	size_t  m_ndshash;  //!< Nodes hash (of unique node ids only, not all members), 0 means was not evaluated
 	//mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
 	mutable AccProb  m_contsum;  //!< Sum of contributions of all members in each cluster
 protected:
     //! Default constructor
-	Collection(): m_cls(), m_ndcs(), m_contsum(0)  {}  //, m_dirty(false)  {}
+	Collection(): m_cls(), m_ndcs(), m_ndshash(0), m_contsum(0)  {}  //, m_dirty(false)  {}
 public:
     //! \brief The number of clusters
     //!
@@ -391,15 +392,15 @@ public:
 	//! the mutual match
 	//!
 	//! \param filename const char*  - name of the input file
-    //! \param ahash=nullptr AggHash*  - resulting aggregated hash of the loaded
-    //! member ids if not nullptr
 	//! \param membership=1 float  - expected membership of the nodes, >0, typically >= 1.
 	//! Used only for the node container preallocation to estimate the number of nodes
 	//! if not specified in the file header
+    //! \param ahash=nullptr AggHash*  - resulting hash of the loaded
+    //! member ids base (unique ids only are hashed, not all ids) if not nullptr
 	//! \param const nodebase=nullptr NodeBaseI*  - node base to filter-out nodes if required
     //! \return bool  - the collection is loaded successfully
-	static Collection load(const char* filename, AggHash* ahash=nullptr
-		, float membership=1, const NodeBaseI* nodebase=nullptr);
+	static Collection load(const char* filename, float membership=1
+		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr);
 
 	//! \brief F1 of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
 	//! for the multi-resolution clustering with possibly unequal node base

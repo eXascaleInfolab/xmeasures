@@ -39,6 +39,8 @@ class AggHash {
 
 	// ATTENTION: type of the m_size should not be less than of m_idsum to
 	// avoid gaps filled with trash on memory alignment
+	// Note: size should be first as the most discriminative attribute, which
+	// can be potentially used for the ordering
 	AccId  m_size;  //!< Size of the container
 	AccId  m_idsum;  //!< Sum of the member ids
 	AccId  m_id2sum;  //!< Sum of the squared member ids
