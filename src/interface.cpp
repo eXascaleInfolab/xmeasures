@@ -441,20 +441,6 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
     //! \brief Contribution from a single member of the clusters
 	auto mbcont = overlaps ? ovpCont : mresCont;
 
-//	// Traverse all members (nodes) and evaluate their contribution to each cluster.
-//	// Total contribution should be equal to the number of nodes
-//	auto mbsconts = [](const Collection& cn) {
-//		for(auto& ncs: cn.m_ndcs) {
-//			const AccProb  share = mbcont(ncs.second.size());
-//			for(auto cl: ncs.second)
-//				cl->mbscont += share;
-//		}
-//	};
-////	AccProb  c1sum = m_ndcs.size();
-////	AccProb  c2sum = cn.m_ndcs.size();
-//	//mbsconts(*this);
-//	mbsconts(cn);
-
     //! \brief  Update contribution of to the member-related clusters
     //!
     //! \param cls const ClusterPtrs&  - clusters to be updated
@@ -493,16 +479,6 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 					clsmm(cl, cl2) += share;  // Note: contains only POSITIVE values
 			}
 		}
-
-//		// Evaluate contributions to the clusters of this collection
-//		// Note: even when the node is not present in the foreign collection, update
-//		// contribution to the clusters of this collection
-//		AccProb  share = updateCont(ncs.second);
-//		auto incs2 = cn.m_ndcs.find(ncs.first);
-//		if(incs2 == cn.m_ndcs.end())
-//			continue;
-//		// Take intersection of the node contributions to the clusters, i.e. min share
-//		share = min(share, updateCont(incs2->second));
 	}
 	// Consider the case of unequal node base, contribution from the missed nodes
 	if((m_ndshash && cn.m_ndshash && m_ndshash != cn.m_ndshash) || ndsnum() != cn.ndsnum()) {
@@ -516,56 +492,6 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 		fputs("WARNING nmi(), collection(s) hashes were not evaluated (%lu, %lu)"
 			", so some unequal nodes might be skipped on evaluation, which cause"
 			" approximate results\n", stderr);
-
-
-//	// Traverse all clusters in the collection filling clusters matching matrix
-//	// and aggregated number of matches for each cluster in the collections (rows, cols)
-//	for(const auto& cl: m_cls) {
-//		// Traverse all members (node ids)
-//		for(auto nid: cl->members) {
-//			const auto imcls = cn.m_ndcs.find(nid);
-//// NOTE: this automatically synchronizes node bases without any penalty ?
-//			// Consider the case of unequal node base skipping the missed node,
-//			// i.e. sync the node base. An alternative solution is penalization
-//			// for the missed nodes assigning all the nodes present only in one
-//			// collection to an additional new cluster
-//			if(imcls == cn.m_ndcs.end())
-//				continue;
-//			const auto csnum = m_ndcs.at(nid).size();
-//			const Prob  cpart = Prob(1)/csnum;
-//			cl->mbscont += cpart;  // Note: contains only POSITIVE values
-//			cmmsum += cpart;
-////			const auto imcls = cn.m_ndcs.find(nid);
-////			// Consider the case of unequal node base skipping the missed node,
-////			// i.e. sync the node base. An alternative solution is penalization
-////			// for the missed nodes assigning all the nodes present only in one
-////			// collection to an additional new cluster
-////			if(imcls == cn.m_ndcs.end())
-////				continue;
-//			// Find Matching clusters (containing the same member node id) in the foreign collection
-//			const auto  mcsnum = imcls->second.size();
-//#if VALIDATE >= 2
-//			assert(mcsnum && "nmi(), clusters should be present");
-//			Prob  cvsum = 0;
-//#endif // VALIDATE
-//			//const Prob  mcpart = Prob(1)/mcsnum;
-//			const AccProb  mmpart = AccProb(cpart) / mcsnum;  // Contribution to the whole matrix
-//			for(auto mcl: imcls->second) {
-//#if VALIDATE >= 2
-//				cvsum += mmpart;
-//#endif // VALIDATE
-//				clsmm(cl.get(), mcl) += mmpart;  // Note: contains only POSITIVE values
-//				mcl->mbscont += mmpart;  // Note: contains only POSITIVE values
-//			}
-//#if VALIDATE >= 2
-//			if(!equal<Prob>(cvsum, cpart, csnum*mcsnum)) {
-//				fprintf(stderr, "nmi(), cvsum: %G != %G for %lu csnum %lu mcslnum\n"
-//					, cvsum, cpart, csnum, mcsnum);
-//				assert(0 && "nmi(), accumulated value is invalid");
-//			}
-//#endif // VALIDATE
-//		}
-//	}
 
 	RawNmi  rnmi;  // Resulting raw nmi, initially equal to 0
 	if(clsmm.empty()) {
@@ -667,12 +593,16 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 	#define TRACING_CLSMM_  // Note: local / private macroses are ended with '_'
 	fprintf(stderr, "nmi(), clsmm:\n");
 #endif // TRACE
+//	// Order collections by the number of clusters
+//	auto& cn1 = clsnum() <= cn.clsnum() ? *this : cn;
+//	auto& cn2 = clsnum() <= cn.clsnum() ? cn : *this;
+//
+//	for
+
 	for(const auto& icm: clsmm) {
 		const auto  c1cnorm = icm.first->mbscont;  // Accumulated value of the current cluster from cn1
 		// Evaluate information size (content) of the current cluster in the cn1
 		h1 -= infocont(c1cnorm, ndsnum());  // ndsnum(), cmmsum
-		//h1 -= infocont(c1cnorm, cmmsum);  // ndsnum(), cmmsum
-		//h1 -= infocont(c1cnorm, cmmsum) + infocont(cmmsum - c1cnorm, cmmsum);  // ndsnum(), cmmsum
 
 		// Travers row
 #ifdef TRACING_CLSMM_
@@ -696,7 +626,6 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 
 			// Note: in the original NMI: AccProb(icmr.val) / nodesNum [ = cmmsum]
 			h12 -= infocont(icmr.val, cmmsum);
-			//h12 -= infocont(icmr.val, cmmsum) + infocont(cmmsum - icmr.val, cmmsum);
 		}
 #ifdef TRACING_CLSMM_
 		fputs("\n", stderr);
@@ -711,14 +640,13 @@ RawNmi Collection::nmi(const Collection& cn, bool expbase) const
 	AccProb  h2 = 0;  // H(cn2) - information size of the cn1 in exp base
 	for(const auto& c2: cn.m_cls)
 		h2 -= infocont(c2->mbscont, cn.ndsnum());  // cn.ndsnum(), cmmsum
-		//h2 -= infocont(c2->mbscont, cmmsum);  // cn.ndsnum(), cmmsum
-		//h2 -= infocont(c2->mbscont, cmmsum) + infocont(cmmsum - c2->mbscont, cmmsum);  // cn.ndsnum(), cmmsum
 
 	rnmi(h1 + h2 - h12, h1, h2, Evaluation::OVERLAPPING);  // h1 + h2 - h12;  h12
-	//rnmi(h12, h1, h2, Evaluation::OVERLAPPING);  // h1 + h2 - h12;  h12
+	//rnmi(h12, h1, h2, Evaluation::OVERLAPPING);  // h1 + h2 - h12;  h12  // ATTENTION: this approach is invalid
 #if TRACE >= 2
 	Prob  nmix = rnmi.mi / max(h1, h2);
-	fprintf(stderr, "nmi(),  mi: %G,  h1: %G, h2: %G,  NMI_max: %G\n", rnmi.mi, h1, h2, nmix);
+	fprintf(stderr, "nmi(),  mi: %G (h12: %G),  h1: %G, h2: %G,  NMI_max: %G\n"
+		, rnmi.mi, h12, h1, h2, nmix);
 #endif // TRACE
 
 	return rnmi;
