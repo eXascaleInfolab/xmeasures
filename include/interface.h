@@ -32,8 +32,10 @@ using std::string;
 using std::is_integral;
 using std::is_pointer;
 using std::is_floating_point;
+using std::is_arithmetic;
 //using std::enable_if;
 using std::enable_if_t;
+using std::conditional_t;
 using std::numeric_limits;
 #if VALIDATE >= 2
 using std::invalid_argument;
@@ -51,22 +53,32 @@ using AggHash = daoc::AggHash<Id, AccId>;
 
 using RawIds = vector<Id>;  //!< Node ids, unordered
 
+template <typename Count>
 struct Cluster;
 
 //! Cluster matching counter
 //! \note Required only for F1 evaluation
+//! \tparam Count  - arithmetic counting type
+template <typename Count>
 class Counter {
-	Cluster*  m_orig;  //!<  Originator cluster
-	Id  m_count;  //!<  Occurrences counter
 public:
+	static_assert(is_arithmetic<Count>::value
+		, "Counter(), Count should be an arithmetic type");
+	using CountT = Count;  //!< Count type, arithmetic
+	using ClusterT = Cluster<Count>;
+private:
+	ClusterT*  m_orig;  //!<  Originator cluster
+	CountT  m_count;  //!<  Occurrences counter, <= members.size()
+public:
+
     //! Default constructor
 	Counter(): m_orig(nullptr), m_count(0)  {}
 
     //! \brief Update the counter from the specified origin
     //!
-    //! \param orig Cluster*  - counter origin
+    //! \param orig ClusterT*  - counter origin
     //! \return void
-	void operator()(Cluster* orig) noexcept
+	void operator()(ClusterT* orig) noexcept
 	{
 		if(m_orig != orig) {
 			m_orig = orig;
@@ -77,13 +89,13 @@ public:
 
     //! \brief Get counted value
     //!
-    //! \return Id  - counted value
-	Id operator()() const noexcept  { return m_count; }
+    //! \return CountT  - counted value
+	CountT operator()() const noexcept  { return m_count; }
 
     //! \brief Get counter origin
     //!
-    //! \return Cluster*  - counter origin
-	Cluster* origin() const noexcept  { return m_orig; }
+    //! \return ClusterT*  - counter origin
+	ClusterT* origin() const noexcept  { return m_orig; }
 
     //! \brief Clear (reset) the counter
 	void clear() noexcept
@@ -96,11 +108,18 @@ public:
 using Prob = float;  //!< Probability
 using AccProb = double;  //!< Accumulated Probability
 
+//! Cluster
+//! \tparam Count  - nodes contribution counter type
+template <typename Count>
 struct Cluster {
+	static_assert(is_arithmetic<Count>::value
+		, "Counter(), Count should be an arithmetic type");
+	using CountT = Count;  //!< Count type, arithmetic
+
 	RawIds  members;  //!< Node ids, unordered
 	union {
-		Counter  counter;  //!< Cluster matching counter
-		AccProb  mbscont;  //!< Members contribution, raw content of information
+		Counter<Count>  counter;  //!< Cluster matching counter
+		Count  mbscont;  //!< Members contribution, raw content of information
 	};
 
     //! Default constructor
@@ -159,18 +178,33 @@ struct Cluster {
 	}
 };
 
-using ClusterHolder = unique_ptr<Cluster>;  //!< Automatic storage for the Cluster;
+//! Automatic storage for the Cluster;
+//! \tparam Count  - arithmetic counting type
+template <typename Count>
+using ClusterHolder = unique_ptr<Cluster<Count>>;
 
-using Clusters = unordered_set<ClusterHolder>;  //!< Clusters storage, input collection
+//! Automatic storage for the Cluster;
+//! \tparam Count  - arithmetic counting type
+template <typename Count>
+using Clusters = unordered_set<ClusterHolder<Count>>;
 
-using ClusterPtrs = vector<Cluster*>;  //!< Cluster pointers, unordered
-using NodeClusters = unordered_map<Id, ClusterPtrs>;  //!< Node to clusters relations
+//! Cluster pointers, unordered
+//! \tparam Count  - arithmetic counting type
+template <typename Count>
+using ClusterPtrs = vector<Cluster<Count>*>;
+
+//! Node to clusters relations
+//! \tparam Count  - arithmetic counting type
+template <typename Count>
+using NodeClusters = unordered_map<Id, ClusterPtrs<Count>>;
 
 //! Resulting greatest matches for 2 input collections of clusters in a single direction
 using Probs = vector<Prob>;
 
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
+//! \tparam Index  - index (of the column) in the row
+//! \tparam Value  - value type
 template <typename Index, typename Value>
 struct RowVecItem {
 	static_assert(is_integral<Index>::value || is_pointer<Index>::value
@@ -216,10 +250,15 @@ template <typename Index, typename Value>
 using SparseMatrixBase = unordered_map<Index, SparseMatrixRowVec<Index, Value>>;
 
 //! Sparse Matrix
+//! \tparam Index  - index type
+//! \tparam Value  - value type
 template <typename Index, typename Value>
 struct SparseMatrix: SparseMatrixBase<Index, Value> {
+	static_assert((is_integral<Index>::value || is_pointer<Index>::value)
+		&& is_arithmetic<Value>::value, "SparseMatrix(), invalid parameter types");
+
 	using IndexT = Index;  //!< Indexes type, integral
-	using ValueT = Value;  //!< Value type
+	using ValueT = Value;  //!< Value type, arithmetic
 	using BaseT = SparseMatrixBase<IndexT, ValueT>;  //!< SparseMatrixBase type
 	using RowT = typename BaseT::mapped_type;  //!< Matrix row type
 	//! Matrix row element type, which contains the value and might have
@@ -275,41 +314,40 @@ struct SparseMatrix: SparseMatrixBase<Index, Value> {
 	using BaseT::at;  //!< Provide direct access to the matrix row
 };
 
-using EvalBase = uint8_t;  //!< Base type for the Evaluation
-
-//! \brief Evaluation type
-enum struct Evaluation: EvalBase {
-	NONE = 0,
-//	HARD = 0
-	MULTIRES = 1,  //!< Multi-resolution non-overlapping clusters, compatible with hard partitioning
-	OVERLAPPING = 2,  //!< Overlapping clusters, compatible with hard partitioning
-	MULRES_OVP = 3  //!< Multi-resolution clusters with possible overlaps on each resolution level
-};
-
-//! \brief Convert Evaluation to string
-//! \relates Evaluation
-//!
-//! \param flag Evaluation  - the flag to be converted
-//! \param bitstr=false bool  - convert to bits string or to Evaluation captions
-//! \return string  - resulting flag as a string
-string to_string(Evaluation eval, bool bitstr=false);
+//using EvalBase = uint8_t;  //!< Base type for the Evaluation
+//
+////! \brief Evaluation type
+//enum struct Evaluation: EvalBase {
+//	NONE = 0,
+////	HARD = 0
+//	MULTIRES = 1,  //!< Multi-resolution non-overlapping clusters, compatible with hard partitioning
+//	OVERLAPPING = 2,  //!< Overlapping clusters, compatible with hard partitioning
+//	MULRES_OVP = 3  //!< Multi-resolution clusters with possible overlaps on each resolution level
+//};
+//
+////! \brief Convert Evaluation to string
+////! \relates Evaluation
+////!
+////! \param flag Evaluation  - the flag to be converted
+////! \param bitstr=false bool  - convert to bits string or to Evaluation captions
+////! \return string  - resulting flag as a string
+//string to_string(Evaluation eval, bool bitstr=false);
 
 struct RawNmi {
 	Prob  mi;  //!< Mutual information of two collections
 	Prob  h1;  //!< Information content of the 1-st collection
 	Prob  h2;  //!< Information content of the 2-nd collection
-	Evaluation  eval;  //!< Evaluation type
+	//Evaluation  eval;  //!< Evaluation type
 
 	static_assert(is_floating_point<Prob>::value, "RawNmi, Prob should be a floating point type");
 	RawNmi() noexcept: mi(0), h1(numeric_limits<Prob>::quiet_NaN())
-		, h2(numeric_limits<Prob>::quiet_NaN()), eval(Evaluation::NONE)  {}
+		, h2(numeric_limits<Prob>::quiet_NaN())  {}
 
-	void operator() (Prob mutinf, Prob cn1h, Prob cn2h, Evaluation cnsev) noexcept
+	void operator() (Prob mutinf, Prob cn1h, Prob cn2h) noexcept
 	{
 		mi = mutinf;
 		h1 = cn1h;
 		h2 = cn2h;
-		eval = cnsev;
 	};
 };
 
@@ -363,13 +401,19 @@ struct NodeBase: UniqIds, NodeBaseI {
 };
 
 //! Collection describing cluster-node relations
-//template <typename Contribs>  // Contributions: AccId (multires) or AccProb (overlapping)
+//! \tparam Count  - arithmetic counting type
+template <typename Count>
 class Collection: public NodeBaseI {
-	Clusters  m_cls;  //!< Clusters
-	NodeClusters  m_ndcs;  //!< Node clusters relations
+public:
+	using CollectionT = Collection<Count>;
+private:
+	Clusters<Count>  m_cls;  //!< Clusters
+	NodeClusters<Count>  m_ndcs;  //!< Node clusters relations
 	size_t  m_ndshash;  //!< Nodes hash (of unique node ids only, not all members), 0 means was not evaluated
 	//mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
-	mutable AccProb  m_contsum;  //!< Sum of contributions of all members in each cluster
+	//! Accumulated contribution
+	using AccCont = conditional_t<is_floating_point<Count>::value, Count, AccId>;
+	mutable AccCont  m_contsum;  //!< Sum of contributions of all members in each cluster
 protected:
     //! Default constructor
 	Collection(): m_cls(), m_ndcs(), m_ndshash(0), m_contsum(0)  {}  //, m_dirty(false)  {}
@@ -398,38 +442,38 @@ public:
     //! \param ahash=nullptr AggHash*  - resulting hash of the loaded
     //! member ids base (unique ids only are hashed, not all ids) if not nullptr
 	//! \param const nodebase=nullptr NodeBaseI*  - node base to filter-out nodes if required
-    //! \return bool  - the collection is loaded successfully
-	static Collection load(const char* filename, float membership=1
+    //! \return CollectionT  - the collection is loaded successfully
+	static CollectionT load(const char* filename, float membership=1
 		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr);
 
 	//! \brief F1 of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
 	//! for the multi-resolution clustering with possibly unequal node base
 	//! \note Undirected (symmetric) evaluation
 	//!
-	//! \param cn1 const Collection&  - first collection
-	//! \param cn2 const Collection&  - second collection
+	//! \param cn1 const CollectionT&  - first collection
+	//! \param cn2 const CollectionT&  - second collection
     //! \param weighted=true bool  - weighted average by cluster size or unweighted
     //! \param prob=false bool  - take harmonic mean of the partial probabilities
     //! instead of F1s
 	//! \return Prob  - resulting F1_gm
-	static Prob f1gm(const Collection& cn1, const Collection& cn2, bool weighted=true
+	static Prob f1gm(const CollectionT& cn1, const CollectionT& cn2, bool weighted=true
 		, bool prob=false);
 
 	//! \brief NMI evaluation
 	//! \note Undirected (symmetric) evaluation
 	//!
-	//! \param cn1 const Collection&  - first collection
-	//! \param cn2 const Collection&  - second collection
+	//! \param cn1 const CollectionT&  - first collection
+	//! \param cn2 const CollectionT&  - second collection
     //! \param expbase=false bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
 	//! \return RawNmi  - resulting NMI
-	static RawNmi nmi(const Collection& cn1, const Collection& cn2, bool expbase=false);
+	static RawNmi nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase=false);
 protected:
     //! \brief Synchronize node base
     //!
-    //! \param cn Collection&  - collection to be synchronize with
+    //! \param cn CollectionT&  - collection to be synchronize with
     //! \return void
-	void synchronize(Collection& cn) noexcept;
+	void synchronize(CollectionT& cn) noexcept;
 
     //! \brief Average of the maximal matches (by F1 or partial probabilities)
     //! relative to the specified collection FROM this one
@@ -437,32 +481,32 @@ protected:
     //! clusters on multiple resolutions
     //! \attention Directed (non-symmetric) evaluation
     //!
-    //! \param cn const Collection&  - collection to compare with
+    //! \param cn const CollectionT&  - collection to compare with
     //! \param weighted bool  - weighted average by cluster size
     //! \param prob bool  - evaluate partial probability instead of F1
     //! \return AccProb  - resulting max average match value from this collection
     //! to the specified one (DIRECTED)
-	inline AccProb avggms(const Collection& cn, bool weighted, bool prob) const;
+	inline AccProb avggms(const CollectionT& cn, bool weighted, bool prob) const;
 
     //! \brief Greatest (Max) matching value (F1 or partial probability) for each cluster
     //! \note External cn collection can have unequal node base and overlapping
     //! clusters on multiple resolutions
     //! \attention Directed (non-symmetric) evaluation
     //!
-    //! \param cn const Collection&  - collection to compare with
+    //! \param cn const CollectionT&  - collection to compare with
     //! \param prob bool  - evaluate partial probability instead of F1
     //! \return Probs - resulting max F1 or partial probability for each member node
-	Probs gmatches(const Collection& cn, bool prob) const;
+	Probs gmatches(const CollectionT& cn, bool prob) const;
 
 	//! \brief NMI evaluation considering overlaps, multi-resolution and possibly
 	//! unequal node base
 	//! \note Undirected (symmetric) evaluation
     //!
-    //! \param cn const Collection&  - collection to compare with
+    //! \param cn const CollectionT&  - collection to compare with
     //! \param expbase bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
     //! \return RawNmi  - resulting NMI
-	RawNmi nmi(const Collection& cn, bool expbase) const;
+	RawNmi nmi(const CollectionT& cn, bool expbase) const;
 };
 
 #endif // INTERFACE_H

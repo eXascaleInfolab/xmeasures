@@ -705,7 +705,7 @@ inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT 
 }
 
 // Accessory Types declaration ------------------------------------------------
-////! Value Statistics
+////! Count Statistics
 //template <typename ValT>
 //class ValStat {
 //	ValT  m_sum;  // Sum of values
@@ -718,12 +718,12 @@ inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT 
 //	constexpr static ValT  VALUE_MIN = numeric_limits<ValT>::lowest();
 //	constexpr static ValT  VALUE_MAX = numeric_limits<ValT>::max();
 //public:
-//	//! Value for the noninitialized elements
+//	//! Count for the noninitialized elements
 //	constexpr static ValT  VALUE_NONE = numeric_limits<ValT>::lowest();
 //	static_assert(!is_same<ValT, AccWeight>::value || VALUE_NONE == ACCWEIGHT_NONE
 //		, "ValStat, VALUE_NONE must be synced with ACCWEIGHT_NONE");
 //
-//	//! \brief Constart new Value Statistics
+//	//! \brief Constart new Count Statistics
 //	ValStat()
 //	: m_sum(0), m_sum2(0), m_num(0), m_min(VALUE_MAX), m_max(VALUE_MIN)
 //		, m_fixed(false)  {}

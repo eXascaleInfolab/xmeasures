@@ -1,5 +1,5 @@
 # xmeasures - Extrinsic Clustering Measures
-Extrinsic clustering measures evaluation for the multi-resolution clustering with overlaps (covers): F1_gm and NMI (compatible to the standard NMI when applied to the single resolution non-overlapping collections of clusters).  
+Extrinsic clustering measures evaluation for the multi-resolution clustering with overlaps (covers): F1_gm for overlapping multi-resolution clusterings with possible unequal node base and standard NMI for non-overlapping clustering on a single resolution.  
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark.
 
 ## Content
@@ -25,40 +25,66 @@ To update/extend the input parameters modify `args.ggo` and run `GenerateArgpars
 # Usage
 Execution Options:
 ```
-$ ./xmeasures  -h
-xmeasures 2.1
+$ ./xmeasures -h
+xmeasures 2.3
 
-Extrinsic measures evaluation for overlapping multi-resolution clusterings with
-possible unequal node base: F1_gm and NMI.
+Extrinsic measures evaluation: F1_gm for overlapping multi-resolution
+clusterings with possible unequal node base and standard NMI for
+non-overlapping clustering on a single resolution.
 
 Usage: xmeasures [OPTIONS] clustering1 clustering2
 
-  clustering  - input file, collection of the clusters to be evaluated
+  clustering  - input file, collection of the clusters to be evaluated.
+
+Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is
+compared to another collection, which is typically the ground-truth.
+Evaluating measures are:
+
+  - F1_gm  - F1 of the [weighted] average greatest match evaluated by F1 or
+partial probability
+
+  - NMI  - Normalized Mutual Information, normalized by max or also avg and
+mininformation content denominators.
+ATTENTION: this is standard NMI, which should be used ONLY for the HARD
+partitioning evaluation (non-overlapping clustering on a single resolution).
+it penalized overlapping and multi-resolution structures.
+NOTE: unequal node base in the clusterings is allowed, it penalizes the match.
+Use [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary
+collections evaluation.
+
 
   -h, --help              Print help and exit
   -V, --version           Print version and exit
+  -o, --ovp               evaluate overlapping clusters instead of
+                            multi-resolution  (default=off)
+  -s, --sync=filename     synchronize with the node base, skipping the
+                            non-matching nodes.
+                            NOTE: the node base can be either a separate, or an
+                            evaluating CNL file, in the latter case this option
+                            should precede the evaluating filename not
+                            repeating it
   -m, --membership=FLOAT  average expected membership of the nodes in the
-                            clusters, > 0, typically >= 1  (default=`1')
+                            clusters, > 0, typically >= 1. Used only for the
+                            containers preallocation facilitating estimation of
+                            the nodes number if not specified in the file
+                            header.  (default=`1')
 
- Mode: f1
-  F1 evaluation of the [weighted] average of the greatest (maximal) match by F1
-  or partial probability.
-   F1 evaluates clusters on multiple resolutions and applicable for overlapping
-  clustering only as approximate evaluation
-  -f, --f1f1              evaluate F1 of the [weighted] average of the greatest
-                            (maximal) match by F1  (default=off)
-  -p, --f1pp              evaluate F1 of the [weighted] average of the greatest
-                            (maximal) match by partial probability.
-                             NOTE: typically F1pp < F1f1 and fits to evaluate
-                            similar collections  (default=off)
+F1 Options:
+  -f, --f1                evaluate F1 of the [weighted] average of the greatest
+                            (maximal) match by F1 or partial probability
+                            (default=off)
+  -p, --prob              use partial probability instead of the F1 for the
+                            matching.
+                            NOTE: typically F1pp < F1f1 and discriminates
+                            similar collections better.  (default=off)
   -u, --unweighted        evaluate simple average of the best matches instead
                             of weighted by the cluster size  (default=off)
 
- Mode: nmi
-  NMI (Normalized Mutual Information) evaluation.
-  Standard NMI is evaluated, which is not applicable for overlapping or
-  multi-resolution clustering
-  -n, --nmi               evaluate NMI  (default=off)
+NMI Options:
+  -n, --nmi               evaluate NMI (Normalized Mutual Information)
+                            (default=off)
+  -a, --all               evaluate all NMIs using avg and min denominators
+                            besides the max one  (default=off)
   -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,
                             bits) for the information measuring  (default=off)
 ```

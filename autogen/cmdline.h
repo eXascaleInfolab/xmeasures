@@ -39,6 +39,8 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
+  int ovp_flag;	/**< @brief evaluate overlapping clusters instead of multi-resolution (default=off).  */
+  const char *ovp_help; /**< @brief evaluate overlapping clusters instead of multi-resolution help description.  */
   char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
   NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
   char * sync_orig;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
@@ -65,6 +67,7 @@ struct gengetopt_args_info
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
+  unsigned int ovp_given ;	/**< @brief Whether ovp was given.  */
   unsigned int sync_given ;	/**< @brief Whether sync was given.  */
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */

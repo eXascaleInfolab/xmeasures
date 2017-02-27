@@ -3,27 +3,33 @@
 package "xmeasures"
 version "2.3"
 
-purpose "Extrinsic measures evaluation for overlapping multi-resolution\
- clusterings with possible unequal node base: F1_gm and NMI."
+purpose "Extrinsic measures evaluation: F1_gm for overlapping multi-resolution\
+ clusterings with possible unequal node base and standard NMI for non-overlapping\
+ clustering on a single resolution."
+# Extrinsic clustering measures evaluation for the multi-resolution clustering with overlaps (covers): F1_gm and NMI (compatible to the standard NMI when applied to the single resolution non-overlapping collections of clusters).
 
 description "Extrinsic measures are evaluated, i.e. clustering (collection of\
  clusters) is compared to another collection, which is typically the ground-truth.
 Evaluating measures are:
+ 
   - F1_gm  - F1 of the [weighted] average greatest match evaluated by F1 or partial\
  probability
+ 
   - NMI  - Normalized Mutual Information, normalized by max or also avg and min\
-information content denominators. NMI_avg is fully compatible with the standard
-NMI for hard partitioning (non-overlapping clustering, but also applicable for\
- the overlapping and multi-resolution clusterings.
-NOTE: unequal node base in the clusterings is allowed, it penalizes the match."
-
-# ? NMI_max overlapping is compatible with onmi and NMI_max multi-resolution with gecmi ?
+information content denominators.
+ATTENTION: this is standard NMI, which should be used ONLY for the HARD\
+ partitioning evaluation (non-overlapping clustering on a single resolution).\
+  it penalized overlapping and multi-resolution structures.
+NOTE: unequal node base in the clusterings is allowed, it penalizes the match.
+Use [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary\
+ collections evaluation.
+"
 
 usage "xmeasures [OPTIONS] clustering1 clustering2
 
   clustering  - input file, collection of the clusters to be evaluated."
 
-#option  "ovp" o  "evaluate overlapping clusters instead of multi-resolution.
+option  "ovp" o  "evaluate overlapping clusters instead of multi-resolution"  flag off
 #NOTE: multi-resolution mode can be used as approximation of the overlapping\
 # clusters evaluation, but not vice verse"  flag off
 # Note: ovp option requires shares evaluation/reading and processing of the directory

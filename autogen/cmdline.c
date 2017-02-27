@@ -25,17 +25,18 @@
 
 #include "cmdline.h"
 
-const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation for overlapping multi-resolution clusterings with\npossible unequal node base: F1_gm and NMI.";
+const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation: F1_gm for overlapping multi-resolution\nclusterings with possible unequal node base and standard NMI for\nnon-overlapping clustering on a single resolution.";
 
 const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.";
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another collection, which is typically the ground-truth.\nEvaluating measures are:\n  - F1_gm  - F1 of the [weighted] average greatest match evaluated by F1 or\npartial probability\n  - NMI  - Normalized Mutual Information, normalized by max or also avg and\nmininformation content denominators. NMI_avg is fully compatible with the\nstandard\nNMI for hard partitioning (non-overlapping clustering, but also applicable for\nthe overlapping and multi-resolution clusterings.\nNOTE: unequal node base in the clusterings is allowed, it penalizes the match.";
+const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another collection, which is typically the ground-truth.\nEvaluating measures are:\n \n  - F1_gm  - F1 of the [weighted] average greatest match evaluated by F1 or\npartial probability\n \n  - NMI  - Normalized Mutual Information, normalized by max or also avg and\nmininformation content denominators.\nATTENTION: this is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nit penalized overlapping and multi-resolution structures.\nNOTE: unequal node base in the clusterings is allowed, it penalizes the match.\nUse [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary\ncollections evaluation.\n";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
+  "  -o, --ovp               evaluate overlapping clusters instead of\n                            multi-resolution  (default=off)",
   "  -s, --sync=filename     synchronize with the node base, skipping the\n                            non-matching nodes.\n                            NOTE: the node base can be either a separate, or an\n                            evaluating CNL file, in the latter case this option\n                            should precede the evaluating filename not\n                            repeating it",
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1. Used only for the\n                            containers preallocation facilitating estimation of\n                            the nodes number if not specified in the file\n                            header.  (default=`1')",
   "\nF1 Options:",
@@ -75,6 +76,7 @@ void clear_given (struct gengetopt_args_info *args_info)
 {
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
+  args_info->ovp_given = 0 ;
   args_info->sync_given = 0 ;
   args_info->membership_given = 0 ;
   args_info->f1_given = 0 ;
@@ -89,6 +91,7 @@ static
 void clear_args (struct gengetopt_args_info *args_info)
 {
   FIX_UNUSED (args_info);
+  args_info->ovp_flag = 0;
   args_info->sync_arg = NULL;
   args_info->sync_orig = NULL;
   args_info->membership_arg = 1;
@@ -109,14 +112,15 @@ void init_args_info(struct gengetopt_args_info *args_info)
 
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
-  args_info->sync_help = gengetopt_args_info_help[2] ;
-  args_info->membership_help = gengetopt_args_info_help[3] ;
-  args_info->f1_help = gengetopt_args_info_help[5] ;
-  args_info->prob_help = gengetopt_args_info_help[6] ;
-  args_info->unweighted_help = gengetopt_args_info_help[7] ;
-  args_info->nmi_help = gengetopt_args_info_help[9] ;
-  args_info->all_help = gengetopt_args_info_help[10] ;
-  args_info->ln_help = gengetopt_args_info_help[11] ;
+  args_info->ovp_help = gengetopt_args_info_help[2] ;
+  args_info->sync_help = gengetopt_args_info_help[3] ;
+  args_info->membership_help = gengetopt_args_info_help[4] ;
+  args_info->f1_help = gengetopt_args_info_help[6] ;
+  args_info->prob_help = gengetopt_args_info_help[7] ;
+  args_info->unweighted_help = gengetopt_args_info_help[8] ;
+  args_info->nmi_help = gengetopt_args_info_help[10] ;
+  args_info->all_help = gengetopt_args_info_help[11] ;
+  args_info->ln_help = gengetopt_args_info_help[12] ;
   
 }
 
@@ -245,6 +249,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "help", 0, 0 );
   if (args_info->version_given)
     write_into_file(outfile, "version", 0, 0 );
+  if (args_info->ovp_given)
+    write_into_file(outfile, "ovp", 0, 0 );
   if (args_info->sync_given)
     write_into_file(outfile, "sync", args_info->sync_orig, 0);
   if (args_info->membership_given)
@@ -559,6 +565,7 @@ cmdline_parser_internal (
       static struct option long_options[] = {
         { "help",	0, NULL, 'h' },
         { "version",	0, NULL, 'V' },
+        { "ovp",	0, NULL, 'o' },
         { "sync",	1, NULL, 's' },
         { "membership",	1, NULL, 'm' },
         { "f1",	0, NULL, 'f' },
@@ -570,7 +577,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVs:m:fpunae", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVos:m:fpunae", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -586,6 +593,16 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
+        case 'o':	/* evaluate overlapping clusters instead of multi-resolution.  */
+        
+        
+          if (update_arg((void *)&(args_info->ovp_flag), 0, &(args_info->ovp_given),
+              &(local_args_info.ovp_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "ovp", 'o',
+              additional_error))
+            goto failure;
+        
+          break;
         case 's':	/* synchronize with the node base, skipping the non-matching nodes.
         NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
         
