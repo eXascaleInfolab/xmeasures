@@ -96,21 +96,23 @@ int main(int argc, char **argv)
 		}
 
 		// Evaluate and output measures
-		if(args_info.f1_given)
-			printf("F1_gm (%s avg of %s): %G", args_info.unweighted_flag
-				? "unweighted" : "weighed", args_info.prob_flag ? "PPs" : "F1s"
-				, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag
-				, args_info.prob_flag));
-
+		// Note: evaluation of overlapping F1 after NMI allows to reuse some
+		// calculations, for other cases the order of evaluations does not matter
 		if(args_info.nmi_flag) {
-			if(args_info.f1_given)
-				fputs("; ", stdout);
 			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag);
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
 			if(args_info.all_flag)
 				printf("NMI_max: %G, NMI_avg: %G, NMI_min: %G", nmix, 2 * rnmi.mi
 					/ (rnmi.h1 + rnmi.h2), rnmi.mi / std::min(rnmi.h1, rnmi.h2));
 			else printf("NMI_max: %G", nmix);
+		}
+		if(args_info.f1_flag) {
+			if(args_info.nmi_flag)
+				fputs("; ", stdout);
+			printf("F1_gm (%s avg of %s): %G", args_info.unweighted_flag
+				? "unweighted" : "weighed", args_info.prob_flag ? "PPs" : "F1s"
+				, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag
+				, args_info.prob_flag));
 		}
 		puts("");  // \n
 

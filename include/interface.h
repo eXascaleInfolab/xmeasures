@@ -78,13 +78,24 @@ public:
     //!
     //! \param orig ClusterT*  - counter origin
     //! \return void
-	void operator()(ClusterT* orig) noexcept
+	void operator()(ClusterT* orig, Count cont)
+#if VALIDATE < 2
+	noexcept
+#endif // VALIDATE
 	{
 		if(m_orig != orig) {
 			m_orig = orig;
 			m_count = 0;
 		}
-		++m_count;
+		if(is_integral<CountT>::value)
+			++m_count;
+		else {
+#if VALIDATE >= 2
+			if(cont <= 0 || cont > 1)
+				throw invalid_argument("operator(), cont should E (0, 1]\n");
+#endif // VALIDATE
+			m_count += cont;
+		}
 	}
 
     //! \brief Get counted value
@@ -116,11 +127,19 @@ struct Cluster {
 		, "Counter(), Count should be an arithmetic type");
 	using CountT = Count;  //!< Count type, arithmetic
 
-	RawIds  members;  //!< Node ids, unordered
-	union {
-		Counter<Count>  counter;  //!< Cluster matching counter
-		Count  mbscont;  //!< Members contribution, raw content of information
+	//! An empty stub type
+	struct EmptyStub {
+		constexpr operator bool() const noexcept  { return false; }
+		constexpr const auto& operator= (const Count&) const noexcept  { return *this;}
+		constexpr const auto& operator+= (const Count&) const noexcept  { return *this; }
 	};
+
+	RawIds  members;  //!< Node ids, unordered
+	// Note: used by F1 only and always
+	Counter<Count>  counter;  //!< Cluster matching counter
+	//!< Contribution from members from members
+	// Note: used only in case of overlaps
+	conditional_t<is_floating_point<Count>::value, Count, EmptyStub>  mbscont;
 
     //! Default constructor
 	Cluster();
@@ -133,10 +152,10 @@ struct Cluster {
     //! \brief F1 measure
     //! \pre Clusters should be valid, i.e. non-empty
     //!
-    //! \param matches Id  - the number of matched members
-    //! \param size Id  - size of the matching foreign cluster
+    //! \param matches CountT  - the number of matched members
+    //! \param capacity CountT  - contributions capacity of the matching foreign cluster
     //! \return AccProb  - resulting F1
-	AccProb f1(Id matches, Id size) const
+	AccProb f1(CountT matches, CountT capacity) const
 #if VALIDATE < 2
 	noexcept
 #endif // VALIDATE
@@ -145,11 +164,12 @@ struct Cluster {
 		// pr = m / c1
 		// rc = m / c2
 		// F1 = 2 * m/c1 * m/c2 / (m/c1 + m/c2) = 2 * m / (c2 + c1)
+		const auto  contrib = is_floating_point<CountT>::value ? mbscont : members.size();
 #if VALIDATE >= 2
-		if(!size || !members.size())
+		if(capacity <= 0 || contrib <= 0)
 			throw invalid_argument("f1(), both clusters should be non-empty");
 #endif // VALIDATE
-		return 2 * matches / AccProb(size + members.size());  // E [0, 1]
+		return 2 * matches / AccProb(capacity + contrib);  // E [0, 1]
 		// Note that partial probability (non-normalized to the remained matches,
 		// it says only how far this match from the full match) of the match is:
 		// P = AccProb(matches * matches) / AccProb(size * members.size()),
@@ -160,21 +180,22 @@ struct Cluster {
     //! \brief Partial probability of the match (non-normalized to the other matches)
     //! \pre Clusters should be valid, i.e. non-empty
     //!
-    //! \param matches Id  - the number of matched members
-    //! \param size Id  - size of the matching foreign cluster
+    //! \param matches CountT  - the number of matched members
+    //! \param capacity CountT  - contributions capacity  of the matching foreign cluster
     //! \return AccProb  - resulting probability
-	AccProb pprob(Id matches, Id size) const
+	AccProb pprob(CountT matches, CountT capacity) const
 #if VALIDATE < 2
 	noexcept
 #endif // VALIDATE
 	{
 		// P = P1 * P2 = m/n1 * m/n2 = m*m / (n1*n2),
 		// where nodes contribution instead of the size should be use for overlaps.
+		const auto  contrib = is_floating_point<CountT>::value ? mbscont : members.size();
 #if VALIDATE >= 2
-		if(!size || !members.size())
+		if(capacity <= 0 || contrib <= 0)
 			throw invalid_argument("pprob(), both clusters should be non-empty");
 #endif // VALIDATE
-		return AccProb(matches * matches) / AccProb(size * members.size());  // E [0, 1]
+		return AccProb(matches * matches) / AccProb(capacity * contrib);  // E [0, 1]
 	}
 };
 
@@ -406,14 +427,18 @@ template <typename Count>
 class Collection: public NodeBaseI {
 public:
 	using CollectionT = Collection<Count>;
+	//! Accumulated contribution
+	constexpr static bool  overlap = is_floating_point<Count>::value;
+	using AccCont = conditional_t<overlap, Count, AccId>;
+	//! Clusters matching matrix
+	using ClustersMatching = SparseMatrix<Cluster<Count>*, AccCont>;  // Used only for NMI
 private:
 	Clusters<Count>  m_cls;  //!< Clusters
 	NodeClusters<Count>  m_ndcs;  //!< Node clusters relations
 	size_t  m_ndshash;  //!< Nodes hash (of unique node ids only, not all members), 0 means was not evaluated
 	//mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
-	//! Accumulated contribution
-	using AccCont = conditional_t<is_floating_point<Count>::value, Count, AccId>;
-	mutable AccCont  m_contsum;  //!< Sum of contributions of all members in each cluster
+	//! Sum of contributions of all members in each cluster
+	mutable AccCont  m_contsum;  // Used by NMI only
 protected:
     //! Default constructor
 	Collection(): m_cls(), m_ndcs(), m_ndshash(0), m_contsum(0)  {}  //, m_dirty(false)  {}
@@ -469,12 +494,7 @@ public:
 	//! \return RawNmi  - resulting NMI
 	static RawNmi nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase=false);
 protected:
-    //! \brief Synchronize node base
-    //!
-    //! \param cn CollectionT&  - collection to be synchronize with
-    //! \return void
-	void synchronize(CollectionT& cn) noexcept;
-
+	// F1-related functions ----------------------------------------------------
     //! \brief Average of the maximal matches (by F1 or partial probabilities)
     //! relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping
@@ -498,6 +518,7 @@ protected:
     //! \return Probs - resulting max F1 or partial probability for each member node
 	Probs gmatches(const CollectionT& cn, bool prob) const;
 
+	// NMI-related functions ---------------------------------------------------
 	//! \brief NMI evaluation considering overlaps, multi-resolution and possibly
 	//! unequal node base
 	//! \note Undirected (symmetric) evaluation
@@ -507,6 +528,19 @@ protected:
     //! for the information measuring
     //! \return RawNmi  - resulting NMI
 	RawNmi nmi(const CollectionT& cn, bool expbase) const;
+
+    //! \brief Clear contributions in each cluster and optionally
+    //! evaluate the clusters matching
+    //!
+    //! \param cn const CollectionT&  - foreign collection to be processed with this one
+    //! \param[out] clsmm=nullptr ClustersMatchingT*  - clusters matching matrix to be filled
+    //! \return AccCont  - sum of all values of the clsmm matrix if specified
+	AccCont evalconts(const CollectionT& cn, ClustersMatching* clsmm=nullptr) const;
+
+    //! \brief Clear contributions in each cluster
+    //!
+    //! \return void
+	void clearconts() const noexcept;
 };
 
 #endif // INTERFACE_H
