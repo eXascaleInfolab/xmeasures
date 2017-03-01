@@ -734,8 +734,8 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), c2csum: %.3G (- %.3G), cmmsum: %.3G\n"
 		, AccProb(m_contsum), AccProb(econt1), AccProb(cn.m_contsum)
 		, AccProb(econt2), AccProb(cmmsum));
-	}
 #endif // TRACE
+	}
 #endif // VALIDATE 1
 	// Set results
 	if(pclsmm)
