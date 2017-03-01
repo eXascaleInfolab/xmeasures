@@ -668,6 +668,10 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 			", so some unequal nodes might be skipped on evaluation, which cause"
 			" approximate results\n", stderr);
 
+	// Set contributions
+	m_contsum = cmmsum + econt1;
+	cn.m_contsum = cmmsum + econt2;
+
 #if VALIDATE >= 1
 	// Validate if there is anything
 	if(!clsmm.empty()) {
@@ -722,13 +726,9 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	}
 	}
 #endif // VALIDATE 1
-
 	// Set results
 	if(pclsmm)
 		*pclsmm = move(clsmm);
-	// Set contributions
-	m_contsum = cmmsum + econt1;
-	cn.m_contsum = cmmsum + econt2;
 
 	return cmmsum;
 }
