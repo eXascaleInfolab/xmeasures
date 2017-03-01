@@ -1,6 +1,6 @@
 # xmeasures - Extrinsic Clustering Measures
-Extrinsic clustering measures evaluation for the multi-resolution clustering with overlaps (covers): F1_gm for overlapping multi-resolution clusterings with possible unequal node base and standard NMI for non-overlapping clustering on a single resolution.  
-`xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark.
+Extremely fast evaluation of the extrinsic clustering measures: F1_gm for overlapping multi-resolution clusterings with possible unequal node base and standard NMI for non-overlapping clustering on a single resolution.  
+`xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark to evaluate clustering of large networks. `xmeasures` evaluates F1 and NMI for collections of hundreds thousands of clusters withing less than 10 sec on an ordinary laptop using a single CPU core.
 
 ## Content
 - [Deployment](#deployment)
@@ -95,9 +95,14 @@ Evaluate F1 of the weighted average of the greatest (maximal) match by F1s:
 $ ./xmeasures -f data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
-Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probabilities:
+Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probabilities and synchronize the node base with the first evaluating collection:
 ```
-$ ./xmeasures -pu data/3cls5nds.cnl data/4cls6nds.cnl
+$ ./xmeasures -fpus data/3cls5nds.cnl data/4cls6nds.cnl
+```
+
+Evaluate F1 of the weighted average of the greatest (maximal) match by F1s, NMI with all denominators and synchronize node base of the evaluating collections with `1lev4nds2cls.cnl`:
+```
+$ ./xmeasures -f -na -s data/1lev4nds2cls.cnl data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
 # Related Projects

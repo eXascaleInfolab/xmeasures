@@ -33,12 +33,14 @@ using std::is_integral;
 using std::is_pointer;
 using std::is_floating_point;
 using std::is_arithmetic;
+using std::is_same;
 //using std::enable_if;
 using std::enable_if_t;
 using std::conditional_t;
 using std::numeric_limits;
 #if VALIDATE >= 2
 using std::invalid_argument;
+using std::domain_error;
 #endif // VALIDATE
 
 // Data Types ------------------------------------------------------------------
@@ -130,8 +132,28 @@ struct Cluster {
 	//! An empty stub type
 	struct EmptyStub {
 		constexpr operator bool() const noexcept  { return false; }
-		constexpr const auto& operator= (const Count&) const noexcept  { return *this;}
-		constexpr const auto& operator+= (const Count&) const noexcept  { return *this; }
+
+		constexpr const auto& operator= (const Count&) const
+#if VALIDATE < 2
+		noexcept
+#endif // VALIDATE
+		{
+#if VALIDATE >= 2
+			throw domain_error("EmptyStub=() should not be called");
+#endif // VALIDATE
+			return *this;
+		}
+
+		constexpr const auto& operator+= (const Count&) const
+#if VALIDATE < 2
+		noexcept
+#endif // VALIDATE
+		{
+#if VALIDATE >= 2
+			throw domain_error("EmptyStub+=() should not be called");
+#endif // VALIDATE
+			return *this;
+		}
 	};
 
 	RawIds  members;  //!< Node ids, unordered
@@ -164,12 +186,11 @@ struct Cluster {
 		// pr = m / c1
 		// rc = m / c2
 		// F1 = 2 * m/c1 * m/c2 / (m/c1 + m/c2) = 2 * m / (c2 + c1)
-		const auto  contrib = is_floating_point<CountT>::value ? mbscont : members.size();
 #if VALIDATE >= 2
-		if(capacity <= 0 || contrib <= 0)
+		if(matches < 0 || capacity < matches || cont() <= 0)
 			throw invalid_argument("f1(), both clusters should be non-empty");
 #endif // VALIDATE
-		return 2 * matches / AccProb(capacity + contrib);  // E [0, 1]
+		return 2 * matches / AccProb(capacity + cont());  // E [0, 1]
 		// Note that partial probability (non-normalized to the remained matches,
 		// it says only how far this match from the full match) of the match is:
 		// P = AccProb(matches * matches) / AccProb(size * members.size()),
@@ -190,12 +211,19 @@ struct Cluster {
 	{
 		// P = P1 * P2 = m/n1 * m/n2 = m*m / (n1*n2),
 		// where nodes contribution instead of the size should be use for overlaps.
-		const auto  contrib = is_floating_point<CountT>::value ? mbscont : members.size();
 #if VALIDATE >= 2
-		if(capacity <= 0 || contrib <= 0)
+		if(matches < 0 || capacity < matches || cont() <= 0)
 			throw invalid_argument("pprob(), both clusters should be non-empty");
 #endif // VALIDATE
-		return AccProb(matches * matches) / AccProb(capacity * contrib);  // E [0, 1]
+		return AccProb(matches * matches) / AccProb(capacity * cont());  // E [0, 1]
+	}
+
+    //! \brief Cluster members contribution
+    //!
+    //! \return Count  - total contribution from the members
+	Count cont() const noexcept
+	{
+		return is_same<decltype(mbscont), EmptyStub>::value ? members.size() : mbscont;
 	}
 };
 
@@ -428,8 +456,8 @@ class Collection: public NodeBaseI {
 public:
 	using CollectionT = Collection<Count>;
 	//! Accumulated contribution
-	constexpr static bool  overlap = is_floating_point<Count>::value;
-	using AccCont = conditional_t<overlap, Count, AccId>;
+	constexpr static bool  m_overlaps = is_floating_point<Count>::value;
+	using AccCont = conditional_t<m_overlaps, Count, AccId>;
 	//! Clusters matching matrix
 	using ClustersMatching = SparseMatrix<Cluster<Count>*, AccCont>;  // Used only for NMI
 private:

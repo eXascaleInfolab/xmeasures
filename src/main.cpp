@@ -43,12 +43,7 @@ int main(int argc, char **argv)
 			cmdline_parser_print_help();
 			return 1;
 		}
-		//printf("inpfiles: %i,  sync_base: %s, cn1: %s, cn2: %s\n", args_info.inputs_num
-		//	, args_info.sync_given ? args_info.sync_arg : "", args_info.inputs[0]
-		//	, args_info.inputs_num >= 2 ? args_info.inputs[1] : args_info.sync_arg);
-		//return 1;
 	}
-
 
 	// Load node base if required
 	NodeBase  ndbase;
@@ -57,8 +52,8 @@ int main(int argc, char **argv)
 		ndbase = NodeBase::load(args_info.sync_arg, args_info.membership_arg, &nbhash);
 
 	auto process = [&](auto evaluation) -> int {
-		using CountT = decltype(evaluation);
-		using Collection = Collection<CountT>;
+		using Count = decltype(evaluation);
+		using Collection = Collection<Count>;
 		// Load collections as relations
 		::AggHash  cn1hash, cn2hash;
 		auto cn1 = Collection::load(args_info.inputs[0], args_info.membership_arg, &cn1hash
@@ -114,7 +109,8 @@ int main(int argc, char **argv)
 				, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag
 				, args_info.prob_flag));
 		}
-		puts("");  // \n
+		puts(string(" (evaluated considering " ).append(is_floating_point<Count>::value
+			? "overlaps" : "multi-resolution").append(")").c_str());  // \n
 
 		return 0;
 	};
