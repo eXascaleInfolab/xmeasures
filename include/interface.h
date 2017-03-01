@@ -129,32 +129,32 @@ struct Cluster {
 		, "Counter(), Count should be an arithmetic type");
 	using CountT = Count;  //!< Count type, arithmetic
 
-	//! An empty stub type
-	struct EmptyStub {
-		constexpr operator bool() const noexcept  { return false; }
-
-		constexpr const auto& operator= (const Count&) const
-#if VALIDATE < 2
-		noexcept
-#endif // VALIDATE
-		{
-#if VALIDATE >= 2
-			throw domain_error("EmptyStub=() should not be called");
-#endif // VALIDATE
-			return *this;
-		}
-
-		constexpr const auto& operator+= (const Count&) const
-#if VALIDATE < 2
-		noexcept
-#endif // VALIDATE
-		{
-#if VALIDATE >= 2
-			throw domain_error("EmptyStub+=() should not be called");
-#endif // VALIDATE
-			return *this;
-		}
-	};
+//	//! An empty stub type
+//	struct EmptyStub {
+//		constexpr operator bool() const noexcept  { return false; }
+//
+//		constexpr const auto& operator= (const Count&) const
+//#if VALIDATE < 2
+//		noexcept
+//#endif // VALIDATE
+//		{
+//#if VALIDATE >= 2
+//			throw domain_error("EmptyStub=() should not be called");
+//#endif // VALIDATE
+//			return *this;
+//		}
+//
+//		constexpr const auto& operator+= (const Count&) const
+//#if VALIDATE < 2
+//		noexcept
+//#endif // VALIDATE
+//		{
+//#if VALIDATE >= 2
+//			throw domain_error("EmptyStub+=() should not be called");
+//#endif // VALIDATE
+//			return *this;
+//		}
+//	};
 
 	RawIds  members;  //!< Node ids, unordered
 	// Note: used by F1 only and always
@@ -192,7 +192,7 @@ struct Cluster {
 		// F1 = 2 * m/c1 * m/c2 / (m/c1 + m/c2) = 2 * m / (c2 + c1)
 		// ATTENTION: F1 compares clusters per-pair, so it is much simpler and has another
 		// semantics of contribution for the multi-resolution case
-		constexpr Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
+		const Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
 #if VALIDATE >= 2
 		if(matches < 0 || capacity < matches || contrib <= 0)
 			throw invalid_argument("f1(), both clusters should be non-empty");
@@ -220,7 +220,7 @@ struct Cluster {
 		// where nodes contribution instead of the size should be use for overlaps.
 		// ATTENTION: F1 compares clusters per-pair, so it is much simpler and has another
 		// semantics of contribution for the multi-resolution case
-		constexpr Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
+		const Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
 #if VALIDATE >= 2
 		if(matches < 0 || capacity < matches || contrib <= 0)
 			throw invalid_argument("pprob(), both clusters should be non-empty");
@@ -233,7 +233,8 @@ struct Cluster {
     //! \return Count  - total contribution from the members
 	Count cont() const noexcept
 	{
-		return is_same<decltype(mbscont), EmptyStub>::value ? members.size() : mbscont;
+//		return is_same<decltype(mbscont), EmptyStub>::value ? members.size() : mbscont;
+		return mbscont;
 	}
 };
 

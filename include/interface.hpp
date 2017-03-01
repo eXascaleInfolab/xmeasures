@@ -345,7 +345,9 @@ AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool pro
 		auto icl = m_cls.begin();
 		for(size_t i = 0; i < csnum; ++i) {
 			// Evaluate members considering their shared contributions
-			AccCont  ccont = (*icl)->cont();
+			// ATTENTION: F1 compares clusters per-pair, so it is much simpler and
+			// has another semantics of contribution for the multi-resolution case
+			AccCont  ccont = m_overlaps ? (*icl)->cont() : (*icl)->members.size();
 #if VALIDATE >= 2
 			assert(ccont > 0 && "avggms(), the contribution should be positive");
 #endif // VALIDATE
@@ -625,14 +627,21 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 		const auto  cls2num = incs2 != cn.m_ndcs.end() ? incs2->second.size() : 0;
 		AccProb  share;
 		if(cls2num)
-			share = updateCont(incs2->second) * share1;  // Note: shares already divided by clsXnum
+			share = (m_overlaps ? updateCont(incs2->second)
+				: mbcont(incs2->second.size())) * share1;  // Note: shares already divided by clsXnum
 		for(auto cl: ncs.second) {
-			cl->mbscont += share1;
+			if(m_overlaps)
+				cl->mbscont += share1;
 			// Update clusters matching matrix
 			if(cls2num) {
 				cmmsum += share * cls2num;
-				for(auto cl2: incs2->second)
+				for(auto cl2: incs2->second) {
 					clsmm(cl, cl2) += share;  // Note: contains only POSITIVE values
+					if(!m_overlaps) {
+						cl->mbscont += share;
+						cl2->mbscont += share;
+					}
+				}
 			}
 		}
 	}

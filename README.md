@@ -95,9 +95,9 @@ Evaluate F1 of the weighted average of the greatest (maximal) match by F1s:
 $ ./xmeasures -f data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
-Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probabilities and synchronize the node base with the first evaluating collection:
+Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probabilities and synchronize the node base with the first evaluating collection, and considering overlapping clusters instead of multi-resolutions (`-o` does not matter for the case of non-overlapping single resolution collections):
 ```
-$ ./xmeasures -fpus data/3cls5nds.cnl data/4cls6nds.cnl
+$ ./xmeasures -fpus -o data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
 Evaluate F1 of the weighted average of the greatest (maximal) match by F1s, NMI with all denominators and synchronize node base of the evaluating collections with `1lev4nds2cls.cnl`:
