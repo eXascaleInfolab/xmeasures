@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 				", size: %lu, ids: %lu, id2s: %lu);  synchronize: %s\n"
 				, cn1.ndsnum(), cn1hash.hash(), cn1hash.size(), cn1hash.idsum(), cn1hash.id2sum()
 				, cn2.ndsnum(), cn2hash.hash(), cn2hash.size(), cn2hash.idsum(), cn2hash.id2sum()
-				, daoc::to_cstr(args_info.sync_given));
+				, daoc::toYesNo(args_info.sync_given));
 			if(args_info.sync_given) {
 				fputs("ERROR, the nodes base had to be synchronized\n", stderr);
 				return 1;

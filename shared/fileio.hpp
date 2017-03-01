@@ -323,11 +323,11 @@ size_t estimateCnlNodes(size_t filesize, float membership=1.f) noexcept;
 //! \return size_t  - estimated number of clusters
 size_t estimateClusters(size_t ndsnum, float membership=1.f) noexcept;
 
-//! \brief Convert bool to c-string
+//! \brief Convert value to yes/no c-string
 //!
-//! \param val bool  - boolean to be converted
+//! \param val bool  - value to be converted
 //! \return constexpr const char*  - resulting c-string
-constexpr const char* to_cstr(bool val) noexcept  { return val ? "yes" : "no"; }
+constexpr const char* toYesNo(bool val) noexcept  { return val ? "yes" : "no"; }
 
 // File I/O templates definition -----------------------------------------------
 template <typename Id, typename AccId>
