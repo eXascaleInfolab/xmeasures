@@ -70,7 +70,7 @@ public:
 	using ClusterT = Cluster<Count>;
 private:
 	ClusterT*  m_orig;  //!<  Originator cluster
-	CountT  m_count;  //!<  Occurrences counter, <= members.size()
+	CountT  m_count;  //!<  Occurrences counter, <= members size
 public:
 
     //! Default constructor
@@ -159,9 +159,13 @@ struct Cluster {
 	RawIds  members;  //!< Node ids, unordered
 	// Note: used by F1 only and always
 	Counter<Count>  counter;  //!< Cluster matching counter
+	////! Accumulated contribution
+	//using AccCont = conditional_t<m_overlaps, Count, AccId>;
 	//!< Contribution from members from members
-	// Note: used only in case of overlaps
-	conditional_t<is_floating_point<Count>::value, Count, EmptyStub>  mbscont;
+	// Note: used only in case of overlaps by all measures, and by NMI only
+	// in case of multiple resolutions
+	//conditional_t<is_floating_point<Count>::value, Count, EmptyStub>  mbscont;
+	Count  mbscont;
 
     //! Default constructor
 	Cluster();
@@ -174,10 +178,10 @@ struct Cluster {
     //! \brief F1 measure
     //! \pre Clusters should be valid, i.e. non-empty
     //!
-    //! \param matches CountT  - the number of matched members
-    //! \param capacity CountT  - contributions capacity of the matching foreign cluster
+    //! \param matches Count  - the number of matched members
+    //! \param capacity Count  - contributions capacity of the matching foreign cluster
     //! \return AccProb  - resulting F1
-	AccProb f1(CountT matches, CountT capacity) const
+	AccProb f1(Count matches, Count capacity) const
 #if VALIDATE < 2
 	noexcept
 #endif // VALIDATE
@@ -186,11 +190,14 @@ struct Cluster {
 		// pr = m / c1
 		// rc = m / c2
 		// F1 = 2 * m/c1 * m/c2 / (m/c1 + m/c2) = 2 * m / (c2 + c1)
+		// ATTENTION: F1 compares clusters per-pair, so it is much simpler and has another
+		// semantics of contribution for the multi-resolution case
+		constexpr Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
 #if VALIDATE >= 2
-		if(matches < 0 || capacity < matches || cont() <= 0)
+		if(matches < 0 || capacity < matches || contrib <= 0)
 			throw invalid_argument("f1(), both clusters should be non-empty");
 #endif // VALIDATE
-		return 2 * matches / AccProb(capacity + cont());  // E [0, 1]
+		return 2 * matches / AccProb(capacity + contrib);  // E [0, 1]
 		// Note that partial probability (non-normalized to the remained matches,
 		// it says only how far this match from the full match) of the match is:
 		// P = AccProb(matches * matches) / AccProb(size * members.size()),
@@ -201,21 +208,24 @@ struct Cluster {
     //! \brief Partial probability of the match (non-normalized to the other matches)
     //! \pre Clusters should be valid, i.e. non-empty
     //!
-    //! \param matches CountT  - the number of matched members
-    //! \param capacity CountT  - contributions capacity  of the matching foreign cluster
+    //! \param matches Count  - the number of matched members
+    //! \param capacity Count  - contributions capacity  of the matching foreign cluster
     //! \return AccProb  - resulting probability
-	AccProb pprob(CountT matches, CountT capacity) const
+	AccProb pprob(Count matches, Count capacity) const
 #if VALIDATE < 2
 	noexcept
 #endif // VALIDATE
 	{
 		// P = P1 * P2 = m/n1 * m/n2 = m*m / (n1*n2),
 		// where nodes contribution instead of the size should be use for overlaps.
+		// ATTENTION: F1 compares clusters per-pair, so it is much simpler and has another
+		// semantics of contribution for the multi-resolution case
+		constexpr Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
 #if VALIDATE >= 2
-		if(matches < 0 || capacity < matches || cont() <= 0)
+		if(matches < 0 || capacity < matches || contrib <= 0)
 			throw invalid_argument("pprob(), both clusters should be non-empty");
 #endif // VALIDATE
-		return AccProb(matches * matches) / AccProb(capacity * cont());  // E [0, 1]
+		return AccProb(matches * matches) / AccProb(capacity * contrib);  // E [0, 1]
 	}
 
     //! \brief Cluster members contribution
@@ -455,8 +465,9 @@ template <typename Count>
 class Collection: public NodeBaseI {
 public:
 	using CollectionT = Collection<Count>;
-	//! Accumulated contribution
+	//! Overlaps / multi-resolutions evaluation flag
 	constexpr static bool  m_overlaps = is_floating_point<Count>::value;
+	//! Accumulated contribution
 	using AccCont = conditional_t<m_overlaps, Count, AccId>;
 	//! Clusters matching matrix
 	using ClustersMatching = SparseMatrix<Cluster<Count>*, AccCont>;  // Used only for NMI

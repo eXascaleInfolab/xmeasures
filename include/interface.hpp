@@ -293,9 +293,7 @@ template <typename Count>
 Prob Collection<Count>::f1gm(const CollectionT& cn1, const CollectionT& cn2, bool weighted
 	, bool prob)
 {
-#if TRACE >= 3
-	fputs("f1gm(), F1 Max Avg of the first collection\n", stderr);
-#endif // TRACE
+	// Initialized accessory data for evaluations
 	if(is_floating_point<Count>::value && !(cn1.m_contsum && cn2.m_contsum)) {  // Note: strict ! is fine here
 		// Evaluate members contributions
         //! \brief Initialized cluster members contributions
@@ -318,6 +316,9 @@ Prob Collection<Count>::f1gm(const CollectionT& cn1, const CollectionT& cn2, boo
 		initconts(cn2);
 	}
 
+#if TRACE >= 3
+	fputs("f1gm(), F1 Max Avg of the first collection\n", stderr);
+#endif // TRACE
 	const AccProb  f1ga1 = cn1.avggms(cn2, weighted, prob);
 #if TRACE >= 3
 	fputs("f1gm(), F1 Max Avg of the second collection\n", stderr);
@@ -344,7 +345,7 @@ AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool pro
 		auto icl = m_cls.begin();
 		for(size_t i = 0; i < csnum; ++i) {
 			// Evaluate members considering their shared contributions
-			AccCont  ccont = m_overlaps ? (*icl)->cont() : (*icl)->members.size();
+			AccCont  ccont = (*icl)->cont();
 #if VALIDATE >= 2
 			assert(ccont > 0 && "avggms(), the contribution should be positive");
 #endif // VALIDATE
@@ -393,8 +394,10 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 						/ max(m_ndcs.at(nid).size(), cn.m_ndcs.at(nid).size()));
 				else mcl->counter(cl.get(), 1);
 				// Note: only the max value for match is sufficient
-				const Prob  match = ((*cl).*fmatch)(mcl->counter()
-					, m_overlaps ? mcl->cont() : mcl->members.size());
+				// ATTENTION: F1 compares clusters per-pair, so it is much simpler and
+				// has another semantics of contribution for the multi-resolution case
+				const Prob  match = ((*cl).*fmatch)(mcl->counter(), m_overlaps
+					? mcl->cont() : mcl->members.size());
 				if(gmatch < match)  // Note: <  usage is fine here
 					gmatch = match;
 			}
@@ -596,9 +599,8 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
     // ATTENTION: Such evaluation is applicable only for non-fuzzy overlaps (equal sharing)
 	auto updateCont = [mbcont](const ClusterPtrs<Count>& cls) -> AccCont {
 		const AccCont  share = mbcont(cls.size());
-		if(m_overlaps)  // Note: otherwise mbscont is EmptyStub
-			for(auto cl: cls)
-				cl->mbscont += share;
+		for(auto cl: cls)
+			cl->mbscont += share;
 		return share;
 	};
 
@@ -610,40 +612,28 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	// mutual matrix of clusters matching
 	// Note: in most cases collections has the same node base, or it was synchronized
 	// explicitly in advance, so handle unequal node base as a rare case
-	if(m_overlaps) {
-		for(auto& ncs: m_ndcs) {
-			// Note: always evaluate contributions to the clusters of this collection
-			const AccProb  share1 = mbcont(ncs.second.size());
-			// Evaluate contribution to the second collection if any
-			auto incs2 = cn.m_ndcs.find(ncs.first);
-			const auto  cls2num = incs2 != cn.m_ndcs.end() ? incs2->second.size() : 0;
-			AccProb  share;
-			if(cls2num)
-				share = updateCont(incs2->second) * share1;  // Note: shares already divided by clsXnum
-			for(auto cl: ncs.second) {
-				if(m_overlaps)  // Note: otherwise mbscont is EmptyStub
-					cl->mbscont += share1;
-				// Update clusters matching matrix
-				if(cls2num) {
-					cmmsum += share * cls2num;
-					for(auto cl2: incs2->second)
-						clsmm(cl, cl2) += share;  // Note: contains only POSITIVE values
-				}
-			}
-		}
-	} else {
-		for(auto& ncs: m_ndcs) {
-			// Take the next node if this is not present in the foreign collection
-			auto incs2 = cn.m_ndcs.find(ncs.first);
-			if(incs2 == cn.m_ndcs.end())
-				continue;
-			const auto& cls2 = incs2->second;
+	//
+	// ATTENTION: For 2+ levels cmmsum equals mbsnum * levs_num, in case of overlaps
+	// it also > mbsnum.
+	// =>  .mbscont is ALWAYS required except the case of non-overlapping clustering
+	// on a single resolution
+	for(auto& ncs: m_ndcs) {
+		// Note: always evaluate contributions to the clusters of this collection
+		const AccProb  share1 = mbcont(ncs.second.size());
+		// Evaluate contribution to the second collection if any
+		auto incs2 = cn.m_ndcs.find(ncs.first);
+		const auto  cls2num = incs2 != cn.m_ndcs.end() ? incs2->second.size() : 0;
+		AccProb  share;
+		if(cls2num)
+			share = updateCont(incs2->second) * share1;  // Note: shares already divided by clsXnum
+		for(auto cl: ncs.second) {
+			cl->mbscont += share1;
 			// Update clusters matching matrix
-			for(auto cl: ncs.second)
-				for(auto cl2: cls2) {
-					++cmmsum;
-					++clsmm(cl, cl2);  // Note: contains only POSITIVE values
-				}
+			if(cls2num) {
+				cmmsum += share * cls2num;
+				for(auto cl2: incs2->second)
+					clsmm(cl, cl2) += share;  // Note: contains only POSITIVE values
+			}
 		}
 	}
 	// Consider the case of unequal node base, contribution from the missed nodes
@@ -696,19 +686,24 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 #ifdef TRACING_CLSCOUNTS_
 	fputs("\n", stderr);
 #endif // TRACING_CLSCOUNTS_
-	if((m_overlaps && (!equal<AccProb>(m_contsum, cmmsum, m_cls.size())
-	|| !equal<AccProb>(cn.m_contsum - econt, cmmsum, cn.m_cls.size())))
-	|| (!m_overlaps && !equal<AccProb>(max(m_contsum, cn.m_contsum - econt)
-		, cmmsum, m_cls.size()))
-	) {  // Note: cmmsum should match to either of the sums
-		fprintf(stderr, "evalconts(), c1csum: %.3G, c2csum: %.3G, cmmsum: %.3G\n"
-			, AccProb(m_contsum), AccProb(cn.m_contsum), AccProb(cmmsum));
-		assert(0 && "nmi(), rows accumulation is invalid");
-	}
 	if(m_overlaps)  // consum equals to the number of nodes for the overlapping case
 		assert(equal<AccCont>(m_contsum, ndsnum(), ndsnum())
 			&& equal<AccCont>(cn.m_contsum, cn.ndsnum(), cn.ndsnum())
 			&& "evalconts(), consum validation failed");
+#endif // VALIDATE
+#if VALIDATE >= 1
+	if((//m_overlaps &&
+	(!equal<AccProb>(m_contsum, cmmsum, m_cls.size())
+	|| !equal<AccProb>(cn.m_contsum - econt, cmmsum, cn.m_cls.size())))
+//	|| (!m_overlaps && !equal<AccProb>(max(m_contsum, cn.m_contsum - econt)
+//		, cmmsum, m_cls.size()))
+	) {  // Note: cmmsum should match to either of the sums
+		fprintf(stderr, "evalconts(), c1csum: %.3G, c2csum: %.3G, cmmsum: %.3G\n"
+			, AccProb(m_contsum), AccProb(cn.m_contsum), AccProb(cmmsum));
+		throw domain_error(string("nmi(), rows accumulation is invalid")
+			.append(m_overlaps ? "\n"
+			: ", probably cluster overlaps occurred in the multi-resolution mode\n"));
+	}
 #endif // VALIDATE
 
 	return cmmsum;
@@ -720,8 +715,7 @@ void Collection<Count>::clearconts() const noexcept
 	// Reset member contributions if not zero
 	if(!m_contsum)  // Note: ! is fine here
 		return;
-	if(m_overlaps)
-		for(const auto& cl: m_cls)
-			cl->mbscont = 0;
+	for(const auto& cl: m_cls)
+		cl->mbscont = 0;
 	m_contsum = 0;
 }
