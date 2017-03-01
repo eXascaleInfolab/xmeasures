@@ -95,6 +95,9 @@ int main(int argc, char **argv)
 		// calculations, for other cases the order of evaluations does not matter
 		if(args_info.nmi_flag) {
 			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag);
+			// Set NMI to NULL if collections have no any mutual information
+			if(!rnmi.mi)
+				rnmi.h1 = rnmi.h2 = 1;
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
 			if(args_info.all_flag)
 				printf("NMI_max: %G, NMI_avg: %G, NMI_min: %G", nmix, 2 * rnmi.mi

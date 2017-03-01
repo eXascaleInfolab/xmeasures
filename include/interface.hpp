@@ -320,10 +320,14 @@ Prob Collection<Count>::f1gm(const CollectionT& cn1, const CollectionT& cn2, boo
 	fputs("f1gm(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ga1 = cn1.avggms(cn2, weighted, prob);
+	if(equal<Count>(f1ga1, 0, cn1.m_cls.size()))
+		return 0;
 #if TRACE >= 3
 	fputs("f1gm(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ga2 = cn2.avggms(cn1, weighted, prob);
+	if(equal<Count>(f1ga2, 0, cn2.m_cls.size()))
+		return 0;
 #if TRACE >= 2
 	fprintf(stderr, "f1gm(),  f1ga1: %.3G, f1ga2: %.3G\n", f1ga1, f1ga2);
 #endif // TRACE
@@ -355,9 +359,8 @@ AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool pro
 			accgm += gmats[i] * ccont;
 			csizesSum += ccont;
 		}
-#if VALIDATE >= 2
-		assert(!less<AccCont>(csizesSum, csnum, csnum) && "avggms(), invalid sum of the cluster sizes");
-#endif // VALIDATE
+		// Note: this assert is not the case for the collections containing multiple resolutions
+		//assert(!less<AccCont>(csizesSum, csnum, csnum) && "avggms(), invalid sum of the cluster sizes");
 		accgm /= csizesSum / AccProb(csnum);
 	} else for(auto gm: gmats)
 		accgm += gm;
@@ -619,6 +622,9 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	// it also > mbsnum.
 	// =>  .mbscont is ALWAYS required except the case of non-overlapping clustering
 	// on a single resolution
+
+	// Consider the case of unequal node base, contribution from the missed nodes
+	AccCont  econt1 = 0;  // Extra contribution from this collection
 	for(auto& ncs: m_ndcs) {
 		// Note: always evaluate contributions to the clusters of this collection
 		const AccProb  share1 = mbcont(ncs.second.size());
@@ -630,10 +636,10 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 			share = (m_overlaps ? updateCont(incs2->second)
 				: mbcont(incs2->second.size())) * share1;  // Note: shares already divided by clsXnum
 		for(auto cl: ncs.second) {
-			if(m_overlaps)
-				cl->mbscont += share1;
 			// Update clusters matching matrix
 			if(cls2num) {
+				if(m_overlaps)
+					cl->mbscont += share1;
 				cmmsum += share * cls2num;
 				for(auto cl2: incs2->second) {
 					clsmm(cl, cl2) += share;  // Note: contains only POSITIVE values
@@ -642,30 +648,29 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 						cl2->mbscont += share;
 					}
 				}
+			} else {
+				cl->mbscont += share1;
+				econt1 += share1;
 			}
 		}
 	}
 	// Consider the case of unequal node base, contribution from the missed nodes
-	AccCont  econt = 0;  // Extra contribution from the cn
+	AccCont  econt2 = 0;  // Extra contribution from the cn
 	if((m_ndshash && cn.m_ndshash && m_ndshash != cn.m_ndshash) || ndsnum() != cn.ndsnum()) {
 		for(auto& ncs: cn.m_ndcs) {
 			// Skip processed nodes
 			if(m_ndcs.count(ncs.first))
 				continue;
-			econt += updateCont(ncs.second);
+			econt2 += updateCont(ncs.second);
 		}
 	} else if(!m_ndshash || !cn.m_ndshash)
 		fputs("WARNING evalconts(), collection(s) hashes were not evaluated (%lu, %lu)"
 			", so some unequal nodes might be skipped on evaluation, which cause"
 			" approximate results\n", stderr);
 
-	// Set results
-	if(pclsmm)
-		*pclsmm = move(clsmm);
-	// Set contributions
-	m_contsum = cmmsum;
-	cn.m_contsum = cmmsum + econt;
-
+#if VALIDATE >= 1
+	// Validate if there is anything
+	if(!clsmm.empty()) {
 #if VALIDATE >= 2
 	// Validate sum of vector counts to evaluate probabilities
 	// Note: to have symmetric values normalization should be done by the max values in the row / col
@@ -674,7 +679,7 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	#define TRACING_CLSCOUNTS_
 	fprintf(stderr, "evalconts(), cls1 counts (%lu): ", m_cls.size());
 #endif // TRACE
-	m_contsum = 0;
+	m_contsum = econt1;
 	for(const auto& c1: m_cls) {
 		m_contsum += c1->cont();
 #ifdef TRACING_CLSCOUNTS_
@@ -685,7 +690,7 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 #ifdef TRACING_CLSCOUNTS_
 	fprintf(stderr, "\nevalconts(), cls2 counts (%lu): ", cn.m_cls.size());
 #endif // TRACING_CLSCOUNTS_
-	cn.m_contsum = 0;
+	cn.m_contsum = econt2;
 	for(const auto& c2: cn.m_cls) {
 		cn.m_contsum += c2->cont();
 #ifdef TRACING_CLSCOUNTS_
@@ -695,25 +700,35 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 #ifdef TRACING_CLSCOUNTS_
 	fputs("\n", stderr);
 #endif // TRACING_CLSCOUNTS_
-	if(m_overlaps)  // consum equals to the number of nodes for the overlapping case
-		assert(equal<AccCont>(m_contsum, ndsnum(), ndsnum())
-			&& equal<AccCont>(cn.m_contsum, cn.ndsnum(), cn.ndsnum())
-			&& "evalconts(), consum validation failed");
-#endif // VALIDATE
-#if VALIDATE >= 1
-	if((//m_overlaps &&
-	(!equal<AccProb>(m_contsum, cmmsum, m_cls.size())
-	|| !equal<AccProb>(cn.m_contsum - econt, cmmsum, cn.m_cls.size())))
-//	|| (!m_overlaps && !equal<AccProb>(max(m_contsum, cn.m_contsum - econt)
-//		, cmmsum, m_cls.size()))
-	) {  // Note: cmmsum should match to either of the sums
-		fprintf(stderr, "evalconts(), c1csum: %.3G, c2csum: %.3G, cmmsum: %.3G\n"
-			, AccProb(m_contsum), AccProb(cn.m_contsum), AccProb(cmmsum));
-		throw domain_error(string("nmi(), rows accumulation is invalid")
-			.append(m_overlaps ? "\n"
-			: ", probably cluster overlaps occurred in the multi-resolution mode\n"));
+	if(m_overlaps
+	&& !(equal<AccCont>(m_contsum - econt1, ndsnum(), ndsnum())
+	&& equal<AccCont>(cn.m_contsum - econt2, cn.ndsnum(), cn.ndsnum()))) {  // consum equals to the number of nodes for the overlapping case
+		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), nds1num: %lu"
+			", c2csum: %.3G (- %.3G), nds2num: %lu,  cmmsum: %.3G\n"
+			, AccProb(m_contsum), AccProb(econt1), ndsnum()
+			, AccProb(cn.m_contsum), AccProb(econt2), cn.ndsnum(), AccProb(cmmsum));
+		assert(0 && "evalconts(), consum validation failed");
 	}
-#endif // VALIDATE
+#endif // VALIDATE 2
+	const bool match1 = equal<AccProb>(m_contsum - econt1, cmmsum, m_cls.size());
+	const bool match2 = equal<AccProb>(cn.m_contsum - econt2, cmmsum, cn.m_cls.size());
+	if((m_ndshash == cn.m_ndshash && m_ndshash && m_ndshash && (!match1 || !match2))  // The same node base
+	|| (m_ndshash != cn.m_ndshash && (!match1 && !match2))   // Distinct node base
+	) {  // Note: cmmsum should match to either of the sums
+		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), c2csum: %.3G (- %.3G), cmmsum: %.3G\n"
+			, AccProb(m_contsum), AccProb(econt1), AccProb(cn.m_contsum)
+			, AccProb(econt2), AccProb(cmmsum));
+		throw domain_error("nmi(), rows accumulation is invalid");
+	}
+	}
+#endif // VALIDATE 1
+
+	// Set results
+	if(pclsmm)
+		*pclsmm = move(clsmm);
+	// Set contributions
+	m_contsum = cmmsum + econt1;
+	cn.m_contsum = cmmsum + econt2;
 
 	return cmmsum;
 }

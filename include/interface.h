@@ -16,7 +16,7 @@
 #include <string>
 #include <type_traits>
 #include <limits>
-#if VALIDATE >= 2
+#if VALIDATE >= 1
 #include <stdexcept>
 #endif // VALIDATE
 
@@ -38,9 +38,11 @@ using std::is_same;
 using std::enable_if_t;
 using std::conditional_t;
 using std::numeric_limits;
+#if VALIDATE >= 1
+using std::domain_error;
 #if VALIDATE >= 2
 using std::invalid_argument;
-using std::domain_error;
+#endif // VALIDATE
 #endif // VALIDATE
 
 // Data Types ------------------------------------------------------------------
@@ -164,7 +166,7 @@ struct Cluster {
 	//!< Contribution from members from members
 	// Note: used only in case of overlaps by all measures, and by NMI only
 	// in case of multiple resolutions
-	//conditional_t<is_floating_point<Count>::value, Count, EmptyStub>  mbscont;
+//	conditional_t<is_floating_point<Count>::value, Count, EmptyStub>  mbscont;
 	Count  mbscont;
 
     //! Default constructor
@@ -219,7 +221,8 @@ struct Cluster {
 		// P = P1 * P2 = m/n1 * m/n2 = m*m / (n1*n2),
 		// where nodes contribution instead of the size should be use for overlaps.
 		// ATTENTION: F1 compares clusters per-pair, so it is much simpler and has another
-		// semantics of contribution for the multi-resolution case
+		// semantics of contribution for the multi-resolution case comparing to NMI
+		// that also uses cont()
 		const Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
 #if VALIDATE >= 2
 		if(matches < 0 || capacity < matches || contrib <= 0)
