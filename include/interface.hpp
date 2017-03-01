@@ -320,13 +320,13 @@ Prob Collection<Count>::f1gm(const CollectionT& cn1, const CollectionT& cn2, boo
 	fputs("f1gm(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ga1 = cn1.avggms(cn2, weighted, prob);
-	if(equal<Count>(f1ga1, 0, cn1.m_cls.size()))
+	if(equal<AccProb>(f1ga1, 0, cn1.m_cls.size()))
 		return 0;
 #if TRACE >= 3
 	fputs("f1gm(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ga2 = cn2.avggms(cn1, weighted, prob);
-	if(equal<Count>(f1ga2, 0, cn2.m_cls.size()))
+	if(equal<AccProb>(f1ga2, 0, cn2.m_cls.size()))
 		return 0;
 #if TRACE >= 2
 	fprintf(stderr, "f1gm(),  f1ga1: %.3G, f1ga2: %.3G\n", f1ga1, f1ga2);
