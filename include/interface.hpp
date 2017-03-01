@@ -612,7 +612,7 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	ClustersMatching  clsmm = ClustersMatching(clsnum());  // Note: default max_load_factor is 1
 	// Total sum of all values of the clsmm matrix, i.e. the number of
 	// member nodes in both collections
-	AccProb  cmmsum = 0;
+	AccCont  cmmsum = 0;
 	// Evaluate contributions to the clusters of each collection and to the
 	// mutual matrix of clusters matching
 	// Note: in most cases collections has the same node base, or it was synchronized
@@ -627,32 +627,33 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	AccCont  econt1 = 0;  // Extra contribution from this collection
 	for(auto& ncs: m_ndcs) {
 		// Note: always evaluate contributions to the clusters of this collection
-		const AccProb  share1 = mbcont(ncs.second.size());
+		const auto  cls1num = ncs.second.size();  // Note: equals to the number of resolutions for !m_overlaps
+		const AccCont  share1 = mbcont(cls1num);
 		// Evaluate contribution to the second collection if any
 		auto incs2 = cn.m_ndcs.find(ncs.first);
 		const auto  cls2num = incs2 != cn.m_ndcs.end() ? incs2->second.size() : 0;
-		AccProb  share;
-		if(cls2num)
-			share = (m_overlaps ? updateCont(incs2->second)
+		if(cls2num) {
+			AccCont  cont = (m_overlaps ? updateCont(incs2->second)
 				: mbcont(incs2->second.size())) * share1;  // Note: shares already divided by clsXnum
-		for(auto cl: ncs.second) {
+			// ATTENTION: share1 != cont * cls2num for !m_overlaps (cls1num - the number of resolutions)
+			const AccCont  cont1sum = cont * cls2num;  // Total accumulative contribution from the cl
+			cmmsum += cont1sum * cls1num;
 			// Update clusters matching matrix
-			if(cls2num) {
-				if(m_overlaps)
-					cl->mbscont += share1;
-				cmmsum += share * cls2num;
+			for(auto cl: ncs.second) {
+				cl->mbscont += cont1sum;
 				for(auto cl2: incs2->second) {
-					clsmm(cl, cl2) += share;  // Note: contains only POSITIVE values
-					if(!m_overlaps) {
-						cl->mbscont += share;
-						cl2->mbscont += share;
-					}
+					clsmm(cl, cl2) += cont;  // Note: contains only POSITIVE values
+					if(!m_overlaps)
+						cl2->mbscont += cont;
 				}
-			} else {
-				cl->mbscont += share1;
-				econt1 += share1;
 			}
+		} else {
+			// Note: in this case cls2num and share2 are zero
+			econt1 += share1 * cls1num;
+			for(auto cl: ncs.second)
+				cl->mbscont += share1;
 		}
+
 	}
 	// Consider the case of unequal node base, contribution from the missed nodes
 	AccCont  econt2 = 0;  // Extra contribution from the cn
@@ -661,7 +662,12 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 			// Skip processed nodes
 			if(m_ndcs.count(ncs.first))
 				continue;
-			econt2 += updateCont(ncs.second);
+			// Note: in this case cls1num and share1 are zero
+			const auto  cls2num = ncs.second.size();  // Note: equals to the number of resolutions for !m_overlaps
+			const AccCont  share2 = mbcont(cls2num);
+			econt2 += share2 * cls2num;
+			for(auto cl: ncs.second)
+				cl->mbscont += share2;
 		}
 	} else if(!m_ndshash || !cn.m_ndshash)
 		fputs("WARNING evalconts(), collection(s) hashes were not evaluated (%lu, %lu)"
@@ -724,7 +730,12 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 			, AccProb(econt2), AccProb(cmmsum));
 		throw domain_error("nmi(), rows accumulation is invalid");
 	}
+#if TRACE >= 2
+	fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), c2csum: %.3G (- %.3G), cmmsum: %.3G\n"
+		, AccProb(m_contsum), AccProb(econt1), AccProb(cn.m_contsum)
+		, AccProb(econt2), AccProb(cmmsum));
 	}
+#endif // TRACE
 #endif // VALIDATE 1
 	// Set results
 	if(pclsmm)
