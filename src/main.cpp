@@ -112,8 +112,8 @@ int main(int argc, char **argv)
 				, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag
 				, args_info.prob_flag));
 		}
-		puts(string(" (evaluated considering " ).append(is_floating_point<Count>::value
-			? "overlaps" : "multi-resolution").append(")").c_str());  // \n
+		puts(string(" (").append(is_floating_point<Count>::value
+			? "overlaps" : "multi-resolution").append(" evaluation)").c_str());  // \n
 
 		return 0;
 	};
