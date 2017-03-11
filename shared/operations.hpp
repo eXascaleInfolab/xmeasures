@@ -43,6 +43,7 @@ using std::is_integral;
 using std::is_reference;
 using std::is_base_of;
 using std::declval;
+using std::max;
 using std::enable_if_t;
 
 
@@ -97,8 +98,9 @@ constexpr ValT precision_limit() noexcept
 	static_assert(is_floating_point<ValT>::value, "precision_limit() type should be fractional");
 	// Note: much lower epsilon does not impact convergence,
 	// but usage of sqrt(epsilon) allows to skip the size in comparison functions
-//	return numeric_limits<ValT>::epsilon() * 2;  // Last digit should be precise
-	return sqrt(numeric_limits<ValT>::epsilon());  // Note: sqrt(x^a) = x^(a/2) to filter out accumulation errors
+	// ATTENTION: sqrt(eps) causes inclusion into mcands non-max neighbors in large dense networks
+	//return numeric_limits<ValT>::epsilon() * 5;  // 5 is half of the base 10
+	return numeric_limits<ValT>::epsilon() * 2;  // *2 to consider arithmetic error of +/- operations
 }
 
 //! \brief Strict less for floating point numbers
@@ -173,21 +175,6 @@ constexpr bool equal(const ValT a, const ValT b=ValT(0), const size_t size=1) no
 	return a == b;
 }
 
-//! \brief Divide and round the result
-//!
-//! \param a ValAT  - dividend
-//! \param b ValBT  - divisor
-//! \return ValAT  - rounded quotient
-template <typename ValAT, typename ValBT>
-inline ValAT rdiv(const ValAT a, const ValBT b)
-{
-	static_assert(is_integral<ValAT>::value, "rdiv(), dividend should be integral");
-	assert(b && "rdiv(), b must be != 0");
-	ValAT  base = a / b;
-	base += ((a - base * b) << 1) / b;
-	return base;
-}
-
 // Comparison functions -------------------------------------------------------
 //! Comparison function for the arguments
 // Note: ptrdiff_t casting is required otherwise binary_find() is error prone
@@ -210,7 +197,8 @@ constexpr bool cmpDest(const T& a, const T& b) noexcept
 { return cmpBase(a.dest, b.dest); }
 
 // Binary search --------------------------------------------------------------
-constexpr int  BINSEARCH_MARGIN = 9;  // Min size of an array when bin search is faster than a linear scan
+// Min size of an array when bin search is faster than a linear scan, 11 or 9
+constexpr int  BINSEARCH_MARGIN = 11;
 
 //! \brief Direct value comparison (binary find callback)
 //! 	Note: Items in the container are assumed to be ordered in acs order
@@ -219,25 +207,35 @@ constexpr int  BINSEARCH_MARGIN = 9;  // Min size of an array when bin search is
 //! \param cv T  - container value
 //! \param v T  - control value
 //! \return ptrdiff_t  - comparison result: cv - v
-template <typename T>  //, enable_if_t<sizeof(T) <= sizeof(ptrdiff_t)>* = nullptr>
+template <typename T, enable_if_t<sizeof(T) <= sizeof(void*)
+	//&& !is_floating_point<T>::value
+	>* = nullptr>
 constexpr ptrdiff_t bsVal(const T cv, const T v) noexcept
-// ATTENTION: without casting difference will be incorrect for the types with size
-// different from ptrdiff_t and for the unsigned types
 {
-//	using ValT = common_type<Val1T, Val2T>::type;
+	//using ValT = common_type<Val1T, Val2T>::type;
 	static_assert(!is_floating_point<T>::value
-		&& sizeof(T) <= sizeof(ptrdiff_t)
+	//	//&& sizeof(T) <= sizeof(ptrdiff_t)
 		, "bsVal(), argument type constraints failed");
-	return reinterpret_cast<ptrdiff_t>(cv) - reinterpret_cast<ptrdiff_t>(v);
+	// ATTENTION: ptrdiff_t type cast gives invalid comparison when the second value
+	// is large negative (high memory addresses) and the fist one is large positive
+	//return reinterpret_cast<ptrdiff_t>(cv) - reinterpret_cast<ptrdiff_t>(v);
+	return (cv != v) * ((cv < v) * -2 + 1);
 }
 
-//template <typename T, enable_if_t<(sizeof(T) > sizeof(ptrdiff_t))>* = nullptr>
-//constexpr ptrdiff_t bsVal(T& cv, T& v)  // ATTENTION: non-const ref is used to
-//// ATTENTION: without casting difference will be incorrect for the types with size
-//// different from ptrdiff_t and for the unsigned types
+template <typename T, enable_if_t<(sizeof(T) > sizeof(void*))
+	//&& !is_floating_point<T>::value
+	, bool>* = nullptr>
+constexpr ptrdiff_t bsVal(const T& cv, const T& v) noexcept
+{
+	static_assert(!is_floating_point<T>::value
+		, "bsVal(), argument type constraints failed");
+	return (cv != v) * ((cv < v) * -2 + 1);
+}
+
+//template <typename T, enable_if_t<is_floating_point<T>::value, float>* = nullptr>
+//constexpr ptrdiff_t bsVal(const T cv, const T v, const size_t size=1) noexcept
 //{
-//	// ATTENTION: dereference is used to treat iterators correctly
-//	return reinterpret_cast<ptrdiff_t>(&*cv) - reinterpret_cast<ptrdiff_t>(&*v);
+//	return !equal(cv, v, size) * (less(cv, v, size) * -2 + 1);
 //}
 
 ////! \brief Dereferenced value address comparison (binary find callback)
@@ -351,11 +349,7 @@ constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v) noexcept(noexcept(cv.get(
 #define BS_STRUCT(T, attr)  \
 	[](const T& cv, const T& v) noexcept -> ptrdiff_t \
 	{  \
-		using TAttr = decltype(v.attr);  \
-		static_assert(!is_floating_point<TAttr>::value  \
-			&& sizeof(TAttr) <= sizeof(ptrdiff_t)  \
-			, "bs#T(), argument type constraints failed");  \
-		return reinterpret_cast<ptrdiff_t>(cv.attr) - reinterpret_cast<ptrdiff_t>(v.attr);  \
+		return bsVal<decltype(cv.attr)>(cv.attr, v.attr);  \
 	}
 // 	~ bsVal<decltype(v.attr)>(cv.attr, v.attr);  // But bsVal complicates compile-time error analysis
 
@@ -368,11 +362,7 @@ constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v) noexcept(noexcept(cv.get(
 #define BS_OBJ_ATTR(T, attr)  \
 	[](const T& el, const decltype(declval<T>().attr) ea) noexcept -> ptrdiff_t \
 	{  \
-		using TAttr = decltype(el.attr);  \
-		static_assert(!is_floating_point<TAttr>::value  \
-			&& sizeof(TAttr) <= sizeof(ptrdiff_t)  \
-			, "bs#T#attr(), argument type constraints failed");  \
-		return reinterpret_cast<ptrdiff_t>(el.attr) - reinterpret_cast<ptrdiff_t>(ea);  \
+		return bsVal<decltype(el.attr)>(el.attr, ea);  \
 	}
 
 //! \brief Binary search in the ordered range with random iterators
@@ -383,7 +373,7 @@ constexpr ptrdiff_t bsObjGetF(const T& cv, const T& v) noexcept(noexcept(cv.get(
 //! \tparam T  - value type
 //! \tparam RandIT  - random iterator
 //! \tparam CompareF  - NONSTANDARD comparison function:
-//! 		int cmp(const RandIT::reference iterVal, const T& val);
+//! 		int cmp(const RandIT::reference iterVal, const T val);
 //! 			returns negative if iterVal < val, 0 if iterVal == val
 //! 			and positive otherwise
 //! \return random iterator of the value position if exists, otherwise
@@ -406,8 +396,18 @@ RandIT binary_ifind(RandIT begin, const RandIT end, const T val
 	; pos = begin + (iend - begin) / 2) {
 		int  cres = cmp(*pos, val);
 
-		if(!((cres < 0 && ((begin = pos + 1), true)) || (cres > 0 && ((iend = pos), true))))
-			return pos;
+		if(cres < 0) {
+			begin = pos + 1;
+			continue;
+		}
+		if(cres > 0) {
+			iend = pos;
+			continue;
+		}
+		return pos;
+
+		//if(!((cres < 0 && ((begin = pos + 1), true)) || (cres > 0 && ((iend = pos), true))))
+		//	return pos;
 	}
 #if VALIDATE >= 2
 #if TRACE >= 3
@@ -444,7 +444,7 @@ inline RandIT binary_find(RandIT begin, const RandIT end, const T val
 //! \tparam T  - value type
 //! \tparam IT  - iterator
 //! \tparam CompareF  - NONSTANDARD comparison function:
-//! 		int cmp(const IT::reference iterVal, const T& val);
+//! 		int cmp(const IT::reference iterVal, const T val);
 //! 			returns negative if iterVal < val, 0 if iterVal == val
 //! 			and positive otherwise
 //! \return iterator of the value position or end
@@ -479,6 +479,8 @@ IT linear_ifind(IT begin, const IT end, const T& val
 }
 
 //! Linear search in the specified range
+// Note: inline function anyway does not pass any arguments, so there is no
+// sense to use const ref args
 template <typename T, typename IT, typename CompareF>
 inline IT linear_find(IT begin, const IT end, const T val
 	, CompareF cmp=bsVal<typename iterator_traits<IT>::value_type>) noexcept(CompareF())
@@ -490,6 +492,8 @@ inline IT linear_find(IT begin, const IT end, const T val
 }
 
 //! Linear index find in the sorted dataset
+// Note: Container is passed by non-const ref for better cache reuse to
+// not employ const iterators not used by the nearby code
 template <typename T, typename Container, typename CompareF>
 inline typename Container::iterator linear_ifind(Container& cnt, const T val
 	, CompareF cmp=bsVal<typename Container::value_type>) noexcept(CompareF())
@@ -514,6 +518,8 @@ inline RandIT fast_ifind(RandIT begin, const RandIT end, const T val
 }
 
 //! Fast index find in the sorted dataset using either binary or linear search
+// Note: Container is passed by non-const ref for better cache reuse to
+// not employ const iterators not used by the nearby code
 template <typename T, typename Container, typename CompareF>
 inline typename Container::iterator fast_ifind(Container& cnt, const T val
 	, CompareF cmp=bsVal<typename Container::value_type>) noexcept(CompareF())
@@ -538,6 +544,8 @@ inline RandIT fast_find(RandIT begin, const RandIT end, const T val
 }
 
 //! Fast find in the sorted dataset using either binary or linear search
+// Note: Container is passed by non-const ref for better cache reuse to
+// not employ const iterators not used by the nearby code
 template <typename T, typename Container, typename CompareF>
 inline typename Container::iterator fast_find(Container& cnt, const T val
 	, CompareF cmp=bsVal<typename Container::value_type>) noexcept(CompareF())
@@ -563,7 +571,7 @@ inline typename Container::const_iterator fast_find(const Container& cnt, const 
 ////! \post iel points to the element FOLLOWING the inserted one after the execution
 ////!
 ////! \param els ContainerT&  - elements to be extended considering the ordering
-//////! \param iel typename ContainerT::iterator&  - begin iterator in the els to
+//////! \param iel typename ContainerT::iterator  - begin iterator in the els to
 //////! 	speedup incremental inserts.
 //////! 	Points to the elements FOLLOWING the inserted one after the execution.
 ////! \param el typename ContainerT::value_type  - element to be added to els
@@ -575,7 +583,7 @@ inline typename Container::const_iterator fast_find(const Container& cnt, const 
 ////! 			and positive otherwise
 ////! \return void
 //template <typename ContainerT, typename CompareF>
-//void addSorted(ContainerT& els  //, typename ContainerT::iterator& iel
+//void addSorted(ContainerT& els  //, typename ContainerT::iterator iel
 //	, const typename ContainerT::value_type el
 //	, CompareF cmp=bsVal<typename ContainerT::value_type>)
 //{
@@ -596,7 +604,7 @@ inline typename Container::const_iterator fast_find(const Container& cnt, const 
 //! \tparam IterT  - Iterator type
 //!
 //! \param begin IterT  - begin iterator of the checking range
-//! \param end const IterT&  - end iterator of the checking range
+//! \param end const IterT  - end iterator of the checking range
 //! \param cmp=bsVal CompareF  - comparison function
 //! \param unique=true bool  - all items must be unique or allow duplicates
 //! \return bool  - the items are ordered by cmp func
@@ -703,141 +711,6 @@ inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT 
 #endif // VALIDATE
 	return iel;
 }
-
-// Accessory Types declaration ------------------------------------------------
-////! Count Statistics
-//template <typename ValT>
-//class ValStat {
-//	ValT  m_sum;  // Sum of values
-//	ValT  m_sum2;  // Sum of values squares
-//	Id  m_num;  // Number of values
-//	ValT  m_min;
-//	ValT  m_max;
-//	bool  m_fixed;  // Whether statistic accumulation is finalized
-//
-//	constexpr static ValT  VALUE_MIN = numeric_limits<ValT>::lowest();
-//	constexpr static ValT  VALUE_MAX = numeric_limits<ValT>::max();
-//public:
-//	//! Count for the noninitialized elements
-//	constexpr static ValT  VALUE_NONE = numeric_limits<ValT>::lowest();
-//	static_assert(!is_same<ValT, AccWeight>::value || VALUE_NONE == ACCWEIGHT_NONE
-//		, "ValStat, VALUE_NONE must be synced with ACCWEIGHT_NONE");
-//
-//	//! \brief Constart new Count Statistics
-//	ValStat()
-//	: m_sum(0), m_sum2(0), m_num(0), m_min(VALUE_MAX), m_max(VALUE_MIN)
-//		, m_fixed(false)  {}
-//
-//	//! \brief Add subsequent value to the statistics
-//	//!
-//	//! \param val ValT  - value to be added
-//	//! \return void
-//	void add(ValT val);
-//
-//	//! \brief Reset statistics
-//	//!
-//	//! \return void
-//	void reset() {
-//		m_sum = m_sum2 = 0;
-//		m_num = 0;
-//		m_min = VALUE_MAX;
-//		m_max = VALUE_MIN;
-//		m_fixed = false;
-//	}
-//
-//	//! \brief Finalize statistics accumulation before reading
-//	//! \note MUST be called ONCE after the statistics accumulation and
-//	//! 	before the values reading
-//	//!
-//	//! \return void
-//	void finalize() {
-//		if(m_fixed)
-//			throw domain_error("finalize(), repeated finalization is performed\n");
-//		m_fixed = true;
-//	}
-//
-//	//! \brief Whether the statistics is evaluated or nothing was processed
-//	//!
-//	//! \return bool  - the statistics is evaluated
-//	bool evaluated() const {
-//		return m_min != VALUE_MAX
-//			|| m_max != VALUE_MIN;
-//	}
-//
-//	//! \brief Obtain the Mean value
-//	//! \pre finalize() must be called after the statistics accumulation and
-//	//! 	before the values reading
-//	//!
-//	//! \return ValT  - statistical Mean
-//	ValT mean() const  {
-//		if(!m_fixed)
-//			throw domain_error("mean(), finalization has not been performed\n");
-//		return m_num ? m_sum / m_num : VALUE_NONE;
-//	}
-//
-//	ValT sum() const  {
-//		if(!m_fixed)
-//			throw domain_error("sum(), finalization has not been performed\n");
-//		return m_num ? m_sum : VALUE_NONE;
-//	}
-//
-//	ValT sum2() const  {
-//		if(!m_fixed)
-//			throw domain_error("sum2(), finalization has not been performed\n");
-//		return m_num ? m_sum2 : VALUE_NONE;
-//	}
-//
-//	ValT num() const  {
-//		if(!m_fixed)
-//			throw domain_error("num(), finalization has not been performed\n");
-//		return m_num;
-//	}
-//
-//	ValT min() const  {
-//		if(!m_fixed)
-//			throw domain_error("min(), finalization has not been performed\n");
-//		return m_num ? m_min : VALUE_NONE;
-//	}
-//
-//	ValT max() const  {
-//		if(!m_fixed)
-//			throw domain_error("max(), finalization has not been performed\n");
-//		return m_num ? m_max : VALUE_NONE;
-//	}
-//};
-
-//// Ids related accessory means
-// ATTENTION: AccId depends on Id, currently Id is limited up to 32 bits
-//using AccId = uint64_t;  //!< Accumulated Id
-//
-////! IdSums
-//struct IdSums {
-//	Id  num;  //!< number of ids
-//	AccId  sum;  //!< Sum of Ids
-//	AccId  sum2;  //!< Sum2 of ids
-//
-//	IdSums()
-//	: num(0), sum(0), sum2(0)  {}
-//
-//    //! \brief Accumulate subsequent id
-//    //!
-//    //! \param id Id  - id to be added
-//    //! \return void
-//	void add(Id id) {
-//		++num;
-//		sum += id;
-//		sum2 += id*id;
-//	}
-//
-//	bool operator<(const IdSums& idsm) const {
-//		return num < idsm.num || (num == idsm.num
-//			&& (sum < idsm.sum || (sum == idsm.sum && sum2 < idsm.sum2)));
-//	}
-//
-//	bool operator!=(const IdSums& idsm) const {
-//		return num != idsm.num || sum != idsm.sum || sum2 != idsm.sum2;
-//	}
-//};
 
 }  // daoc
 
