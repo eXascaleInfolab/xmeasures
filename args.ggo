@@ -1,25 +1,22 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "2.3"
+version "3.0"
 
-purpose "Extrinsic measures evaluation: F1_gm for overlapping multi-resolution\
- clusterings with possible unequal node base and standard NMI for non-overlapping\
- clustering on a single resolution."
-# Extrinsic clustering measures evaluation for the multi-resolution clustering with overlaps (covers): F1_gm and NMI (compatible to the standard NMI when applied to the single resolution non-overlapping collections of clusters).
+purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping\
+ multi-resolution clusterings with possible unequal node base and standard NMI for\
+ non-overlapping clustering on a single resolution."
 
 description "Extrinsic measures are evaluated, i.e. clustering (collection of\
  clusters) is compared to another collection, which is typically the ground-truth.
 Evaluating measures are:
- 
-  - F1_gm  - F1 of the [weighted] average greatest match evaluated by F1 or partial\
- probability
- 
-  - NMI  - Normalized Mutual Information, normalized by max or also avg and min\
-information content denominators.
+  - F1  - various F1 measures of the Greatest (Max) Match including the standard\
+ F1-Score with optional weighting;
+  - NMI  - Normalized Mutual Information, normalized by either max or also avg\
+ and min information content denominators.
 ATTENTION: this is standard NMI, which should be used ONLY for the HARD\
  partitioning evaluation (non-overlapping clustering on a single resolution).\
-  it penalized overlapping and multi-resolution structures.
+  it penalizes overlapping and multi-resolution structures.
 NOTE: unequal node base in the clusterings is allowed, it penalizes the match.
 Use [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary\
  collections evaluation.
@@ -41,13 +38,21 @@ NOTE: the node base can be either a separate, or an evaluating CNL file, in the\
 option  "membership" m  "average expected membership of the nodes in the clusters,\
  > 0, typically >= 1. Used only for the containers preallocation facilitating\ 
  estimation of the nodes number if not specified in the file header."  float default="1"
+option  "detailed" d  "detailed results output"  flag off
 
 section "F1 Options"
 option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\
- match by F1 or partial probability"  flag off
-option  "prob" p  "use partial probability instead of the F1 for the matching.
-NOTE: typically F1pp < F1f1 and discriminates similar collections better."
-  flag off  dependon="f1"
+ match by F1 or partial probability.
+NOTE: F1p <= F1h <= F1s, where:
+ - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the\
+ most discriminative and satisfies the largest number of the Formal Constraints\
+ (homogeneity, completeness, rag bag,  size/quantity, balance);
+ - F1h  - Harmonic mean of the [weighted] average of F1s;
+ - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted]\
+ average of F1s, the least discriminative and satisfies the lowest number of the\
+ Formal Constraints.
+"
+ values="partprob","harmonic","standard"  enum  default="partprob"
 option  "unweighted" u  "evaluate simple average of the best matches instead\
  of weighted by the cluster size"  flag off  dependon="f1"
 
@@ -58,9 +63,6 @@ option  "all" a  "evaluate all NMIs using avg and min denominators besides\
 option  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
  for the information measuring" flag off  dependon="nmi"
 # Note: log2 vs ln have no any influence on the resulting value
-#NOTE: exp base gives more discriminative average NMI values and fits\
-# better for large datasets evaluation, where is base 2 gives more\
-# discriminative high NMI values and fits better for small datasets evaluation" flag off  dependon="nmi"
 
 
 args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allow input files to be unnamed parameters
@@ -68,6 +70,9 @@ args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allo
 
 
 # = Changelog =
+# v3.0 - Command line interface changed for F1
+#	- Standard F1-Score added
+#	- Option for the detailed results output added
 # v2.3 - Node base synchronization added
 # v2.2 - Input arguments redesigned
 # v2.1 - F1 of partial probabilities implemented besides F1 of f1s
@@ -76,8 +81,7 @@ args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allo
 # v1.0 - Initial Release
 
 #TODO:
-## v2.n - Penalize for the unequal node base added to NMI
-# , node base synchronization added
+# NF1 measure
 
 
 # Basic structure, see https://www.gnu.org/software/gengetopt/gengetopt.html#Basic-Usage

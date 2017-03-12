@@ -31,8 +31,10 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "2.3"
+#define CMDLINE_PARSER_VERSION "3.0"
 #endif
+
+enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_standard };
 
 /** @brief Where the command line options are stored */
 struct gengetopt_args_info
@@ -50,12 +52,26 @@ struct gengetopt_args_info
   float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. (default='1').  */
   char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. original value given at command line.  */
   const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. help description.  */
-  int f1_flag;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability (default=off).  */
-  const char *f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability help description.  */
-  int prob_flag;	/**< @brief use partial probability instead of the F1 for the matching.
-  NOTE: typically F1pp < F1f1 and discriminates similar collections better. (default=off).  */
-  const char *prob_help; /**< @brief use partial probability instead of the F1 for the matching.
-  NOTE: typically F1pp < F1f1 and discriminates similar collections better. help description.  */
+  int detailed_flag;	/**< @brief detailed results output (default=off).  */
+  const char *detailed_help; /**< @brief detailed results output help description.  */
+  enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
+  NOTE: F1p <= F1h <= F1s, where:
+   - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - F1h  - Harmonic mean of the [weighted] average of F1s;
+   - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+ (default='partprob').  */
+  char * f1_orig;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
+  NOTE: F1p <= F1h <= F1s, where:
+   - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - F1h  - Harmonic mean of the [weighted] average of F1s;
+   - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+ original value given at command line.  */
+  const char *f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
+  NOTE: F1p <= F1h <= F1s, where:
+   - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - F1h  - Harmonic mean of the [weighted] average of F1s;
+   - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+ help description.  */
   int unweighted_flag;	/**< @brief evaluate simple average of the best matches instead of weighted by the cluster size (default=off).  */
   const char *unweighted_help; /**< @brief evaluate simple average of the best matches instead of weighted by the cluster size help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
@@ -70,8 +86,8 @@ struct gengetopt_args_info
   unsigned int ovp_given ;	/**< @brief Whether ovp was given.  */
   unsigned int sync_given ;	/**< @brief Whether sync was given.  */
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
+  unsigned int detailed_given ;	/**< @brief Whether detailed was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
-  unsigned int prob_given ;	/**< @brief Whether prob was given.  */
   unsigned int unweighted_given ;	/**< @brief Whether unweighted was given.  */
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
   unsigned int all_given ;	/**< @brief Whether all was given.  */
@@ -201,6 +217,8 @@ void cmdline_parser_free (struct gengetopt_args_info *args_info);
  */
 int cmdline_parser_required (struct gengetopt_args_info *args_info,
   const char *prog_name);
+
+extern const char *cmdline_parser_f1_values[];  /**< @brief Possible values for f1. */
 
 
 #ifdef __cplusplus

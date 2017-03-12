@@ -93,10 +93,10 @@ int main(int argc, char **argv)
 		// Evaluate and output measures
 		// Note: evaluation of overlapping F1 after NMI allows to reuse some
 		// calculations, for other cases the order of evaluations does not matter
-		if(args_info.nmi_flag) {
+		if(args_info.nmi_given) {
 			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag);
 			// Set NMI to NULL if collections have no any mutual information
-			if(!rnmi.mi)
+			if(!rnmi.mi)  // Note: strict ! is fine here
 				rnmi.h1 = rnmi.h2 = 1;
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
 			if(args_info.all_flag)
@@ -104,13 +104,27 @@ int main(int argc, char **argv)
 					/ (rnmi.h1 + rnmi.h2), rnmi.mi / std::min(rnmi.h1, rnmi.h2));
 			else printf("NMI_max: %G", nmix);
 		}
-		if(args_info.f1_flag) {
+		if(args_info.f1_given) {
+			// Assign required F1 type
+			F1  f1kind = F1::NONE;
+			switch(args_info.f1_arg) {
+			case f1_arg_partprob:
+				f1kind = F1::PARTPROB;
+				break;
+			case f1_arg_harmonic:
+				f1kind = F1::HARMONIC;
+				break;
+			case f1_arg_standard:
+				f1kind = F1::STANDARD;
+				break;
+			}
+
 			if(args_info.nmi_flag)
 				fputs("; ", stdout);
-			printf("F1_gm (%s avg of %s): %G", args_info.unweighted_flag
-				? "unweighted" : "weighed", args_info.prob_flag ? "PPs" : "F1s"
-				, Collection::f1gm(cn1, cn2, !args_info.unweighted_flag
-				, args_info.prob_flag));
+			printf("F1_%s %s: %G", args_info.f1_orig
+				, args_info.unweighted_flag ? "unweighted" : "weighed"
+				, Collection::f1(cn1, cn2, f1kind, !args_info.unweighted_flag)
+				, args_info.detailed_flag);
 		}
 		puts(string(" (").append(is_floating_point<Count>::value
 			? "overlaps" : "multi-resolution").append(" evaluation)").c_str());  // \n

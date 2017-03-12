@@ -290,9 +290,14 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 }
 
 template <typename Count>
-Prob Collection<Count>::f1gm(const CollectionT& cn1, const CollectionT& cn2, bool weighted
-	, bool prob)
+Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
+	, bool weighted, bool verbose)
 {
+	if(kind == F1::NONE) {
+		fputs("WARNING f1(), f1 kind is not specified, the evaluation is skipped\n", stderr);
+		return 0;
+	}
+
 	// Initialized accessory data for evaluations
 	if(is_floating_point<Count>::value && !(cn1.m_contsum && cn2.m_contsum)) {  // Note: strict ! is fine here
 		// Evaluate members contributions
@@ -316,22 +321,26 @@ Prob Collection<Count>::f1gm(const CollectionT& cn1, const CollectionT& cn2, boo
 		initconts(cn2);
 	}
 
+	const bool  prob = kind == F1::PARTPROB;  // Evaluate by the partial probabilities
 #if TRACE >= 3
-	fputs("f1gm(), F1 Max Avg of the first collection\n", stderr);
+	fputs("f1(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ga1 = cn1.avggms(cn2, weighted, prob);
 	if(equal<AccProb>(f1ga1, 0, cn1.m_cls.size()))
 		return 0;
 #if TRACE >= 3
-	fputs("f1gm(), F1 Max Avg of the second collection\n", stderr);
+	fputs("f1(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
 	const AccProb  f1ga2 = cn2.avggms(cn1, weighted, prob);
 	if(equal<AccProb>(f1ga2, 0, cn2.m_cls.size()))
 		return 0;
-#if TRACE >= 2
-	fprintf(stderr, "f1gm(),  f1ga1: %.3G, f1ga2: %.3G\n", f1ga1, f1ga2);
+#if TRACE <= 1
+	if(verbose)
 #endif // TRACE
-	return 2 * f1ga1 / (f1ga1 + f1ga2) * f1ga2;
+	fprintf(verbose ? stdout : stderr, "f1(),  f1ga1: %.G, f1ga2: %.G\n", f1ga1, f1ga2);
+	return kind != F1::STANDARD
+		? 2 * f1ga1 / (f1ga1 + f1ga2) * f1ga2
+		: (f1ga1 + f1ga2) / 2;
 }
 
 template <typename Count>

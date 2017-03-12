@@ -264,6 +264,23 @@ using NodeClusters = unordered_map<Id, ClusterPtrs<Count>>;
 //! Resulting greatest matches for 2 input collections of clusters in a single direction
 using Probs = vector<Prob>;
 
+// F1-related types -----------------------------------------------------------
+using F1Base = uint8_t;
+
+//! \brief F1 kind
+enum struct F1: F1Base {
+	//! Note initialized
+	NONE = 0,
+	//! Harmonic mean of the [weighted] average of the greatest (maximal) match
+	//! by partial probabilities
+	PARTPROB,
+	//! Harmonic mean of the [weighted] average of the greatest (maximal) match by F1s
+	HARMONIC,
+	//! Arithmetic mean (average) of the [weighted] average of the greatest (maximal)
+	//! match by F1s
+	STANDARD
+};
+
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
 //! \tparam Index  - index (of the column) in the row
@@ -514,18 +531,29 @@ public:
 	static CollectionT load(const char* filename, float membership=1
 		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr);
 
-	//! \brief F1 of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
-	//! for the multi-resolution clustering with possibly unequal node base
+	//! \brief Specified F1 evaluation of the Greatest (Max) Match for the
+	//! multi-resolution clustering with possibly unequal node base
+	//!
+	//! Supported F1 measures are F1p <= F1h <= F1s, where:
+	//! - F1p  - Harmonic mean of the [weighted] average of partial probabilities,
+	//! 	the most discriminative and satisfies the largest number of the Formal
+	//! 	Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+	//! - F1h  - Harmonic mean of the [weighted] average of F1s;
+	//! - F1s  - Standard F1-Score, i.e. arithmetic mean (average) of the [weighted]
+	//! 	average of F1s, the least discriminative and satisfies the lowest number
+	//! 	of the Formal Constraints.
+	//!
+	//! of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
 	//! \note Undirected (symmetric) evaluation
 	//!
 	//! \param cn1 const CollectionT&  - first collection
 	//! \param cn2 const CollectionT&  - second collection
+    //! \param kind F1  - kind of F1 to be evaluated
     //! \param weighted=true bool  - weighted average by cluster size or unweighted
-    //! \param prob=false bool  - take harmonic mean of the partial probabilities
-    //! instead of F1s
+    //! \param verbose=false bool  - print intermediate results to the stdout
 	//! \return Prob  - resulting F1_gm
-	static Prob f1gm(const CollectionT& cn1, const CollectionT& cn2, bool weighted=true
-		, bool prob=false);
+	static Prob f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
+		, bool weighted=true, bool verbose=false);
 
 	//! \brief NMI evaluation
 	//! \note Undirected (symmetric) evaluation
