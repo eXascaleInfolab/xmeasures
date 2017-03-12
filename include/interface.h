@@ -277,7 +277,7 @@ enum struct F1: F1Base {
 	//! Harmonic mean of the [weighted] average of the greatest (maximal) match by F1s
 	HARMONIC,
 	//! Arithmetic mean (average) of the [weighted] average of the greatest (maximal)
-	//! match by F1s
+	//! match by F1s, i.e. F1-Score
 	STANDARD
 };
 

@@ -724,8 +724,8 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	if(m_overlaps
 	&& !(equal<AccCont>(m_contsum - econt1, ndsnum(), ndsnum())
 	&& equal<AccCont>(cn.m_contsum - econt2, cn.ndsnum(), cn.ndsnum()))) {  // consum equals to the number of nodes for the overlapping case
-		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), nds1num: %lu"
-			", c2csum: %.3G (- %.3G), nds2num: %lu,  cmmsum: %.3G\n"
+		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), nds1num: %u"
+			", c2csum: %.3G (- %.3G), nds2num: %u,  cmmsum: %.3G\n"
 			, AccProb(m_contsum), AccProb(econt1), ndsnum()
 			, AccProb(cn.m_contsum), AccProb(econt2), cn.ndsnum(), AccProb(cmmsum));
 		assert(0 && "evalconts(), consum validation failed");
