@@ -302,10 +302,11 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 //! node ids if not nullptr
 //! \param cmin=0 size_t  - min allowed cluster size
 //! \param cmax=0 size_t  - max allowed cluster size, 0 means any size
+//! \param verbose=true bool  - print the number of loaded nodes to the stdout
 //! \return bool  - the collection is loaded successfully
 template <typename Id, typename AccId>
 unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership=1
-	, AggHash<Id, AccId>* ahash=nullptr, size_t cmin=0, size_t cmax=0);
+	, AggHash<Id, AccId>* ahash=nullptr, size_t cmin=0, size_t cmax=0, bool verbose=true);
 
 //! \brief Estimate the number of nodes from the CNL file size
 //!
@@ -332,7 +333,7 @@ constexpr const char* toYesNo(bool val) noexcept  { return val ? "yes" : "no"; }
 // File I/O templates definition -----------------------------------------------
 template <typename Id, typename AccId>
 unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
-	, AggHash<Id, AccId>* ahash, size_t cmin, size_t cmax)
+	, AggHash<Id, AccId>* ahash, size_t cmin, size_t cmax, bool verbose)
 {
 	unordered_set<Id>  nodebase;  // Node base;  Note: returned using NRVO optimization
 
@@ -427,9 +428,10 @@ unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
 #if TRACE >= 2
 	printf("loadNodes(). the loaded base has %lu nodes from the input %lu members and %lu clusters\n"
 		, nodebase.size(), totmbs, fclsnum);
-#elif TRACE >= 1
-	printf("The loaded nodebase: %lu\n", nodebase.size());
-#endif // TRACE
+#else
+	if(verbose)
+		printf("loadNodes(), nodebase nodes loaded: %lu\n", nodebase.size());
+#endif // TRACE 2
 
 	// Evaluate nodes hash if required
 	if(ahash && nodebase.size()) {

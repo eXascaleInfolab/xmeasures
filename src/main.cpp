@@ -49,7 +49,8 @@ int main(int argc, char **argv)
 	NodeBase  ndbase;
 	::AggHash  nbhash;
 	if(args_info.sync_given && args_info.inputs_num == 2)
-		ndbase = NodeBase::load(args_info.sync_arg, args_info.membership_arg, &nbhash);
+		ndbase = NodeBase::load(args_info.sync_arg, args_info.membership_arg, &nbhash
+			, 0, 0, args_info.detailed_flag);
 
 	auto process = [&](auto evaluation) -> int {
 		using Count = decltype(evaluation);
@@ -57,7 +58,7 @@ int main(int argc, char **argv)
 		// Load collections as relations
 		::AggHash  cn1hash, cn2hash;
 		auto cn1 = Collection::load(args_info.inputs[0], args_info.membership_arg, &cn1hash
-			, ndbase ? &ndbase : nullptr);
+			, ndbase ? &ndbase : nullptr, args_info.detailed_flag);
 		if(ndbase) {
 			if(nbhash != cn1hash) {
 				fprintf(stderr, "ERROR, nodebase hash %lu (%lu nodes) != filtered"
@@ -68,7 +69,7 @@ int main(int argc, char **argv)
 			ndbase.clear();
 		}
 		auto cn2 = Collection::load(args_info.inputs[1], args_info.membership_arg, &cn2hash
-			, args_info.sync_given ? &cn1 : nullptr);
+			, args_info.sync_given ? &cn1 : nullptr, args_info.detailed_flag);
 
 		if(!cn1.ndsnum() || ! cn2.ndsnum()) {
 			fprintf(stderr, "WARNING, at least one of the collections is empty, there is nothing"

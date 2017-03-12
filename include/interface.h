@@ -527,9 +527,11 @@ public:
     //! \param ahash=nullptr AggHash*  - resulting hash of the loaded
     //! member ids base (unique ids only are hashed, not all ids) if not nullptr
 	//! \param const nodebase=nullptr NodeBaseI*  - node base to filter-out nodes if required
+	//! \param verbose=false bool  - print the number of loaded nodes to the stdout
     //! \return CollectionT  - the collection is loaded successfully
 	static CollectionT load(const char* filename, float membership=1
-		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr);
+		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
+		, bool verbose=false);
 
 	//! \brief Specified F1 evaluation of the Greatest (Max) Match for the
 	//! multi-resolution clustering with possibly unequal node base

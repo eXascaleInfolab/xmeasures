@@ -149,7 +149,7 @@ NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
 
 template <typename Count>
 Collection<Count> Collection<Count>::load(const char* filename, float membership, ::AggHash* ahash
-	, const NodeBaseI* nodebase)
+	, const NodeBaseI* nodebase, bool verbose)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
 
@@ -272,7 +272,7 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 	if(ahash)
 		*ahash = move(mbhash);
 #if TRACE >= 2
-	printf("loadNodes() [shrinked], loaded %lu clusters (reserved %lu buckets, overhead: %0.2f %%) and"
+	printf("load(), loaded %lu clusters (reserved %lu buckets, overhead: %0.2f %%) and"
 		" %lu nodes (reserved %lu buckets, overhead: %0.2f %%) with hash %lu from %s\n"
 		, cn.m_cls.size(), cn.m_cls.bucket_count()
 		, cn.m_cls.size() ? float(cn.m_cls.bucket_count() - cn.m_cls.size()) / cn.m_cls.size() * 100
@@ -282,8 +282,9 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 			: numeric_limits<float>::infinity()
 		, cn.m_ndshash, file.name().c_str());
 #elif TRACE >= 1
-	printf("Loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
-		, cn.m_ndcs.size(), file.name().c_str());
+	if(verbose)
+		printf("load(), loaded %lu clusters %lu nodes from %s\n", cn.m_cls.size()
+			, cn.m_ndcs.size(), file.name().c_str());
 #endif
 
 	return cn;
