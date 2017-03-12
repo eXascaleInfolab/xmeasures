@@ -52,8 +52,8 @@ struct gengetopt_args_info
   float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. (default='1').  */
   char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. original value given at command line.  */
   const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. help description.  */
-  int detailed_flag;	/**< @brief detailed results output (default=off).  */
-  const char *detailed_help; /**< @brief detailed results output help description.  */
+  int detailed_flag;	/**< @brief detailed (verbose) results output (default=off).  */
+  const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
    - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);

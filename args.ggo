@@ -38,7 +38,7 @@ NOTE: the node base can be either a separate, or an evaluating CNL file, in the\
 option  "membership" m  "average expected membership of the nodes in the clusters,\
  > 0, typically >= 1. Used only for the containers preallocation facilitating\ 
  estimation of the nodes number if not specified in the file header."  float default="1"
-option  "detailed" d  "detailed results output"  flag off
+option  "detailed" d  "detailed (verbose) results output"  flag off
 
 section "F1 Options"
 option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\

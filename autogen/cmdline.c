@@ -39,7 +39,7 @@ const char *gengetopt_args_info_help[] = {
   "  -o, --ovp               evaluate overlapping clusters instead of\n                            multi-resolution  (default=off)",
   "  -s, --sync=filename     synchronize with the node base, skipping the\n                            non-matching nodes.\n                            NOTE: the node base can be either a separate, or an\n                            evaluating CNL file, in the latter case this option\n                            should precede the evaluating filename not\n                            repeating it",
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1. Used only for the\n                            containers preallocation facilitating estimation of\n                            the nodes number if not specified in the file\n                            header.  (default=`1')",
-  "  -d, --detailed          detailed results output  (default=off)",
+  "  -d, --detailed          detailed (verbose) results output  (default=off)",
   "\nF1 Options:",
   "  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - F1p  - Harmonic mean of the [weighted] average\n                            of partial probabilities, the most discriminative\n                            and satisfies the largest number of the Formal\n                            Constraints (homogeneity, completeness, rag bag,\n                            size/quantity, balance);\n                             - F1h  - Harmonic mean of the [weighted] average\n                            of F1s;\n                             - F1s  - Standard F1-Score, i.e. the Arithmetic\n                            mean (average) of the [weighted] average of F1s,\n                            the least discriminative and satisfies the lowest\n                            number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
   "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
@@ -683,7 +683,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'd':	/* detailed results output.  */
+        case 'd':	/* detailed (verbose) results output.  */
         
         
           if (update_arg((void *)&(args_info->detailed_flag), 0, &(args_info->detailed_given),

@@ -136,12 +136,13 @@ const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 
 // Collection definitions ------------------------------------------------------
 NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
-	, size_t cmin, size_t cmax)
+	, size_t cmin, size_t cmax, bool verbose)
 {
 	NodeBase  nb;  // Return using NRVO optimization
 	NamedFileWrapper  finp(filename, "r");
 	if(finp)
-		static_cast<UniqIds&>(nb) = loadNodes<Id, AccId>(finp, membership, ahash, cmin, cmax);
+		static_cast<UniqIds&>(nb) = loadNodes<Id, AccId>(finp, membership, ahash
+			, cmin, cmax, verbose);
 	else perror((string("WARNING load(), can't open ") += filename).c_str());
 
 	return nb;

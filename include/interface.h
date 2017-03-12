@@ -475,9 +475,10 @@ struct NodeBase: UniqIds, NodeBaseI {
 	//! if not specified in the file header
 	//! \param cmin=0 size_t  - min allowed cluster size
 	//! \param cmax=0 size_t  - max allowed cluster size, 0 means any size
+    //! \param verbose=false bool  - print intermediate results to the stdout
     //! \return bool  - the collection is loaded successfully
 	static NodeBase load(const char* filename, float membership=1
-		, AggHash* ahash=nullptr, size_t cmin=0, size_t cmax=0);
+		, AggHash* ahash=nullptr, size_t cmin=0, size_t cmax=0, bool verbose=false);
 };
 
 //! Collection describing cluster-node relations
