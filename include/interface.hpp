@@ -337,7 +337,7 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 #if TRACE <= 1
 	if(verbose)
 #endif // TRACE
-	fprintf(verbose ? stdout : stderr, "f1(),  f1ga1: %.G, f1ga2: %.G\n", f1ga1, f1ga2);
+	fprintf(verbose ? stdout : stderr, "f1(),  f1ga1: %G, f1ga2: %G\n", f1ga1, f1ga2);
 	return kind != F1::STANDARD
 		? 2 * f1ga1 / (f1ga1 + f1ga2) * f1ga2
 		: (f1ga1 + f1ga2) / 2;

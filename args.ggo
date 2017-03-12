@@ -52,7 +52,7 @@ NOTE: F1p <= F1h <= F1s, where:
  average of F1s, the least discriminative and satisfies the lowest number of the\
  Formal Constraints.
 "
- values="partprob","harmonic","standard"  enum  default="partprob"
+ values="partprob","harmonic","standard"  enum  default="partprob"  argoptional
 option  "unweighted" u  "evaluate simple average of the best matches instead\
  of weighted by the cluster size"  flag off  dependon="f1"
 

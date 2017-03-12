@@ -123,8 +123,8 @@ int main(int argc, char **argv)
 				fputs("; ", stdout);
 			printf("F1_%s %s: %G", args_info.f1_orig
 				, args_info.unweighted_flag ? "unweighted" : "weighed"
-				, Collection::f1(cn1, cn2, f1kind, !args_info.unweighted_flag)
-				, args_info.detailed_flag);
+				, Collection::f1(cn1, cn2, f1kind, !args_info.unweighted_flag
+					, args_info.detailed_flag));
 		}
 		puts(string(" (").append(is_floating_point<Count>::value
 			? "overlaps" : "multi-resolution").append(" evaluation)").c_str());  // \n

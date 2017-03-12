@@ -41,7 +41,7 @@ const char *gengetopt_args_info_help[] = {
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1. Used only for the\n                            containers preallocation facilitating estimation of\n                            the nodes number if not specified in the file\n                            header.  (default=`1')",
   "  -d, --detailed          detailed results output  (default=off)",
   "\nF1 Options:",
-  "  -f, --f1=ENUM           evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - F1p  - Harmonic mean of the [weighted] average\n                            of partial probabilities, the most discriminative\n                            and satisfies the largest number of the Formal\n                            Constraints (homogeneity, completeness, rag bag,\n                            size/quantity, balance);\n                             - F1h  - Harmonic mean of the [weighted] average\n                            of F1s;\n                             - F1s  - Standard F1-Score, i.e. the Arithmetic\n                            mean (average) of the [weighted] average of F1s,\n                            the least discriminative and satisfies the lowest\n                            number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
+  "  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - F1p  - Harmonic mean of the [weighted] average\n                            of partial probabilities, the most discriminative\n                            and satisfies the largest number of the Formal\n                            Constraints (homogeneity, completeness, rag bag,\n                            size/quantity, balance);\n                             - F1h  - Harmonic mean of the [weighted] average\n                            of F1s;\n                             - F1s  - Standard F1-Score, i.e. the Arithmetic\n                            mean (average) of the [weighted] average of F1s,\n                            the least discriminative and satisfies the lowest\n                            number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
   "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
   "\nNMI Options:",
   "  -n, --nmi               evaluate NMI (Normalized Mutual Information)\n                            (default=off)",
@@ -624,7 +624,7 @@ cmdline_parser_internal (
         { "sync",	1, NULL, 's' },
         { "membership",	1, NULL, 'm' },
         { "detailed",	0, NULL, 'd' },
-        { "f1",	1, NULL, 'f' },
+        { "f1",	2, NULL, 'f' },
         { "unweighted",	0, NULL, 'u' },
         { "nmi",	0, NULL, 'n' },
         { "all",	0, NULL, 'a' },
@@ -632,7 +632,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVos:m:df:unae", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVos:m:df::unae", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
