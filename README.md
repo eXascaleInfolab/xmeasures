@@ -28,7 +28,7 @@ To update/extend the input parameters modify `args.ggo` and run `GenerateArgpars
 # Usage
 Execution Options:
 ```
-$ ../xmeasures -h
+$ ./xmeasures -h
 xmeasures 3.0
 
 Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping
