@@ -17,20 +17,18 @@ Author (c)  Artem Lutov <artem@exascale.info>
 # Deployment
 
 ## Dependencies
-There no any dependencies for the execution or compilation.  
-However, to extend the input options and automatically regenerate the input parsing,
-[*gengetopt*](https://www.gnu.org/software/gengetopt) application should be installed: `$ sudo apt-get install gengetopt`.  
+There no any dependencies for the execution or compilation except the standard C++ library.  
 For the *prebuilt executables*:
 - libstdc++6 (stdc++fs): `$ sudo apt-get install libstdc++6`
 
 ## Compilation
 Just execute `$ make`.  
-To update/extend the input parameters modify `args.ggo` and run `GenerateArgparser.sh` (calls `gengetopt`).
+To update/extend the input parameters modify `args.ggo` and run `GenerateArgparser.sh` (calls `gengetopt`) before running `make`. To install [*gengetopt*](https://www.gnu.org/software/gengetopt) execute: `$ sudo apt-get install gengetopt`.
 
 # Usage
 Execution Options:
 ```
-$ ./xmeasures -h
+$ ../xmeasures -h
 xmeasures 3.0
 
 Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping
@@ -71,10 +69,10 @@ collections evaluation.
                             containers preallocation facilitating estimation of
                             the nodes number if not specified in the file
                             header.  (default=`1')
-  -d, --detailed          detailed results output  (default=off)
+  -d, --detailed          detailed (verbose) results output  (default=off)
 
 F1 Options:
-  -f, --f1=ENUM           evaluate F1 of the [weighted] average of the greatest
+  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest
                             (maximal) match by F1 or partial probability.
                             NOTE: F1p <= F1h <= F1s, where:
                              - F1p  - Harmonic mean of the [weighted] average
