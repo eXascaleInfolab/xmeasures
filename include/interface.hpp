@@ -16,6 +16,8 @@
 
 
 using std::out_of_range;
+using std::overflow_error;
+using std::to_string;
 //using std::bitset;
 using std::min;
 using std::max;
@@ -373,12 +375,22 @@ AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool pro
 		// Note: this assert is not the case for the collections containing multiple resolutions
 		//assert(!less<AccCont>(csizesSum, csnum, csnum) && "avggms(), invalid sum of the cluster sizes");
 		accgm /= csizesSum / AccProb(csnum);
-	} else for(auto gm: gmats)
-		accgm += gm;
+	} else {
+#if VALIDATE >= 2
+		const Id  clsize = sqrt(cn.m_ndcs.size());  // An approximate expected average number of cluster members
+#endif // VALIDATE
+		for(auto gm: gmats) {
+#if VALIDATE >= 2
+			if(less<decltype(gm)>(1, gm, clsize))
+				throw overflow_error("avggms(), gm E (0, 1] is out of range: " + to_string(gm) + "\n");
+#endif // VALIDATE
+			accgm += gm;
+		}
+	}
 #if VALIDATE >= 1
 	if(less<AccProb>(gmats.size(), accgm, gmats.size()))
-		throw std::overflow_error("avggms(), accgm is invalid (larger than"
-			" the number of clusters)\n");
+		throw overflow_error("avggms(), accgm is invalid (larger than the number"
+			" of clusters), probably invalid dataset is supplied\n");
 #endif // VALIDATE
 	return accgm / gmats.size();
 }

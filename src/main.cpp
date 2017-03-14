@@ -108,22 +108,26 @@ int main(int argc, char **argv)
 		if(args_info.f1_given) {
 			// Assign required F1 type
 			F1  f1kind = F1::NONE;
+			// Note: args_info.f1_orig is empty if default value is used
+			char  f1suf = '-';  // Suffix char of the selected F1 measure
 			switch(args_info.f1_arg) {
 			case f1_arg_partprob:
 				f1kind = F1::PARTPROB;
+				f1suf = 'p';
 				break;
 			case f1_arg_harmonic:
 				f1kind = F1::HARMONIC;
+				f1suf = 'h';
 				break;
 			case f1_arg_standard:
 				f1kind = F1::STANDARD;
+				f1suf = 's';
 				break;
 			}
 
 			if(args_info.nmi_flag)
 				fputs("; ", stdout);
-			printf("F1_%s %s: %G", args_info.f1_orig
-				, args_info.unweighted_flag ? "unweighted" : "weighed"
+			printf("F1%c %s: %G", f1suf, args_info.unweighted_flag ? "unweighted" : "weighed"
 				, Collection::f1(cn1, cn2, f1kind, !args_info.unweighted_flag
 					, args_info.detailed_flag));
 		}
