@@ -2,7 +2,7 @@
 Extremely fast evaluation of the extrinsic clustering measures: *various F1 measures (including F1-Score) for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization)* and standard NMI for non-overlapping clustering on a single resolution.  
 `xmeasures` evaluates F1 and NMI for collections of hundreds thousands clusters withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) unlike O(N*C) of the existing state of the art implementations, where N is the number of nodes in the network and C is the number of clusters.
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark to evaluate clustering of large networks.  
-A paper about the implemented F1 (F1p is much more discriminative than the standard F1-Score and NF1 measure) and NMI measures and their applicability is being written now and the reference will be specified before Summer, 2017.
+A paper about the implemented F1 measures (F1p is much more discriminative than the standard F1-Score, NMI measures and their applicability is being written now and the reference will be specified before Summer, 2017.
 > Standard NMI is implemented considering overlapping and multi-resolution clustering only to demonstrate non-applicability of the standard NMI for such cases, it yield unfair results. See [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for the fair generalized NMI evaluation.
 
 Author (c)  Artem Lutov <artem@exascale.info>
