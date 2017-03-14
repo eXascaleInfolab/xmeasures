@@ -94,6 +94,8 @@ public:
 		if(is_integral<CountT>::value)
 			++m_count;
 		else {
+			static_assert(!is_floating_point<CountT>::value || sizeof(m_count) >= sizeof(double)
+				, "operator(), types validation failed");
 #if VALIDATE >= 2
 			if(cont <= 0 || cont > 1)
 				throw invalid_argument("operator(), cont should E (0, 1]\n");
@@ -131,33 +133,6 @@ struct Cluster {
 		, "Counter(), Count should be an arithmetic type");
 	using CountT = Count;  //!< Count type, arithmetic
 
-//	//! An empty stub type
-//	struct EmptyStub {
-//		constexpr operator bool() const noexcept  { return false; }
-//
-//		constexpr const auto& operator= (const Count&) const
-//#if VALIDATE < 2
-//		noexcept
-//#endif // VALIDATE
-//		{
-//#if VALIDATE >= 2
-//			throw domain_error("EmptyStub=() should not be called");
-//#endif // VALIDATE
-//			return *this;
-//		}
-//
-//		constexpr const auto& operator+= (const Count&) const
-//#if VALIDATE < 2
-//		noexcept
-//#endif // VALIDATE
-//		{
-//#if VALIDATE >= 2
-//			throw domain_error("EmptyStub+=() should not be called");
-//#endif // VALIDATE
-//			return *this;
-//		}
-//	};
-
 	RawIds  members;  //!< Node ids, unordered
 	// Note: used by F1 only and always
 	Counter<Count>  counter;  //!< Cluster matching counter
@@ -166,16 +141,12 @@ struct Cluster {
 	//!< Contribution from members from members
 	// Note: used only in case of overlaps by all measures, and by NMI only
 	// in case of multiple resolutions
-//	conditional_t<is_floating_point<Count>::value, Count, EmptyStub>  mbscont;
 	Count  mbscont;
+	static_assert(!is_floating_point<Count>::value || sizeof(mbscont) >= sizeof(double)
+		, "operator(), types validation failed");
 
     //! Default constructor
 	Cluster();
-
-//    //! \brief Constructor
-//    //!
-//    //! \param continit bool  - init raw information content instead of the counter
-//	Cluster(bool continit);
 
     //! \brief F1 measure
     //! \pre Clusters should be valid, i.e. non-empty
@@ -223,12 +194,15 @@ struct Cluster {
 		// ATTENTION: F1 compares clusters per-pair, so it is much simpler and has another
 		// semantics of contribution for the multi-resolution case comparing to NMI
 		// that also uses cont()
-		const Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
+		constexpr bool  floating = is_floating_point<Count>::value;
+		const Count  contrib = floating ? cont() : members.size();
 #if VALIDATE >= 2
 		if(matches < 0 || capacity < matches || contrib <= 0)
 			throw invalid_argument("pprob(), both clusters should be non-empty");
 #endif // VALIDATE
-		return AccProb(matches * matches) / AccProb(capacity * contrib);  // E [0, 1]
+		return floating ? static_cast<AccProb>(matches) * matches / (static_cast<AccProb>(capacity) * contrib)
+			: static_cast<AccProb>(static_cast<AccId>(matches) * matches)
+				/ (static_cast<AccId>(capacity) * contrib);  // E [0, 1]
 	}
 
     //! \brief Cluster members contribution

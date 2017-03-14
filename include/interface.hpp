@@ -376,11 +376,11 @@ AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool pro
 		//assert(!less<AccCont>(csizesSum, csnum, csnum) && "avggms(), invalid sum of the cluster sizes");
 		accgm /= csizesSum / AccProb(csnum);
 	} else {
-#if VALIDATE >= 2
+#if VALIDATE >= 3
 		const Id  clsize = sqrt(cn.m_ndcs.size());  // An approximate expected average number of cluster members
 #endif // VALIDATE
 		for(auto gm: gmats) {
-#if VALIDATE >= 2
+#if VALIDATE >= 3
 			if(less<decltype(gm)>(1, gm, clsize))
 				throw overflow_error("avggms(), gm E (0, 1] is out of range: " + to_string(gm) + "\n");
 #endif // VALIDATE
