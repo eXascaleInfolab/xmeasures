@@ -101,8 +101,10 @@ int main(int argc, char **argv)
 				rnmi.h1 = rnmi.h2 = 1;
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
 			if(args_info.all_flag)
-				printf("NMI_max: %G, NMI_avg: %G, NMI_min: %G", nmix, 2 * rnmi.mi
-					/ (rnmi.h1 + rnmi.h2), rnmi.mi / std::min(rnmi.h1, rnmi.h2));
+				printf("NMI_max: %G, NMI_sqrt: %G, NMI_avg: %G, NMI_min: %G"
+					, nmix, rnmi.mi / sqrt(rnmi.h1 * rnmi.h2)
+					, 2 * rnmi.mi / (rnmi.h1 + rnmi.h2)
+					, rnmi.mi / std::min(rnmi.h1, rnmi.h2));
 			else printf("NMI_max: %G", nmix);
 		}
 		if(args_info.f1_given) {

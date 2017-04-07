@@ -45,7 +45,7 @@ const char *gengetopt_args_info_help[] = {
   "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
   "\nNMI Options:",
   "  -n, --nmi               evaluate NMI (Normalized Mutual Information)\n                            (default=off)",
-  "  -a, --all               evaluate all NMIs using avg and min denominators\n                            besides the max one  (default=off)",
+  "  -a, --all               evaluate all NMIs using sqrt, avg and min\n                            denominators besides the max one  (default=off)",
   "  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,\n                            bits) for the information measuring  (default=off)",
     0
 };
@@ -730,7 +730,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'a':	/* evaluate all NMIs using avg and min denominators besides the max one.  */
+        case 'a':	/* evaluate all NMIs using sqrt, avg and min denominators besides the max one.  */
         
         
           if (update_arg((void *)&(args_info->all_flag), 0, &(args_info->all_given),

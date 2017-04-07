@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "3.0"
+#define CMDLINE_PARSER_VERSION "3.0.1"
 #endif
 
 enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_standard };
@@ -76,8 +76,8 @@ struct gengetopt_args_info
   const char *unweighted_help; /**< @brief evaluate simple average of the best matches instead of weighted by the cluster size help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */
-  int all_flag;	/**< @brief evaluate all NMIs using avg and min denominators besides the max one (default=off).  */
-  const char *all_help; /**< @brief evaluate all NMIs using avg and min denominators besides the max one help description.  */
+  int all_flag;	/**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one (default=off).  */
+  const char *all_help; /**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one help description.  */
   int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring (default=off).  */
   const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
   

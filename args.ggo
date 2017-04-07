@@ -1,7 +1,7 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "3.0"
+version "3.0.1"
 
 purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping\
  multi-resolution clusterings with possible unequal node base and standard NMI for\
@@ -58,7 +58,7 @@ option  "unweighted" u  "evaluate simple average of the best matches instead\
 
 section "NMI Options"
 option  "nmi" n  "evaluate NMI (Normalized Mutual Information)"  flag off
-option  "all" a  "evaluate all NMIs using avg and min denominators besides\
+option  "all" a  "evaluate all NMIs using sqrt, avg and min denominators besides\
  the max one"  flag off  dependon="nmi"
 option  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
  for the information measuring" flag off  dependon="nmi"
@@ -70,6 +70,7 @@ args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allo
 
 
 # = Changelog =
+# v3.0 - NMI_sqrt added
 # v3.0 - Command line interface changed for F1
 #	- Standard F1-Score added
 #	- Option for the detailed results output added
