@@ -1,7 +1,7 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "3.0.1"
+version "3.0.2"
 
 purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping\
  multi-resolution clusterings with possible unequal node base and standard NMI for\
@@ -10,10 +10,10 @@ purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlappin
 description "Extrinsic measures are evaluated, i.e. clustering (collection of\
  clusters) is compared to another collection, which is typically the ground-truth.
 Evaluating measures are:
-  - F1  - various F1 measures of the Greatest (Max) Match including the standard\
+  - F1  - various F1 measures of the Greatest (Max) Match including the Average\
  F1-Score with optional weighting;
-  - NMI  - Normalized Mutual Information, normalized by either max or also avg\
- and min information content denominators.
+  - NMI  - Normalized Mutual Information, normalized by either max or also sqrt,\
+ avg and min information content denominators.
 ATTENTION: this is standard NMI, which should be used ONLY for the HARD\
  partitioning evaluation (non-overlapping clustering on a single resolution).\
   it penalizes overlapping and multi-resolution structures.
@@ -70,7 +70,7 @@ args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allo
 
 
 # = Changelog =
-# v3.0.+ - NMI_sqrt added
+# v3.0.2 - NMI_sqrt added
 # v3.0 - Command line interface changed for F1
 #	- Standard F1-Score added
 #	- Option for the detailed results output added
