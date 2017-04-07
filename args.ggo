@@ -70,7 +70,7 @@ args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allo
 
 
 # = Changelog =
-# v3.0 - NMI_sqrt added
+# v3.0.+ - NMI_sqrt added
 # v3.0 - Command line interface changed for F1
 #	- Standard F1-Score added
 #	- Option for the detailed results output added
