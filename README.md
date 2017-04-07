@@ -30,8 +30,8 @@ To update/extend the input parameters modify `args.ggo` and run `GenerateArgpars
 # Usage
 Execution Options:
 ```
-$ ./xmeasures -h
-xmeasures 3.0
+$ ../xmeasures -h
+xmeasures 3.0.2
 
 Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping
 multi-resolution clusterings with possible unequal node base and standard NMI
@@ -44,10 +44,10 @@ Usage: xmeasures [OPTIONS] clustering1 clustering2
 Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is
 compared to another collection, which is typically the ground-truth.
 Evaluating measures are:
-  - F1  - various F1 measures of the Greatest (Max) Match including the
-standard F1-Score with optional weighting;
-  - NMI  - Normalized Mutual Information, normalized by either max or also avg
-and min information content denominators.
+  - F1  - various F1 measures of the Greatest (Max) Match including the Average
+F1-Score with optional weighting;
+  - NMI  - Normalized Mutual Information, normalized by either max or also
+sqrt, avg and min information content denominators.
 ATTENTION: this is standard NMI, which should be used ONLY for the HARD
 partitioning evaluation (non-overlapping clustering on a single resolution).
 it penalizes overlapping and multi-resolution structures.
@@ -96,8 +96,8 @@ F1 Options:
 NMI Options:
   -n, --nmi               evaluate NMI (Normalized Mutual Information)
                             (default=off)
-  -a, --all               evaluate all NMIs using avg and min denominators
-                            besides the max one  (default=off)
+  -a, --all               evaluate all NMIs using sqrt, avg and min
+                            denominators besides the max one  (default=off)
   -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,
                             bits) for the information measuring  (default=off)
 ```
