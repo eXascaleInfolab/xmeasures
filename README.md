@@ -16,8 +16,7 @@ Author (c)  Artem Lutov <artem@exascale.info>
 
 # Deployment
 
-The target platform is NIX, the binary is compiled for Linux Ubuntu x64 and also should work on Windows 10+ x64 (see details in [this article](https://www.howtogeek.com/249966/
-how-to-install-and-use-the-linux-bash-shell-on-windows-10/)).
+The target platform is NIX, the binary is compiled for Linux Ubuntu x64 and also should work on Windows 10+ x64 (see details in [this article](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/)).
 
 ## Dependencies
 There no any dependencies for the execution or compilation except the standard C++ library.  
