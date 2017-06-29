@@ -41,8 +41,8 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  int ovp_flag;	/**< @brief evaluate overlapping clusters instead of multi-resolution (default=off).  */
-  const char *ovp_help; /**< @brief evaluate overlapping clusters instead of multi-resolution help description.  */
+  int ovp_flag;	/**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R unlike 1 for the member existing in R distinct clusters on R resolutions (default=off).  */
+  const char *ovp_help; /**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R unlike 1 for the member existing in R distinct clusters on R resolutions help description.  */
   char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
   NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
   char * sync_orig;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
@@ -56,21 +56,21 @@ struct gengetopt_args_info
   const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
-   - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
-   - F1h  - Harmonic mean of the [weighted] average of F1s;
-   - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - p (F1p)  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
+   - s (F1s)  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
  (default='partprob').  */
   char * f1_orig;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
-   - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
-   - F1h  - Harmonic mean of the [weighted] average of F1s;
-   - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - p (F1p)  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
+   - s (F1s)  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
  original value given at command line.  */
   const char *f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
-   - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
-   - F1h  - Harmonic mean of the [weighted] average of F1s;
-   - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - p (F1p)  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
+   - s (F1s)  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
  help description.  */
   int unweighted_flag;	/**< @brief evaluate simple average of the best matches instead of weighted by the cluster size (default=off).  */
   const char *unweighted_help; /**< @brief evaluate simple average of the best matches instead of weighted by the cluster size help description.  */

@@ -31,17 +31,17 @@ const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another collection, which is typically the ground-truth.\nEvaluating measures are:\n  - F1  - various F1 measures of the Greatest (Max) Match including the Average\nF1-Score with optional weighting;\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: this is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nit penalizes overlapping and multi-resolution structures.\nNOTE: unequal node base in the clusterings is allowed, it penalizes the match.\nUse [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary\ncollections evaluation.\n";
+const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another clustering, which is typically the ground-truth.\nEvaluating measures are:\n  - F1  - various F1 measures of the Greatest (Max) Match including the Average\nF1-Score with optional weighting;\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: this is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\nNOTE: unequal node base in the clusterings is allowed, it penalizes the match.\nUse [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary\ncollections evaluation.\n";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
   "  -V, --version           Print version and exit",
-  "  -o, --ovp               evaluate overlapping clusters instead of\n                            multi-resolution  (default=off)",
+  "  -o, --ovp               evaluate overlapping instead of multi-resolution\n                            clusters, where max matching for any shared member\n                            between R overlapping clusters is 1/R unlike 1 for\n                            the member existing in R distinct clusters on R\n                            resolutions  (default=off)",
   "  -s, --sync=filename     synchronize with the node base, skipping the\n                            non-matching nodes.\n                            NOTE: the node base can be either a separate, or an\n                            evaluating CNL file, in the latter case this option\n                            should precede the evaluating filename not\n                            repeating it",
   "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1. Used only for the\n                            containers preallocation facilitating estimation of\n                            the nodes number if not specified in the file\n                            header.  (default=`1')",
   "  -d, --detailed          detailed (verbose) results output  (default=off)",
   "\nF1 Options:",
-  "  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - F1p  - Harmonic mean of the [weighted] average\n                            of partial probabilities, the most discriminative\n                            and satisfies the largest number of the Formal\n                            Constraints (homogeneity, completeness, rag bag,\n                            size/quantity, balance);\n                             - F1h  - Harmonic mean of the [weighted] average\n                            of F1s;\n                             - F1s  - Standard F1-Score, i.e. the Arithmetic\n                            mean (average) of the [weighted] average of F1s,\n                            the least discriminative and satisfies the lowest\n                            number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
+  "  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - p (F1p)  - Harmonic mean of the [weighted]\n                            average of partial probabilities, the most\n                            discriminative and satisfies the largest number of\n                            the Formal Constraints (homogeneity, completeness,\n                            rag bag,  size/quantity, balance);\n                             - h (F1h)  - Harmonic mean of the [weighted]\n                            average of F1s;\n                             - s (F1s)  - Standard F1-Score, i.e. the\n                            Arithmetic mean (average) of the [weighted] average\n                            of F1s, the least discriminative and satisfies the\n                            lowest number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
   "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
   "\nNMI Options:",
   "  -n, --nmi               evaluate NMI (Normalized Mutual Information)\n                            (default=off)",
@@ -648,7 +648,7 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
-        case 'o':	/* evaluate overlapping clusters instead of multi-resolution.  */
+        case 'o':	/* evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R unlike 1 for the member existing in R distinct clusters on R resolutions.  */
         
         
           if (update_arg((void *)&(args_info->ovp_flag), 0, &(args_info->ovp_given),
@@ -695,9 +695,9 @@ cmdline_parser_internal (
           break;
         case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
         NOTE: F1p <= F1h <= F1s, where:
-         - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
-         - F1h  - Harmonic mean of the [weighted] average of F1s;
-         - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+         - p (F1p)  - Harmonic mean of the [weighted] average of partial probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+         - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
+         - s (F1s)  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
 .  */
         
         

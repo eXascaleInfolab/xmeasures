@@ -56,51 +56,56 @@ Use [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary
 collections evaluation.
 
 
-  -h, --help              Print help and exit
-  -V, --version           Print version and exit
-  -o, --ovp               evaluate overlapping clusters instead of
-                            multi-resolution  (default=off)
-  -s, --sync=filename     synchronize with the node base, skipping the
-                            non-matching nodes.
-                            NOTE: the node base can be either a separate, or an
-                            evaluating CNL file, in the latter case this option
-                            should precede the evaluating filename not
-                            repeating it
-  -m, --membership=FLOAT  average expected membership of the nodes in the
-                            clusters, > 0, typically >= 1. Used only for the
-                            containers preallocation facilitating estimation of
-                            the nodes number if not specified in the file
-                            header.  (default=`1')
-  -d, --detailed          detailed (verbose) results output  (default=off)
+-h, --help              Print help and exit
+-V, --version           Print version and exit
+-o, --ovp               evaluate overlapping instead of multi-resolution
+								  clusters, where max matching for any shared member
+								  between R overlapping clusters is 1/R unlike 1 for
+								  the member existing in R distinct clusters on R
+								  resolutions  (default=off)
+-s, --sync=filename     synchronize with the node base, skipping the
+								  non-matching nodes.
+								  NOTE: the node base can be either a separate, or an
+								  evaluating CNL file, in the latter case this option
+								  should precede the evaluating filename not
+								  repeating it
+-m, --membership=FLOAT  average expected membership of the nodes in the
+								  clusters, > 0, typically >= 1. Used only for the
+								  containers preallocation facilitating estimation of
+								  the nodes number if not specified in the file
+								  header.  (default=`1')
+-d, --detailed          detailed (verbose) results output  (default=off)
 
 F1 Options:
-  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest
-                            (maximal) match by F1 or partial probability.
-                            NOTE: F1p <= F1h <= F1s, where:
-                             - F1p  - Harmonic mean of the [weighted] average
-                            of partial probabilities, the most discriminative
-                            and satisfies the largest number of the Formal
-                            Constraints (homogeneity, completeness, rag bag,
-                            size/quantity, balance);
-                             - F1h  - Harmonic mean of the [weighted] average
-                            of F1s;
-                             - F1s  - Standard F1-Score, i.e. the Arithmetic
-                            mean (average) of the [weighted] average of F1s,
-                            the least discriminative and satisfies the lowest
-                            number of the Formal Constraints.
-                              (possible values="partprob", "harmonic",
-                            "standard" default=`partprob')
-  -u, --unweighted        evaluate simple average of the best matches instead
-                            of weighted by the cluster size  (default=off)
+-f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest
+								  (maximal) match by F1 or partial probability.
+								  NOTE: F1p <= F1h <= F1s, where:
+									- p (F1p)  - Harmonic mean of the [weighted]
+								  average of partial probabilities, the most
+								  discriminative and satisfies the largest number of
+								  the Formal Constraints (homogeneity, completeness,
+								  rag bag,  size/quantity, balance);
+									- h (F1h)  - Harmonic mean of the [weighted]
+								  average of F1s;
+									- s (F1s)  - Standard F1-Score, i.e. the
+								  Arithmetic mean (average) of the [weighted] average
+								  of F1s, the least discriminative and satisfies the
+								  lowest number of the Formal Constraints.
+									 (possible values="partprob", "harmonic",
+								  "standard" default=`partprob')
+-u, --unweighted        evaluate simple average of the best matches instead
+								  of weighted by the cluster size  (default=off)
 
 NMI Options:
-  -n, --nmi               evaluate NMI (Normalized Mutual Information)
-                            (default=off)
-  -a, --all               evaluate all NMIs using sqrt, avg and min
-                            denominators besides the max one  (default=off)
-  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,
-                            bits) for the information measuring  (default=off)
+-n, --nmi               evaluate NMI (Normalized Mutual Information)
+								  (default=off)
+-a, --all               evaluate all NMIs using sqrt, avg and min
+								  denominators besides the max one  (default=off)
+-e, --ln                use ln (exp base) instead of log2 (Shannon entropy,
+								  bits) for the information measuring  (default=off)
 ```
+
+> Empty lines and comments (lines starting with #) in the input file (cnl format) are skipped.
 
 **Examples**
 Evaluate F1 of the weighted average of the greatest (maximal) match by partial probabilities (the most discriminative F1-measure):

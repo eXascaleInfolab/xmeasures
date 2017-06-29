@@ -8,7 +8,7 @@ purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlappin
  non-overlapping clustering on a single resolution."
 
 description "Extrinsic measures are evaluated, i.e. clustering (collection of\
- clusters) is compared to another collection, which is typically the ground-truth.
+ clusters) is compared to another clustering, which is typically the ground-truth.
 Evaluating measures are:
   - F1  - various F1 measures of the Greatest (Max) Match including the Average\
  F1-Score with optional weighting;
@@ -16,7 +16,7 @@ Evaluating measures are:
  avg and min information content denominators.
 ATTENTION: this is standard NMI, which should be used ONLY for the HARD\
  partitioning evaluation (non-overlapping clustering on a single resolution).\
-  it penalizes overlapping and multi-resolution structures.
+  It penalizes overlapping and multi-resolution structures.
 NOTE: unequal node base in the clusterings is allowed, it penalizes the match.
 Use [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary\
  collections evaluation.
@@ -26,7 +26,9 @@ usage "xmeasures [OPTIONS] clustering1 clustering2
 
   clustering  - input file, collection of the clusters to be evaluated."
 
-option  "ovp" o  "evaluate overlapping clusters instead of multi-resolution"  flag off
+option  "ovp" o  "evaluate overlapping instead of multi-resolution clusters, where\
+ max matching for any shared member between R overlapping clusters is 1/R unlike 1\
+ for the member existing in R distinct clusters on R resolutions"  flag off
 #NOTE: multi-resolution mode can be used as approximation of the overlapping\
 # clusters evaluation, but not vice verse"  flag off
 # Note: ovp option requires shares evaluation/reading and processing of the directory
@@ -36,7 +38,7 @@ NOTE: the node base can be either a separate, or an evaluating CNL file, in the\
  latter case this option should precede the evaluating filename not repeating it"
   string  typestr="filename"
 option  "membership" m  "average expected membership of the nodes in the clusters,\
- > 0, typically >= 1. Used only for the containers preallocation facilitating\ 
+ > 0, typically >= 1. Used only for the containers preallocation facilitating\
  estimation of the nodes number if not specified in the file header."  float default="1"
 option  "detailed" d  "detailed (verbose) results output"  flag off
 
@@ -44,11 +46,11 @@ section "F1 Options"
 option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\
  match by F1 or partial probability.
 NOTE: F1p <= F1h <= F1s, where:
- - F1p  - Harmonic mean of the [weighted] average of partial probabilities, the\
+ - p (F1p)  - Harmonic mean of the [weighted] average of partial probabilities, the\
  most discriminative and satisfies the largest number of the Formal Constraints\
  (homogeneity, completeness, rag bag,  size/quantity, balance);
- - F1h  - Harmonic mean of the [weighted] average of F1s;
- - F1s  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted]\
+ - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
+ - s (F1s)  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted]\
  average of F1s, the least discriminative and satisfies the lowest number of the\
  Formal Constraints.
 "
