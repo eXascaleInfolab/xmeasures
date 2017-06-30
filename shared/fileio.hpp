@@ -265,10 +265,11 @@ public:
 
     //! \brief Read line from the file and store including the terminating '\n' symbol
     //! \attention The read string contains the trailing '\n' if exist in the file
+    //! \note The buffer might contain [part of] the read line on reading error
     //!
     //! \param input FILE*  - processing file
-    //! \return bool  - whether the following line available and the current one
-    //! 	is read without any errors
+    //! \return bool  - whether the current line is read without any errors or
+    //! the all lines already read (and the current one is empty)
 	bool readline(FILE* input);
 };
 
@@ -347,6 +348,7 @@ unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
 	// Note: strings defined out of the cycle to avoid reallocations
 	StringBuffer  line;  // Reading line
 	// Parse header and read the number of clusters if specified
+	// Note: line includes terminating '\n'
 	parseCnlHeader(file, line, clsnum, ndsnum);
 
 	// Estimate the number of nodes in the file if not specified
@@ -378,6 +380,10 @@ unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
 	size_t  fclsnum = 0;  // The number of read clusters from the file
 #endif // TRACE
 	do {
+#if TRACE >= 3
+		// Note: line includes terminating '\n'
+		fprintf(stderr, "%lu> %s", fclsnum, static_cast<const char*>(line));
+#endif // TRACE
 		char *tok = strtok(line, mbdelim);  // const_cast<char*>(line.data())
 
 		// Skip comments

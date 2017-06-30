@@ -159,7 +159,7 @@ bool StringBuffer::readline(FILE* input)
 	m_length = iend != -1 && ibeg != -1 ? iend - ibeg : strlen(data());
 
 	// Check for errors
-	if(feof(input) || ferror(input)) {
+	if((!m_length && feof(input)) || ferror(input)) {
 		if(ferror(input))
 			perror("ERROR readline(), file reading error");
 		return false;  // No more lines can be read
@@ -212,7 +212,13 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 	constexpr char  clsmark[] = "clusters";
 	constexpr char  ndsmark[] = "nodes";
 	constexpr char  attrnameDelim[] = " \t:,";
+#if TRACE >= 2
+	size_t  lnum = 0;  // The number of lines read
+#endif // TRACE
 	while(line.readline(fcls)) {
+#if TRACE >= 2
+		++lnum;
+#endif // TRACE
 		// Skip empty lines
 		if(line.empty())
 			continue;
@@ -263,6 +269,9 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 		line.readline(fcls);
 		break;
 	}
+#if TRACE >= 2
+	fprintf(stderr, "parseCnlHeader(), processed %lu lines\n", lnum);
+#endif // TRACE
 }
 
 size_t estimateCnlNodes(size_t filesize, float membership) noexcept
