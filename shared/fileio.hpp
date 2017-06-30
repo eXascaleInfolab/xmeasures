@@ -432,7 +432,7 @@ unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
 //	if(nodebase.size() <= nodebase.bucket_count() * nodebase.max_load_factor() / 3)
 //		nodebase.reserve(nodebase.size());
 #if TRACE >= 2
-	printf("loadNodes(). the loaded base has %lu nodes from the input %lu members of %lu clusters\n"
+	printf("loadNodes(), the loaded base has %lu nodes from the input %lu members of %lu clusters\n"
 		, nodebase.size(), totmbs, fclsnum);
 #else
 	if(verbose)
