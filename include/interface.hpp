@@ -196,6 +196,8 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 #if TRACE >= 2
 	fprintf(stderr, "load(), expected %lu clusters, %lu nodes from %lu input bytes\n"
 		, csnum, nsnum, fsize);
+	if(nodebase)
+		fprintf(stderr, "load(), nodebase provided with %u nodes\n", nodebase->ndsnum());
 #endif // TRACE
 
 	// Preallocate space for the clusters and nodes

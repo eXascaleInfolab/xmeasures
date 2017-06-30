@@ -8,7 +8,7 @@ purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlappin
  non-overlapping clustering on a single resolution."
 
 description "Extrinsic measures are evaluated, i.e. clustering (collection of\
- clusters) is compared to another clustering, which is typically the ground-truth.
+ clusters) is compared to another clustering, which can be the ground-truth.
 Evaluating measures are:
   - F1  - various F1 measures of the Greatest (Max) Match including the Average\
  F1-Score with optional weighting;
@@ -46,12 +46,12 @@ section "F1 Options"
 option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\
  match by F1 or partial probability.
 NOTE: F1p <= F1h <= F1s, where:
- - p (F1p)  - Harmonic mean of the [weighted] average of partial probabilities, the\
+ - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the\
  most discriminative and satisfies the largest number of the Formal Constraints\
  (homogeneity, completeness, rag bag,  size/quantity, balance);
  - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
- - s (F1s)  - Standard F1-Score, i.e. the Arithmetic mean (average) of the [weighted]\
- average of F1s, the least discriminative and satisfies the lowest number of the\
+ - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s,\
+ Standard F1-Score, the least discriminative and satisfies the lowest number of the\
  Formal Constraints.
 "
  values="partprob","harmonic","standard"  enum  default="partprob"  argoptional

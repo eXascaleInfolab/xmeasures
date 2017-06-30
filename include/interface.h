@@ -546,7 +546,9 @@ protected:
     //! \brief Average of the maximal matches (by F1 or partial probabilities)
     //! relative to the specified collection FROM this one
     //! \note External cn collection can have unequal node base and overlapping
-    //! clusters on multiple resolutions
+    //! clusters on multiple resolutions. Small collection relative to the average
+    //! or average relative to huge might yield best matching F1 equal to 1, but
+    //! then the back match should be small.
     //! \attention Directed (non-symmetric) evaluation
     //!
     //! \param cn const CollectionT&  - collection to compare with

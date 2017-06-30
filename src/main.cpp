@@ -26,12 +26,12 @@ int main(int argc, char **argv)
 	if(!args_info.f1_given && !args_info.nmi_given) {
 		fputs("WARNING, no any measures to evaluate specified\n", stderr);
 		cmdline_parser_print_help();
-		return 1;
+		return EINVAL;
 	}
 
 	if(args_info.membership_arg <= 0) {
 		fprintf(stderr, "ERROR, positive membership is expected: %G\n", args_info.membership_arg);
-		return 1;
+		return EDOM;
 	}
 
 	{	// Validate the number of input files
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 			fputs("ERROR, 2 input clusterings are required with possibly additional"
 				" node base, i.e. 2-3 input files in total\n", stderr);
 			cmdline_parser_print_help();
-			return 1;
+			return EINVAL;
 		}
 	}
 
@@ -57,24 +57,27 @@ int main(int argc, char **argv)
 		using Collection = Collection<Count>;
 		// Load collections as relations
 		::AggHash  cn1hash, cn2hash;
-		auto cn1 = Collection::load(args_info.inputs[0], args_info.membership_arg, &cn1hash
+		// Note: cn1 is nodebase if specified and not in the separated file
+		const bool  cn1base = args_info.sync_given && args_info.inputs_num < 2;
+		auto cn1 = Collection::load(cn1base ? args_info.sync_arg : args_info.inputs[0]
+			, args_info.membership_arg, &cn1hash
 			, ndbase ? &ndbase : nullptr, args_info.detailed_flag);
 		if(ndbase) {
 			if(nbhash != cn1hash) {
 				fprintf(stderr, "ERROR, nodebase hash %lu (%lu nodes) != filtered"
 					" collection nodes hash %lu (%lu)\n", nbhash.hash(), nbhash.size()
 					, cn1hash.hash(), cn1hash.size());
-				return 1;
+				return EINVAL;
 			}
 			ndbase.clear();
 		}
-		auto cn2 = Collection::load(args_info.inputs[1], args_info.membership_arg, &cn2hash
+		auto cn2 = Collection::load(args_info.inputs[!cn1base], args_info.membership_arg, &cn2hash
 			, args_info.sync_given ? &cn1 : nullptr, args_info.detailed_flag);
 
 		if(!cn1.ndsnum() || ! cn2.ndsnum()) {
 			fprintf(stderr, "WARNING, at least one of the collections is empty, there is nothing"
 				" to evaluate. Collection nodes sizes: %u, %u\n", cn1.ndsnum(), cn2.ndsnum());
-			return 1;
+			return EINVAL;
 		}
 
 		// Check the collections' nodebase
@@ -87,7 +90,7 @@ int main(int argc, char **argv)
 				, daoc::toYesNo(args_info.sync_given));
 			if(args_info.sync_given) {
 				fputs("ERROR, the nodes base had to be synchronized\n", stderr);
-				return 1;
+				return EINVAL;
 			}
 		}
 

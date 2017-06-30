@@ -309,8 +309,8 @@ constexpr ptrdiff_t bsObjsDest(typename T::const_reference obj
 //! \param val const typename T::value_type::CallT  - comparing value
 //! \return ptrdiff_t  - comparison result: cv - v
 template <typename T>
-inline ptrdiff_t bsObjsOp(typename T::const_reference obj
-	, const typename T::value_type::CallT val) noexcept(typename T::value_type()())
+constexpr ptrdiff_t bsObjsOp(typename T::const_reference obj
+	, const typename T::value_type::CallT val)  // noexcept(typename T::value_type()())
 // ATTENTION: without casting difference will be incorrect for the types with size
 // different from ptrdiff_t and for the unsigned types
 {
@@ -327,7 +327,7 @@ inline ptrdiff_t bsObjsOp(typename T::const_reference obj
 //! \param val const typename T::CallT  - comparing value
 //! \return ptrdiff_t  - comparison result: cv - v
 template <typename T>
-inline ptrdiff_t bsObjOp(const T& obj, const typename T::CallT val) noexcept(T()())
+constexpr ptrdiff_t bsObjOp(const T& obj, const typename T::CallT val)
 // ATTENTION: without casting difference will be incorrect for the types with size
 // different from ptrdiff_t and for the unsigned types
 {
