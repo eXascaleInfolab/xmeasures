@@ -26,11 +26,7 @@ using namespace daoc;
 // Cluster definition ----------------------------------------------------------
 template <typename Count>
 Cluster<Count>::Cluster(): members(), counter(), mbscont()
-{
-#if VALIDATE >= 1
-	assert(!mbscont && "Cluster(), contin should be 0");  // Note: ! is fine here
-#endif // VALIDATE
-}
+{}
 
 //string to_string(Evaluation eval, bool bitstr)
 //{
@@ -218,6 +214,7 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 	assert(ndchars >= 1 && "load(), ndchars invalid");
 #endif // VALIDATE
 	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
+	ClusterHolder<Count>  chd(new Cluster<Count>());
 	do {
 		// Skip cluster id if specified and parse first node id
 		char *tok = strtok(line, mbdelim);  // const_cast<char*>(line.data())
@@ -238,8 +235,7 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 		}
 
 		// Parse remained node ids and load cluster members
-		auto icl = cn.m_cls.emplace(new Cluster<Count>()).first;
-		Cluster<Count>* const  pcl = icl->get();
+		Cluster<Count>* const  pcl = chd.get();
 		auto& members = pcl->members;
 		members.reserve(line.length() / ndchars);  // Note: strtok() does not affect line.length()
 		do {
@@ -265,7 +261,13 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 				mbhash.add(nid);
 			ncs.push_back(pcl);
 		} while((tok = strtok(nullptr, mbdelim)));
-		members.shrink_to_fit();  // Free over reserved space
+		if(!members.empty()) {
+			members.shrink_to_fit();  // Free over reserved space
+			const bool  res = cn.m_cls.insert(move(chd)).second;
+			assert(res && "load(), the cluster insertion is skipped as it already present");
+			// Start filling a new cluster
+			chd.reset(new Cluster<Count>());
+		}
 	} while(line.readline(file));
 	// Rehash the clusters and nodes for faster traversing if required
 	if(cn.m_cls.size() < cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() / 2)

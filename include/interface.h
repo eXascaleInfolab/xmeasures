@@ -138,7 +138,7 @@ struct Cluster {
 	Counter<Count>  counter;  //!< Cluster matching counter
 	////! Accumulated contribution
 	//using AccCont = conditional_t<m_overlaps, Count, AccId>;
-	//!< Contribution from members from members
+	//!< Contribution from members
 	// Note: used only in case of overlaps by all measures, and by NMI only
 	// in case of multiple resolutions
 	Count  mbscont;

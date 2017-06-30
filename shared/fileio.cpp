@@ -270,7 +270,8 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 		break;
 	}
 #if TRACE >= 2
-	fprintf(stderr, "parseCnlHeader(), processed %lu lines\n", lnum);
+	fprintf(stderr, "parseCnlHeader(), processed %lu lines of '%s'\n"
+		, lnum, fcls.name().c_str());
 #endif // TRACE
 }
 
