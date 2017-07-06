@@ -19,14 +19,14 @@ Author (c)  Artem Lutov <artem@exascale.info>
 The target platform is NIX, the binary is compiled for Linux Ubuntu x64 and also should work on Windows 10+ x64 (see details in [this article](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/)).
 
 ## Requirements
-There are no any requirements for the execution or compilation except the *standard C++ library*, which is typically available by default.  
-The **prebuilt executable** requires `stdlib++6` from *Ubuntu 16.04 x64*, on another platforms you might need to *compile the native executable*.
+There are no any requirements for the execution or compilation except the *standard C++ library*.
 
-To install *libstdc++6* (stdc++fs) on Linux Ubuntu 16.04 / Latest Debian x64, execute: `$ sudo apt-get install libstdc++6`. On the earlier versions of Ubuntu you might need to use the *toolchain* repository:
+The **prebuilt executable** requires `stdlib++6` from *Ubuntu 16.04 x64*, on another platforms you might need to *compile the native executable*.  
+To install *libstdc++6* (stdc++fs) on Linux Ubuntu 16.04 / latest Debian x64, execute: `$ sudo apt-get install libstdc++6`. On the earlier versions of Ubuntu you might need to use the *toolchain* repository:
 ```
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-sudo apt-get update
-sudo apt-get install -y libstdc++6
+$ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+$ sudo apt-get update
+$ sudo apt-get install -y libstdc++6
 ```
 Or manually fetch `libstdc++6` from the Ubuntu 16.04 repository and install it via `dpkg`:
 ```
