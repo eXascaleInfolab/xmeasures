@@ -22,14 +22,15 @@ The target platform is NIX, the binary is compiled for Linux Ubuntu x64 and also
 There no any requirements for the execution or compilation except the standard C++ library, which is available by default on the *Linux Ubuntu 16.04*.  
 To install *libstdc++6* (stdc++fs) on Linux Ubuntu / Debian execute: `$ sudo apt-get install libstdc++6`
 
-> The binary is built on *Ubuntu 16.04 x64*, on another NIX systems you might need to compile native binary.  
-On the earlier versions of Ubuntu you can also fetch the latest stdlib++6 compatible on one on Ubuntu 16. Either add the repository with updated software:
+> The binary is built on *Ubuntu 16.04 x64*, on another NIX systems you might need to **compile the native binary**.
+
+On the earlier versions of Ubuntu you can also fetch the latest `stdlib++6` compatible to the one on Ubuntu 16:
 ```
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get install -y libstdc++6
 ```
-or manually  fetch `libstdc++6` from the Ubuntu 16.04 repository and install it via `dpkg`:
+Or manually  fetch `libstdc++6` from the Ubuntu 16.04 repository and install it via `dpkg`:
 ```
 $ wget http://security.ubuntu.com/ubuntu/pool/main/g/gcc-5/libstdc++6_5.4.0-6ubuntu1~16.04.4_amd64.deb
 $ sudo dpkg -i ./libstdc++6*.deb
