@@ -133,10 +133,11 @@ Evaluate F1-Score (weighted by the cluster size) and  NMI with all denominators 
 $ ./xmeasures -fs -na -s data/1lev4nds2cls.cnl data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
+**Note:** Please, [star this project](https://github.com/eXascaleInfolab/xmeasures) if you use it.
+
 # Related Projects
 - [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) - Overlapping NMI evaluation that is compatible with the original NMI and suitable for both overlapping and multi resolution (hierarchical) clustering evaluation.
 - [resmerge](https://github.com/eXascaleInfolab/resmerge)  - Resolution levels clustering merger with filtering. Flattens hierarchy/list of multiple resolutions levels (clusterings) into the single flat clustering with clusters on various resolution levels synchronizing the node base.
 - [ExecTime](https://bitbucket.org/lumais/exectime/)  - A lightweight resource consumption profiler.
 - [PyCABeM](https://github.com/eXascaleInfolab/PyCABeM) - Python Benchmarking Framework for the Clustering Algorithms Evaluation. Uses extrinsic (NMIs) and intrinsic (Q) measures for the clusters quality evaluation considering overlaps (nodes membership by multiple clusters).
-
-**Note:** Please, [star this project](https://github.com/eXascaleInfolab/xmeasures) if you use it.
+- [TInfES](https://github.com/eXascaleInfolab/TInfES)  - Type inference evaluation scripts and accessory apps used for the benchmarking.

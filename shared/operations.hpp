@@ -17,7 +17,7 @@
 #include <limits>  // Type limits
 #include <type_traits>  // conditional, type check
 #include <cassert>
-#include <utility>  // declval, forward, move
+#include <utility>  // declval, move, forward
 #include <iterator>  // iterator_traits
 
 #include "macrodef.h"
@@ -48,7 +48,26 @@ using std::is_base_of;
 using std::declval;
 using std::max;
 using std::enable_if_t;
+using std::distance;
 
+
+// Tracing file
+//!\brief Global trace log
+//! Client may reassign ftrace, for example when the hierarchy is output to the
+//! stdout so as this channel should not be used for the tracing.
+//! \note Mainly stdout or stderr are assumed to used
+#ifdef FTRACE_GLOBAL
+extern FILE* ftrace;
+#else
+static FILE* ftrace =
+// Note: TRACE <= 1 has vary few output
+#if defined(DEBUG) || TRACE <= 1
+	stderr
+#else
+	stdout  // Release
+#endif // DEBUG, TRACE
+	;
+#endif // FTRACE_GLOBAL
 
 // Compile time tracing functions ---------------------------------------------
 //! \brief Trace specified type in compile time
@@ -112,6 +131,7 @@ constexpr ValT precision_limit()
 
 //! \brief Strict less for floating point numbers
 //! \pre size should be positive (!= 0)
+//! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2
@@ -134,6 +154,7 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
 	// - fabs(a + b) should not be used in the normalization, it diminishes accuracy
 	// Exact solution:
 	//return a - b + precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b)) < 0;
+	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
 	// Faster computation with sufficient accuracy:
 	return a - b + precision_limit<ValT>() * (1 + log2(size)) * (fabs(a) + fabs(b))/2 < 0;
 }
@@ -148,6 +169,7 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
 
 //! \brief Check equality of 2 floating point numbers
 //! \pre size should be positive (!= 0)
+//! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2
@@ -165,7 +187,7 @@ constexpr bool equal(const ValT a, const ValT b=ValT(0), const float size=1)
 //	// Allow stand-alone nodes
 //	//assert(size >= 1 && "equal(), size should be positive");
 //#if TRACE >= 3
-//	fprintf(stderr, "equal()  a: %g, b: %g, cnt: %lu, precLim: %G (from %G)"
+//	fprintf(ftrace, "equal()  a: %g, b: %g, cnt: %lu, precLim: %G (from %G)"
 //		"\n\tres: %d, val: %g, lim: %g (lmul: %g)\n"
 //		, a, b, size, precision_limit<ValT>(), numeric_limits<ValT>::epsilon()
 //		, fabs(a - b) <= precision_limit<ValT>() * size * (1 + fabs(a) + fabs(b))
@@ -181,6 +203,7 @@ constexpr bool equal(const ValT a, const ValT b=ValT(0), const float size=1)
 	// 	it will diminish precision and make the comparison invalid
 	//// - "fabs(a + b)" is not appropriate here in case of a = -b && b > 0  => fabs(a) + fabs(b)
 	//return fabs(a - b) <= precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b));
+	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
 	return fabs(a - b) <= precision_limit<ValT>() * (1 + log2(size)) * (fabs(a) + fabs(b))/2;
 }
 
@@ -212,6 +235,11 @@ constexpr bool cmpBase(const ValT a, const ValT b)
 template <typename T>
 constexpr bool cmpDest(const T& a, const T& b)
 { return cmpBase(a.dest, b.dest); }
+
+//! Comparison function for the objects weight
+template <typename ObjsT, typename WeightT>
+constexpr bool cmpObjsWeight(typename ObjsT::const_reference a, typename ObjsT::const_reference b)
+{ return less<WeightT>(a.weight, b.weight); }
 
 // Binary search --------------------------------------------------------------
 // Min size of an array when bin search is faster than a linear scan, 11 or 9
@@ -430,11 +458,11 @@ RandIT binary_ifind(RandIT begin, const RandIT end, const T val
 #if TRACE >= 3
 	if(!(iend == end || cmp(*iend, val) <= 0)) {
 		// Note: iend != end is always true here
-		fprintf(stderr, "  >>>>> binary_ifind(), iend: %s, val: %s. Container: "
+		fprintf(ftrace, "  >>>>> binary_ifind(), iend: %s, val: %s. Container: "
 			, iend->idstr().c_str(), val->idstr().c_str());
 		for(auto ic = begin; ic != end; ++ic)
-			fprintf(stderr, " %s", ic->idstr().c_str());
-		fputs("\n", stderr);
+			fprintf(ftrace, " %s", ic->idstr().c_str());
+		fputs("\n", ftrace);
 	}
 #endif // TRACE
 	assert((iend == end || cmp(*iend, val) >= 0)
@@ -693,7 +721,7 @@ typename ContainerT::iterator insorted(ContainerT& els, const ItemT el, CompareF
 #if VALIDATE >= 1
 #if TRACE >= 2
 	if(!(iel == els.end() || cmp(*iel, el) != 0))
-		fprintf(stderr, "  >>>>>>> insorted(), #%u (%p) is already among %lu members\n"
+		fprintf(ftrace, "  >>>>>>> insorted(), #%u (%p) is already among %lu members\n"
 			, el->id, el, els.size());
 #endif // TRACE
 #ifndef INSORTED_NONUNIQUE
@@ -737,7 +765,7 @@ inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT 
 #if VALIDATE >= 1
 #if TRACE >= 2
 	if(!(iel == els.end() || cmp(*iel, el) != 0))
-		fprintf(stderr, "  >>>>>>> insortedLight(), #%u (%p) is already among %lu members\n"
+		fprintf(ftrace, "  >>>>>>> insortedLight(), #%u (%p) is already among %lu members\n"
 			, el->id, el, els.size());
 #endif // TRACE
 #ifndef INSORTED_NONUNIQUE

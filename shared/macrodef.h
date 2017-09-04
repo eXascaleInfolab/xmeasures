@@ -25,6 +25,8 @@
 //		- 2  - detailed tracing for DEBUG
 //		- 3  - extra detailed tracing
 //
+//	- FTRACE_GLOBAL  - use global ftrace file for the whole project, or "shared/" headers
+//		define it locally
 // NOTE: undefined maro definition is interpreted as having value 0
 
 #ifndef TRACE
@@ -46,5 +48,19 @@
 //	#define VALIDATE 0
 #endif // DEBUG
 #endif // VALIDATE
+
+// SWIG related macro definitions
+// Swig 3.0.12 does not understand some structures, workarounds are applied
+#ifdef SWIG
+	// Just skip the static assert
+    #define static_assert(a, b)
+#endif // SWIG
+
+// Note: SWIG_VERSION is not defined for SWIGJAVA and SWIGCSHARP
+#if defined(SWIG_VERSION) || defined(SWIGJAVA) || defined(SWIGCSHARP)
+	// Defined automatically when any SWIG processing is performed
+	// (either the included as SWIG interface or implementation)
+	#define DAOC_SWIGPROC
+#endif // SWIG processing
 
 #endif // MACRODEF_H
