@@ -193,7 +193,9 @@ void ensureDir(const string& dir)
 			+= "' already exists as a non-directory path\n");
 }
 
-void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum) {
+void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum
+	, size_t& ndsnum, bool verbose)
+{
     //! Parse count value
     //! \return  - id value of 0 in case of parsing errors
 	auto parseCount = []() noexcept -> size_t {
@@ -251,8 +253,19 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, 
 				fprintf(stderr, "parseCnlHeader(), nodes: %lu\n", ndsnum);
 #endif // TRACE
 			} else {
-				fprintf(stderr, "WARNING parseCnlHeader(), the header parsing is omitted"
+#if TRACE >= 1
+#if TRACE < 2
+			if(verbose)
+#endif // TRACE 2
+				fprintf(
+#if TRACE >= 2
+				stderr
+#else
+				stdout
+#endif // TRACE 2
+				, "WARNING parseCnlHeader(), the header parsing is omitted"
 					" because of the unexpected attribute: %s\n", tok);
+#endif // TRACE 1
 				break;
 			}
 		} while((tok = strtok(nullptr, attrnameDelim)) && attrs < 2);

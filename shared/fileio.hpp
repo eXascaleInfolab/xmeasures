@@ -287,8 +287,10 @@ void ensureDir(const string& dir);
 //! \param line StringBuffer&  - processing line (string, header) being read from the file
 //! \param[out] clsnum size_t&  - resulting number of clusters if specified, 0 in case of parsing errors
 //! \param[out] ndsnum size_t&  - resulting number of nodes if specified, 0 in case of parsing errors
+//! \param verbose=false bool  - print information about the header parsing issue to the stdout
 //! \return void
-void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum, size_t& ndsnum);
+void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum
+	, size_t& ndsnum, bool verbose=false);
 
 //! \brief Load nodes from the CNL file with optional filtering by the cluster size
 //!
@@ -349,7 +351,7 @@ unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
 	StringBuffer  line;  // Reading line
 	// Parse header and read the number of clusters if specified
 	// Note: line includes terminating '\n'
-	parseCnlHeader(file, line, clsnum, ndsnum);
+	parseCnlHeader(file, line, clsnum, ndsnum, verbose);
 
 	// Estimate the number of nodes in the file if not specified
 	if(!ndsnum) {

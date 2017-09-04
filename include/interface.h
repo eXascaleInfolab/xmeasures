@@ -539,8 +539,10 @@ public:
 	//! \param cn2 const CollectionT&  - second collection
     //! \param expbase=false bool  - use ln (exp base) or log2 (Shannon entropy, bits)
     //! for the information measuring
+    //! \param verbose=false bool  - perform additional verification and print details
 	//! \return RawNmi  - resulting NMI
-	static RawNmi nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase=false);
+	static RawNmi nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase=false
+		, bool verbose=false);
 protected:
 	// F1-related functions ----------------------------------------------------
     //! \brief Average of the maximal matches (by F1 or partial probabilities)

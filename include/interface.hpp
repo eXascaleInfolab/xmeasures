@@ -446,21 +446,26 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 }
 
 template <typename Count>
-RawNmi Collection<Count>::nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase)
+RawNmi Collection<Count>::nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase, bool verbose)
 {
 	RawNmi  rnmi1;
 	if(!cn1.clsnum() || !cn2.clsnum())
 		return rnmi1;
 
 	rnmi1 = cn1.nmi(cn2, expbase);
-#if VALIDATE >= 2
-	// Check NMI value for the inverse order of collections
-	auto rnmi2 = cn2.nmi(cn1, expbase);
-	fprintf(stderr, "nmi(), mi1: %G, mi2: %G,  dmi: %G\n", rnmi1.mi, rnmi2.mi
-		, rnmi1.mi - rnmi2.mi);
-	assert(equal(rnmi1.mi, rnmi2.mi, (cn1.clsnum() + cn2.clsnum()) / 2)
-		&& "nmi(), rnmi is not symmetric");
-#endif // VALIDATE
+#if VALIDATE >= 1
+#if VALIDATE < 2
+	if(verbose)
+#endif // VALIDATE 2
+	{
+		// Check NMI value for the inverse order of collections
+		auto rnmi2 = cn2.nmi(cn1, expbase);
+		fprintf(stderr, "nmi(), mi1: %G, mi2: %G,  dmi: %G\n", rnmi1.mi, rnmi2.mi
+			, rnmi1.mi - rnmi2.mi);
+		assert(equal(rnmi1.mi, rnmi2.mi, (cn1.clsnum() + cn2.clsnum()) / 2)
+			&& "nmi(), rnmi is not symmetric, most likely overlaps are present and not considered but this implementation");
+	}
+#endif // VALIDATE 1
 	return rnmi1;
 }
 
@@ -494,7 +499,7 @@ RawNmi Collection<Count>::nmi(const CollectionT& cn, bool expbase) const
 		//if(!val)
 		//	return 0;
 		const AccProb  prob = val / capacity;
-		return prob * clog(prob);
+		return !equal<Prob>(prob, 1) ? prob * clog(prob) : -1;
 	};
 
 	AccProb  h12 = 0;  // Accumulated mutual probability over the matrix, I(cn1, cn2) in exp base
@@ -563,7 +568,7 @@ RawNmi Collection<Count>::nmi(const CollectionT& cn, bool expbase) const
 #endif // TRACING_CLSMM_
 	}
 #if VALIDATE >= 2
-	fprintf(stderr, "nmi(), psum: %G\n", psum);
+	fprintf(stderr, "nmi(), psum: %G, h12: %G\n", psum, h12);
 	assert(equal(psum, 1., cmmsum) && "nmi(), total probability of the matrix should be 1");
 #endif // VALIDATE
 
@@ -740,8 +745,8 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	if(m_overlaps
 	&& !(equal<AccCont>(m_contsum - econt1, ndsnum(), ndsnum())
 	&& equal<AccCont>(cn.m_contsum - econt2, cn.ndsnum(), cn.ndsnum()))) {  // consum equals to the number of nodes for the overlapping case
-		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), nds1num: %u"
-			", c2csum: %.3G (- %.3G), nds2num: %u,  cmmsum: %.3G\n"
+		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G lacked), nds1num: %u"
+			", c2csum: %.3G (- %.3G lacked), nds2num: %u,  cmmsum: %.3G\n"
 			, AccProb(m_contsum), AccProb(econt1), ndsnum()
 			, AccProb(cn.m_contsum), AccProb(econt2), cn.ndsnum(), AccProb(cmmsum));
 		assert(0 && "evalconts(), consum validation failed");
@@ -752,13 +757,13 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	if((m_ndshash == cn.m_ndshash && m_ndshash && m_ndshash && (!match1 || !match2))  // The same node base
 	|| (m_ndshash != cn.m_ndshash && (!match1 && !match2))   // Distinct node base
 	) {  // Note: cmmsum should match to either of the sums
-		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), c2csum: %.3G (- %.3G), cmmsum: %.3G\n"
+		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G lacked), c2csum: %.3G (- %.3G lacked), cmmsum: %.3G\n"
 			, AccProb(m_contsum), AccProb(econt1), AccProb(cn.m_contsum)
 			, AccProb(econt2), AccProb(cmmsum));
 		throw domain_error("nmi(), rows accumulation is invalid");
 	}
 #if TRACE >= 2
-	fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G), c2csum: %.3G (- %.3G), cmmsum: %.3G\n"
+	fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G lacked), c2csum: %.3G (- %.3G lacked), cmmsum: %.3G\n"
 		, AccProb(m_contsum), AccProb(econt1), AccProb(cn.m_contsum)
 		, AccProb(econt2), AccProb(cmmsum));
 #endif // TRACE

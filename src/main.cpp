@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 		// Note: evaluation of overlapping F1 after NMI allows to reuse some
 		// calculations, for other cases the order of evaluations does not matter
 		if(args_info.nmi_given) {
-			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag);
+			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag, args_info.detailed_flag);
 			// Set NMI to NULL if collections have no any mutual information
 			if(!rnmi.mi)  // Note: strict ! is fine here
 				rnmi.h1 = rnmi.h2 = 1;
