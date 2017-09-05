@@ -132,6 +132,8 @@ constexpr ValT precision_limit()
 //! \brief Strict less for floating point numbers
 //! \pre size should be positive (!= 0)
 //! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
+//! \attention Valid only for fabs(a) + fabs(b) > 1, otherwise precision_limit()
+//! 	should be used without the multiplier
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2
@@ -170,6 +172,8 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
 //! \brief Check equality of 2 floating point numbers
 //! \pre size should be positive (!= 0)
 //! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
+//! \attention Valid only for fabs(a) + fabs(b) > 1, otherwise precision_limit()
+//! 	should be used without the multiplier
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2

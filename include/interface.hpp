@@ -462,7 +462,7 @@ RawNmi Collection<Count>::nmi(const CollectionT& cn1, const CollectionT& cn2, bo
 		auto rnmi2 = cn2.nmi(cn1, expbase);
 		fprintf(stderr, "nmi(), mi1: %G, mi2: %G,  dmi: %G\n", rnmi1.mi, rnmi2.mi
 			, rnmi1.mi - rnmi2.mi);
-		assert(equal(rnmi1.mi, rnmi2.mi, (cn1.clsnum() + cn2.clsnum()) / 2)
+		assert((rnmi1.mi - rnmi2.mi) < precision_limit<Prob>() * 2
 			&& "nmi(), rnmi is not symmetric, most likely overlaps are present and not considered but this implementation");
 	}
 #endif // VALIDATE 1
@@ -577,7 +577,13 @@ RawNmi Collection<Count>::nmi(const CollectionT& cn, bool expbase) const
 	for(const auto& c2: cn.m_cls)
 		h2 -= infocont(c2->cont(), cn.m_contsum);  // cn.ndsnum(), cmmsum
 
-	rnmi(h1 + h2 - h12, h1, h2);  // h1 + h2 - h12;  h12
+	Prob  mi = h1 + h2 - h12;
+#if VALIDATE >= 2
+	assert(mi >= -precision_limit<Prob>() && "nmi(), mi is invalid");
+#endif // VALIDATE
+	if(fabs(mi) < precision_limit<Prob>())
+		mi = 0;
+	rnmi(mi, h1, h2);  // h1 + h2 - h12;  h12
 	//rnmi(h12, h1, h2);  // h1 + h2 - h12;  h12  // ATTENTION: this approach is invalid, it shows higher values for worse matching, but [and] awards overlaps
 
 	// VVV Tracks only shapes of clusters, but not the clusters [members] matching between the collections => need h12
