@@ -132,8 +132,6 @@ constexpr ValT precision_limit()
 //! \brief Strict less for floating point numbers
 //! \pre size should be positive (!= 0)
 //! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
-//! \attention Valid only for fabs(a) + fabs(b) > 1, otherwise precision_limit()
-//! 	should be used without the multiplier
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2
@@ -158,7 +156,8 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
 	//return a - b + precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b)) < 0;
 	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
 	// Faster computation with sufficient accuracy:
-	return a - b + precision_limit<ValT>() * (1 + log2(size)) * (fabs(a) + fabs(b))/2 < 0;
+	return 2 * (a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
+		+ precision_limit<ValT>() * (1 + log2(size)) < 0;
 }
 
 //! \brief Strict less for integral numbers
@@ -172,8 +171,6 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
 //! \brief Check equality of 2 floating point numbers
 //! \pre size should be positive (!= 0)
 //! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
-//! \attention Valid only for fabs(a) + fabs(b) > 1, otherwise precision_limit()
-//! 	should be used without the multiplier
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2
@@ -208,7 +205,8 @@ constexpr bool equal(const ValT a, const ValT b=ValT(0), const float size=1)
 	//// - "fabs(a + b)" is not appropriate here in case of a = -b && b > 0  => fabs(a) + fabs(b)
 	//return fabs(a - b) <= precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b));
 	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
-	return fabs(a - b) <= precision_limit<ValT>() * (1 + log2(size)) * (fabs(a) + fabs(b))/2;
+	return 2 * fabs(a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
+		<= precision_limit<ValT>() * (1 + log2(size));
 }
 
 //! \brief Strict equal for integral numbers
