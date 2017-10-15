@@ -36,7 +36,7 @@ Then `g++-5` should be installed and `Makefile` might need to be edited replacin
 Execution Options:
 ```
 $ ../xmeasures -h
-xmeasures 3.0.2
+xmeasures 3.0
 
 Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping
 multi-resolution clusterings with possible unequal node base and standard NMI
@@ -56,9 +56,13 @@ sqrt, avg and min information content denominators.
 ATTENTION: this is standard NMI, which should be used ONLY for the HARD
 partitioning evaluation (non-overlapping clustering on a single resolution).
 it penalizes overlapping and multi-resolution structures.
-NOTE: unequal node base in the clusterings is allowed, it penalizes the match.
-Use [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary
-collections evaluation.
+NOTE: Unequal node base in the clusterings is allowed, it penalizes the match.
+Each cluster should contain unique members, which is verified only in the debug
+mode.
+Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or
+[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation
+in the arbitrary collections (still each cluster should contain unique
+members).
 
 
   -h, --help              Print help and exit
@@ -136,6 +140,7 @@ $ ./xmeasures -fs -na -s data/1lev4nds2cls.cnl data/3cls5nds.cnl data/4cls6nds.c
 **Note:** Please, [star this project](https://github.com/eXascaleInfolab/xmeasures) if you use it.
 
 # Related Projects
+- [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI)  - NMI evaluation for the overlapping clusters (communities) that is not compatible with the standard NMI value unlike GenConvNMI, but it is much faster than GenConvNMI.
 - [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) - Overlapping NMI evaluation that is compatible with the original NMI and suitable for both overlapping and multi resolution (hierarchical) clustering evaluation.
 - [resmerge](https://github.com/eXascaleInfolab/resmerge)  - Resolution levels clustering merger with filtering. Flattens hierarchy/list of multiple resolutions levels (clusterings) into the single flat clustering with clusters on various resolution levels synchronizing the node base.
 - [ExecTime](https://bitbucket.org/lumais/exectime/)  - A lightweight resource consumption profiler.

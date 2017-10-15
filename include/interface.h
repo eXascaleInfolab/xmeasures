@@ -171,7 +171,7 @@ struct Cluster {
 		, Prob, Count>>(capacity, matches) || contrib <= 0)
 			throw invalid_argument(string("f1(), both clusters should be non-empty, matches: ")
 				.append(std::to_string(matches)).append(", capacity: ").append(std::to_string(capacity))
-				.append(", contrib: ").append(std::to_string(contrib)));
+				.append(", contrib: ").append(std::to_string(contrib)) += '\n');
 #endif // VALIDATE
 		return 2 * matches / AccProb(capacity + contrib);  // E [0, 1]
 		// Note that partial probability (non-normalized to the remained matches,
@@ -204,7 +204,7 @@ struct Cluster {
 		(capacity, matches) || contrib <= 0)
 			throw invalid_argument(string("pprob(), both clusters should be non-empty, matches: ")
 				.append(std::to_string(matches)).append(", capacity: ").append(std::to_string(capacity))
-				.append(", contrib: ").append(std::to_string(contrib)));
+				.append(", contrib: ").append(std::to_string(contrib)) += '\n');
 #endif // VALIDATE
 		return floating ? static_cast<AccProb>(matches) * matches / (static_cast<AccProb>(capacity) * contrib)
 			: static_cast<AccProb>(static_cast<AccId>(matches) * matches)

@@ -128,6 +128,8 @@ int main(int argc, char **argv)
 				f1kind = F1::STANDARD;
 				f1suf = 's';
 				break;
+			default:
+				throw invalid_argument("main(), UNKNOWN F1 policy specified\n");
 			}
 
 			if(args_info.nmi_flag)

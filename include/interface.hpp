@@ -11,16 +11,26 @@
 #include <cstring>  // strlen, strtok
 //#include <bitset>
 //#include <cmath>  // sqrt
+#if VALIDATE >= 2
+#include <algorithm>
+#endif // VALIDATE 2
+
 #include "operations.hpp"
 #include "interface.h"
 
 
+
 using std::out_of_range;
 using std::overflow_error;
+using std::invalid_argument;
 using std::to_string;
 //using std::bitset;
 using std::min;
 using std::max;
+#if VALIDATE >= 2
+using std::sort;
+using std::adjacent_find;
+#endif // VALIDATE 2
 using namespace daoc;
 
 // Cluster definition ----------------------------------------------------------
@@ -263,6 +273,16 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 		} while((tok = strtok(nullptr, mbdelim)));
 		if(!members.empty()) {
 			members.shrink_to_fit();  // Free over reserved space
+#if VALIDATE >= 2
+			// Validate that members are unique
+			sort(members.begin(), members.end());
+			const auto im = adjacent_find(members.begin(), members.end());
+			if(im != members.end()) {
+				fprintf(stderr, "load(), the cluster #%lu contains duplicated member #%lu: %u\n"
+					, cn.m_cls.size(), distance(members.begin(), im), *im);
+				throw invalid_argument("load(), the cluster contains duplicated members\n");
+			}
+#endif // VALIDATE
 			const bool  res = cn.m_cls.insert(move(chd)).second;
 			assert(res && "load(), the cluster insertion is skipped as it already present");
 			// Start filling a new cluster

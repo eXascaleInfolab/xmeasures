@@ -1,7 +1,7 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "3.0.2"
+version "3.0"
 
 purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping\
  multi-resolution clusterings with possible unequal node base and standard NMI for\
@@ -17,9 +17,12 @@ Evaluating measures are:
 ATTENTION: this is standard NMI, which should be used ONLY for the HARD\
  partitioning evaluation (non-overlapping clustering on a single resolution).\
   It penalizes overlapping and multi-resolution structures.
-NOTE: unequal node base in the clusterings is allowed, it penalizes the match.
-Use [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for arbitrary\
- collections evaluation.
+NOTE: Unequal node base in the clusterings is allowed, it penalizes the match.\
+ Each cluster should contain unique members, which is verified only in the debug\
+ mode.
+Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\
+ [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\
+ in the arbitrary collections (still each cluster should contain unique members).
 "
 
 usage "xmeasures [OPTIONS] clustering1 clustering2
