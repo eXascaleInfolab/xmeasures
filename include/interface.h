@@ -167,8 +167,11 @@ struct Cluster {
 		// semantics of contribution for the multi-resolution case
 		const Count  contrib = is_floating_point<Count>::value ? cont() : members.size();
 #if VALIDATE >= 2
-		if(matches < 0 || capacity < matches || contrib <= 0)
-			throw invalid_argument("f1(), both clusters should be non-empty");
+		if(matches < 0 || daoc::less<conditional_t<is_floating_point<Count>::value
+		, Prob, Count>>(capacity, matches) || contrib <= 0)
+			throw invalid_argument(string("f1(), both clusters should be non-empty, matches: ")
+				.append(std::to_string(matches)).append(", capacity: ").append(std::to_string(capacity))
+				.append(", contrib: ").append(std::to_string(contrib)));
 #endif // VALIDATE
 		return 2 * matches / AccProb(capacity + contrib);  // E [0, 1]
 		// Note that partial probability (non-normalized to the remained matches,
@@ -182,7 +185,7 @@ struct Cluster {
     //! \pre Clusters should be valid, i.e. non-empty
     //!
     //! \param matches Count  - the number of matched members
-    //! \param capacity Count  - contributions capacity  of the matching foreign cluster
+    //! \param capacity Count  - contributions capacity of the matching foreign cluster
     //! \return AccProb  - resulting probability
 	AccProb pprob(Count matches, Count capacity) const
 #if VALIDATE < 2
@@ -197,8 +200,11 @@ struct Cluster {
 		constexpr bool  floating = is_floating_point<Count>::value;
 		const Count  contrib = floating ? cont() : members.size();
 #if VALIDATE >= 2
-		if(matches < 0 || capacity < matches || contrib <= 0)
-			throw invalid_argument("pprob(), both clusters should be non-empty");
+		if(matches < 0 || daoc::less<conditional_t<floating, Prob, Count>>
+		(capacity, matches) || contrib <= 0)
+			throw invalid_argument(string("pprob(), both clusters should be non-empty, matches: ")
+				.append(std::to_string(matches)).append(", capacity: ").append(std::to_string(capacity))
+				.append(", contrib: ").append(std::to_string(contrib)));
 #endif // VALIDATE
 		return floating ? static_cast<AccProb>(matches) * matches / (static_cast<AccProb>(capacity) * contrib)
 			: static_cast<AccProb>(static_cast<AccId>(matches) * matches)

@@ -63,4 +63,9 @@
 	#define DAOC_SWIGPROC
 #endif // SWIG processing
 
+// Define macros for the case when SWIG supports functions overloading
+#if defined(SWIGCSHARP) || defined(SWIGD) || defined(SWIGJAVA)
+	#define SWIG_OVERLOADS
+#endif // OVERLOADS
+
 #endif // MACRODEF_H
