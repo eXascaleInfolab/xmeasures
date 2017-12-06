@@ -100,8 +100,13 @@ int main(int argc, char **argv)
 		if(args_info.nmi_given) {
 			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag, args_info.detailed_flag);
 			// Set NMI to NULL if collections have no any mutual information
-			if(!rnmi.mi)  // Note: strict ! is fine here
+			// ATTENTION: for some cases, for example when one of the collections is a single cluster,
+			// NMI will always yield 0 for any clusters in the second collection, which is limitation
+			// of the original NMI measure. Similar issues possible in more complex configurations.
+			if(rnmi.mi <= precision_limit<decltype(rnmi.mi)>()) {  // Note: strict ! is fine here
+				throw domain_error("ERROR: NMI is not applicable to the specified collections: 0, which says nothing about the similarity\n");
 				rnmi.h1 = rnmi.h2 = 1;
+			}
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
 			if(args_info.all_flag)
 				printf("NMI_max: %G, NMI_sqrt: %G, NMI_avg: %G, NMI_min: %G"
