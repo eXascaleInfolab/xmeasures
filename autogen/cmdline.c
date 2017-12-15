@@ -27,11 +27,11 @@
 
 const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping\nmulti-resolution clusterings with possible unequal node base and standard NMI\nfor non-overlapping clustering on a single resolution.";
 
-const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.";
+const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.\n  \nExample:\n  $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl\n";
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another clustering, which can be the ground-truth.\nEvaluating measures are:\n  - F1  - various F1 measures of the Greatest (Max) Match including the Average\nF1-Score with optional weighting;\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: this is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\nNOTE: Unequal node base in the clusterings is allowed, it penalizes the match.\nEach cluster should contain unique members, which is verified only in the debug\nmode.\nUse [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n";
+const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another clustering, which can be the ground-truth.\nNOTE: Each cluster should contain unique members, which is verified only in the\ndebug mode.\nEvaluating measures are:\n\n  - F1  - various F1 measures of the Greatest (Max) Match including the Average\nF1-Score with optional weighting.\n NOTE: There are 3 matching policies available for each kind of F1. The most\nrepresentative evaluation is performed by the F1p with combined matching\npolicy (considers both micro and macro weightings). \n\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: This is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\nNOTE: Unequal node base in the clusterings is allowed, it penalizes the\nmatch.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help              Print help and exit",
@@ -42,7 +42,7 @@ const char *gengetopt_args_info_help[] = {
   "  -d, --detailed          detailed (verbose) results output  (default=off)",
   "\nF1 Options:",
   "  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - p (F1p)  - Harmonic mean of the [weighted]\n                            average of Partial Probabilities, the most\n                            discriminative and satisfies the largest number of\n                            the Formal Constraints (homogeneity, completeness,\n                            rag bag,  size/quantity, balance);\n                             - h (F1h)  - Harmonic mean of the [weighted]\n                            average of F1s;\n                             - s (F1s)  - Arithmetic mean (average) of the\n                            [weighted] average of F1s, Standard F1-Score, the\n                            least discriminative and satisfies the lowest\n                            number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
-  "  -u, --unweighted        evaluate simple average of the best matches instead\n                            of weighted by the cluster size  (default=off)",
+  "  -k, --kind[=ENUM]       kind of the matching policy:\n                             - w  - weighted (default)\n                             - u  - unweighed\n                             - c  - combined: F1(w, u)\n                               (possible values=\"weighted\", \"unweighed\",\n                            \"combined\" default=`weighted')",
   "\nNMI Options:",
   "  -n, --nmi               evaluate NMI (Normalized Mutual Information)\n                            (default=off)",
   "  -a, --all               evaluate all NMIs using sqrt, avg and min\n                            denominators besides the max one  (default=off)",
@@ -70,6 +70,7 @@ static int
 cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *prog_name, const char *additional_error);
 
 const char *cmdline_parser_f1_values[] = {"partprob", "harmonic", "standard", 0}; /*< Possible values for f1. */
+const char *cmdline_parser_kind_values[] = {"weighted", "unweighed", "combined", 0}; /*< Possible values for kind. */
 
 static char *
 gengetopt_strdup (const char *s);
@@ -84,7 +85,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->membership_given = 0 ;
   args_info->detailed_given = 0 ;
   args_info->f1_given = 0 ;
-  args_info->unweighted_given = 0 ;
+  args_info->kind_given = 0 ;
   args_info->nmi_given = 0 ;
   args_info->all_given = 0 ;
   args_info->ln_given = 0 ;
@@ -102,7 +103,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->detailed_flag = 0;
   args_info->f1_arg = f1_arg_partprob;
   args_info->f1_orig = NULL;
-  args_info->unweighted_flag = 0;
+  args_info->kind_arg = kind_arg_weighted;
+  args_info->kind_orig = NULL;
   args_info->nmi_flag = 0;
   args_info->all_flag = 0;
   args_info->ln_flag = 0;
@@ -121,7 +123,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->membership_help = gengetopt_args_info_help[4] ;
   args_info->detailed_help = gengetopt_args_info_help[5] ;
   args_info->f1_help = gengetopt_args_info_help[7] ;
-  args_info->unweighted_help = gengetopt_args_info_help[8] ;
+  args_info->kind_help = gengetopt_args_info_help[8] ;
   args_info->nmi_help = gengetopt_args_info_help[10] ;
   args_info->all_help = gengetopt_args_info_help[11] ;
   args_info->ln_help = gengetopt_args_info_help[12] ;
@@ -215,6 +217,7 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->sync_orig));
   free_string_field (&(args_info->membership_orig));
   free_string_field (&(args_info->f1_orig));
+  free_string_field (&(args_info->kind_orig));
   
   
   for (i = 0; i < args_info->inputs_num; ++i)
@@ -305,8 +308,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "detailed", 0, 0 );
   if (args_info->f1_given)
     write_into_file(outfile, "f1", args_info->f1_orig, cmdline_parser_f1_values);
-  if (args_info->unweighted_given)
-    write_into_file(outfile, "unweighted", 0, 0 );
+  if (args_info->kind_given)
+    write_into_file(outfile, "kind", args_info->kind_orig, cmdline_parser_kind_values);
   if (args_info->nmi_given)
     write_into_file(outfile, "nmi", 0, 0 );
   if (args_info->all_given)
@@ -431,9 +434,9 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   /* checks for required options */
   
   /* checks for dependences among options */
-  if (args_info->unweighted_given && ! args_info->f1_given)
+  if (args_info->kind_given && ! args_info->f1_given)
     {
-      fprintf (stderr, "%s: '--unweighted' ('-u') option depends on option 'f1'%s\n", prog_name, (additional_error ? additional_error : ""));
+      fprintf (stderr, "%s: '--kind' ('-k') option depends on option 'f1'%s\n", prog_name, (additional_error ? additional_error : ""));
       error_occurred = 1;
     }
   if (args_info->all_given && ! args_info->nmi_given)
@@ -625,14 +628,14 @@ cmdline_parser_internal (
         { "membership",	1, NULL, 'm' },
         { "detailed",	0, NULL, 'd' },
         { "f1",	2, NULL, 'f' },
-        { "unweighted",	0, NULL, 'u' },
+        { "kind",	2, NULL, 'k' },
         { "nmi",	0, NULL, 'n' },
         { "all",	0, NULL, 'a' },
         { "ln",	0, NULL, 'e' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVos:m:df::unae", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVos:m:df::k::nae", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -710,12 +713,18 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'u':	/* evaluate simple average of the best matches instead of weighted by the cluster size.  */
+        case 'k':	/* kind of the matching policy:
+         - w  - weighted (default)
+         - u  - unweighed
+         - c  - combined: F1(w, u)
+         .  */
         
         
-          if (update_arg((void *)&(args_info->unweighted_flag), 0, &(args_info->unweighted_given),
-              &(local_args_info.unweighted_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "unweighted", 'u',
+          if (update_arg( (void *)&(args_info->kind_arg), 
+               &(args_info->kind_orig), &(args_info->kind_given),
+              &(local_args_info.kind_given), optarg, cmdline_parser_kind_values, "weighted", ARG_ENUM,
+              check_ambiguity, override, 0, 0,
+              "kind", 'k',
               additional_error))
             goto failure;
         

@@ -41,10 +41,17 @@ class AggHash {
 	// avoid gaps filled with trash on memory alignment
 	// Note: size should be first as the most discriminative attribute, which
 	// can be potentially used for the ordering
+	// Note: the size is redundant and does not have any impact except for the structured ordering
+	// if the sum does not increase AccId_MAX or if zero value of id is NOT allowed. The size is
+	// necessary if id=0 may be present in the clusters.
 	AccId  m_size;  //!< Size of the container
 	AccId  m_idsum;  //!< Sum of the member ids
 	AccId  m_id2sum;  //!< Sum of the squared member ids
 public:
+	// Export the template parameter types
+	using IdT = Id;  //!< Type of the member ids
+	using AccIdT = AccId;  //!< Type of the accumulated Ids and accumulated squares of Ids
+
     //! \brief Default constructor
 	AggHash() noexcept
 	: m_size(0), m_idsum(0), m_id2sum(0) {}

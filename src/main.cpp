@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 			// NMI will always yield 0 for any clusters in the second collection, which is limitation
 			// of the original NMI measure. Similar issues possible in more complex configurations.
 			if(rnmi.mi <= precision_limit<decltype(rnmi.mi)>()) {  // Note: strict ! is fine here
-				throw domain_error("ERROR: NMI is not applicable to the specified collections: 0, which says nothing about the similarity\n");
+				throw domain_error("NMI is not applicable to the specified collections: 0, which says nothing about the similarity\n");
 				rnmi.h1 = rnmi.h2 = 1;
 			}
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
@@ -136,12 +136,31 @@ int main(int argc, char **argv)
 			default:
 				throw invalid_argument("main(), UNKNOWN F1 policy specified\n");
 			}
+			// Assign matching kind
+			Match  mkind = Match::NONE;
+			// Note: args_info.kind_orig is empty if default value is used
+			char  kindsuf = '-';  // Suffix char of the selected F1 measure
+			switch(args_info.kind_arg) {
+			case kind_arg_weighted:
+				mkind = Match::WEIGHTED;
+				kindsuf = 'w';
+				break;
+			case kind_arg_unweighed:
+				mkind = Match::UNWEIGHTED;
+				kindsuf = 'u';
+				break;
+			case kind_arg_combined:
+				mkind = Match::COMBINED;
+				kindsuf = 'c';
+				break;
+			default:
+				throw invalid_argument("main(), UNKNOWN Matching policy specified\n");
+			}
 
 			if(args_info.nmi_flag)
 				fputs("; ", stdout);
-			printf("F1%c %s: %G", f1suf, args_info.unweighted_flag ? "unweighted" : "weighed"
-				, Collection::f1(cn1, cn2, f1kind, !args_info.unweighted_flag
-					, args_info.detailed_flag));
+			printf("F1%c_%c (%s, %s): %G", f1suf, kindsuf, to_string(f1kind).c_str(), to_string(mkind).c_str()
+				, Collection::f1(cn1, cn2, f1kind, mkind, args_info.detailed_flag));
 		}
 		puts(string(" (").append(is_floating_point<Count>::value
 			? "overlaps" : "multi-resolution").append(" evaluation)").c_str());  // \n

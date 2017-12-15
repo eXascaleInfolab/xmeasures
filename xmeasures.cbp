@@ -73,6 +73,7 @@
 		<Unit filename="shared/fileio.hpp" />
 		<Unit filename="shared/macrodef.h" />
 		<Unit filename="shared/operations.hpp" />
+		<Unit filename="src/interface.cpp" />
 		<Unit filename="src/main.cpp" />
 		<Extensions>
 			<DoxyBlocks>

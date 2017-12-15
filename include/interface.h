@@ -22,6 +22,9 @@
 
 #define INCLUDE_STL_FS
 #include "fileio.hpp"
+#if VALIDATE >= 2
+#include "operations.hpp"
+#endif // VALIDATE 2
 
 
 using std::vector;
@@ -249,7 +252,7 @@ using F1Base = uint8_t;
 
 //! \brief F1 kind
 enum struct F1: F1Base {
-	//! Note initialized
+	//! Not initialized
 	NONE = 0,
 	//! Harmonic mean of the [weighted] average of the greatest (maximal) match
 	//! by partial probabilities
@@ -260,6 +263,13 @@ enum struct F1: F1Base {
 	//! match by F1s, i.e. F1-Score
 	STANDARD
 };
+
+//! \brief String representation of the F1
+//! \relates F1
+//!
+//! \param f1 F1  - the value to be converted
+//! \return string  - string value
+string to_string(F1 f1);
 
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
@@ -437,7 +447,7 @@ struct NodeBaseI {
 //! Unique ids (node ids)
 using UniqIds = unordered_set<Id>;
 
-//! Node base interface
+//! Node base
 struct NodeBase: UniqIds, NodeBaseI {
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
 	Id ndsnum() const noexcept  { return size(); }
@@ -460,6 +470,38 @@ struct NodeBase: UniqIds, NodeBaseI {
 	static NodeBase load(const char* filename, float membership=1
 		, AggHash* ahash=nullptr, size_t cmin=0, size_t cmax=0, bool verbose=false);
 };
+
+//! Collection matching kind base
+using MatchBase = uint8_t;
+
+//! \brief Collection matching kind
+enum struct Match: MatchBase {
+	NONE = 0,  //!< Note initialized
+	WEIGHTED,  //!< Weighted matching by the number of members in each cluster (macro weighting)
+	UNWEIGHTED,  //!< Unweighted matching of each cluster (micro weighting)
+	COMBINED  //!< Combined weighting of macro and micro: F1(macro_weighting, micro_weighting)
+};
+
+//! \brief String representation of the Match
+//! \relates Match
+//!
+//! \param mkind Match  - the value to be converted
+//! \return string  - string value
+string to_string(Match mkind);
+
+//! \brief The matching includes weighted match
+//! \relates Match
+//!
+//! \param m Match  - matching kind
+//! \return bool  - weighted matching included
+bool xwmatch(Match m) noexcept;
+
+//! \brief The matching includes unweighted match
+//! \relates Match
+//!
+//! \param m Match  - matching kind
+//! \return bool  - unweighted matching included
+bool xumatch(Match m) noexcept;
 
 //! Collection describing cluster-node relations
 //! \tparam Count  - arithmetic counting type
@@ -532,11 +574,11 @@ public:
 	//! \param cn1 const CollectionT&  - first collection
 	//! \param cn2 const CollectionT&  - second collection
     //! \param kind F1  - kind of F1 to be evaluated
-    //! \param weighted=true bool  - weighted average by cluster size or unweighted
+    //! \param mkind=Match::WEIGHTED Match  - matching kind
     //! \param verbose=false bool  - print intermediate results to the stdout
 	//! \return Prob  - resulting F1_gm
 	static Prob f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
-		, bool weighted=true, bool verbose=false);
+		, Match mkind=Match::WEIGHTED, bool verbose=false);
 
 	//! \brief NMI evaluation
 	//! \note Undirected (symmetric) evaluation
@@ -559,21 +601,22 @@ protected:
     //! then the back match should be small.
     //! \attention Directed (non-symmetric) evaluation
     //!
-    //! \param cn const CollectionT&  - collection to compare with
+    //! \param gmats const Probs&  - greatest (max) matching with another collection
     //! \param weighted bool  - weighted average by cluster size
-    //! \param prob bool  - evaluate partial probability instead of F1
     //! \return AccProb  - resulting max average match value from this collection
     //! to the specified one (DIRECTED)
-	inline AccProb avggms(const CollectionT& cn, bool weighted, bool prob) const;
+	inline AccProb avggms(const Probs& gmats, bool weighted) const;  // const CollectionT& cn
 
     //! \brief Greatest (Max) matching value (F1 or partial probability) for each cluster
     //! \note External cn collection can have unequal node base and overlapping
     //! clusters on multiple resolutions
     //! \attention Directed (non-symmetric) evaluation
+    //! \post Modifies internal state of the collection
     //!
     //! \param cn const CollectionT&  - collection to compare with
     //! \param prob bool  - evaluate partial probability instead of F1
-    //! \return Probs - resulting max F1 or partial probability for each member node
+    //! \return Probs - resulting max F1 or partial probability for cluster
+    //! (all member nodes are considered in the cluster)
 	Probs gmatches(const CollectionT& cn, bool prob) const;
 
 	// NMI-related functions ---------------------------------------------------
@@ -600,5 +643,21 @@ protected:
     //! \return void
 	void clearconts() const noexcept;
 };
+
+// Accessory functions ---------------------------------------------------------
+//! \brief Harmonic mean
+//! \note a + b = 0 are threated correctly resulting 0
+//!
+//! \param a AccProb  - first item
+//! \param b AccProb  - second item
+//! \return AccProb  - resulting mean
+AccProb hmean(AccProb a, AccProb b) noexcept;
+
+//! \brief Arithmetic mean (average)
+//!
+//! \param a AccProb  - first item
+//! \param b AccProb  - second item
+//! \return AccProb  - resulting mean
+AccProb amean(AccProb a, AccProb b) noexcept;
 
 #endif // INTERFACE_H

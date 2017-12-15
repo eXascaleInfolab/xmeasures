@@ -31,10 +31,11 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "3.0"
+#define CMDLINE_PARSER_VERSION "3.1"
 #endif
 
 enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_standard };
+enum enum_kind { kind__NULL = -1, kind_arg_weighted = 0, kind_arg_unweighed, kind_arg_combined };
 
 /** @brief Where the command line options are stored */
 struct gengetopt_args_info
@@ -72,8 +73,21 @@ struct gengetopt_args_info
    - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
    - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
  help description.  */
-  int unweighted_flag;	/**< @brief evaluate simple average of the best matches instead of weighted by the cluster size (default=off).  */
-  const char *unweighted_help; /**< @brief evaluate simple average of the best matches instead of weighted by the cluster size help description.  */
+  enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
+   - w  - weighted (default)
+   - u  - unweighed
+   - c  - combined: F1(w, u)
+    (default='weighted').  */
+  char * kind_orig;	/**< @brief kind of the matching policy:
+   - w  - weighted (default)
+   - u  - unweighed
+   - c  - combined: F1(w, u)
+    original value given at command line.  */
+  const char *kind_help; /**< @brief kind of the matching policy:
+   - w  - weighted (default)
+   - u  - unweighed
+   - c  - combined: F1(w, u)
+    help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */
   int all_flag;	/**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one (default=off).  */
@@ -88,7 +102,7 @@ struct gengetopt_args_info
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
   unsigned int detailed_given ;	/**< @brief Whether detailed was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
-  unsigned int unweighted_given ;	/**< @brief Whether unweighted was given.  */
+  unsigned int kind_given ;	/**< @brief Whether kind was given.  */
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
   unsigned int all_given ;	/**< @brief Whether all was given.  */
   unsigned int ln_given ;	/**< @brief Whether ln was given.  */
@@ -219,6 +233,7 @@ int cmdline_parser_required (struct gengetopt_args_info *args_info,
   const char *prog_name);
 
 extern const char *cmdline_parser_f1_values[];  /**< @brief Possible values for f1. */
+extern const char *cmdline_parser_kind_values[];  /**< @brief Possible values for kind. */
 
 
 #ifdef __cplusplus

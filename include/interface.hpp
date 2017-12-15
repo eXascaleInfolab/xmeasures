@@ -9,7 +9,6 @@
 //! \date 2017-02-13
 
 #include <cstring>  // strlen, strtok
-//#include <bitset>
 //#include <cmath>  // sqrt
 #if VALIDATE >= 2
 #include <algorithm>
@@ -17,7 +16,6 @@
 
 #include "operations.hpp"
 #include "interface.h"
-
 
 
 using std::out_of_range;
@@ -37,34 +35,6 @@ using namespace daoc;
 template <typename Count>
 Cluster<Count>::Cluster(): members(), counter(), mbscont()
 {}
-
-//string to_string(Evaluation eval, bool bitstr)
-//{
-//	static_assert(sizeof(Evaluation) == sizeof(EvalBase)
-//		, "to_string(), Evaluation type must be the same size as EvalBase");
-//	// Convert to bit string
-//	if(bitstr)
-//		return bitset<sizeof(Evaluation) * 8>(static_cast<EvalBase>(eval))
-//			.to_string().insert(0, "0b");
-//
-//	// Convert to semantic string
-//	string  val;
-//	switch(eval) {
-//	case Evaluation::MULTIRES:
-//		val = "MULTIRES";
-//		break;
-//	case Evaluation::OVERLAPPING:
-//		val = "OVERLAPPING";
-//		break;
-//	case Evaluation::MULRES_OVP:
-//		val = "MULRES_OVP";
-//		break;
-//	case Evaluation::NONE:
-//	default:
-//		val = "NONE";
-//	}
-//	return val;
-//}
 
 // SparseMatrix definitions ----------------------------------------------------
 template <typename Index, typename Value>
@@ -143,19 +113,6 @@ const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 }
 
 // Collection definitions ------------------------------------------------------
-NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
-	, size_t cmin, size_t cmax, bool verbose)
-{
-	NodeBase  nb;  // Return using NRVO optimization
-	NamedFileWrapper  finp(filename, "r");
-	if(finp)
-		static_cast<UniqIds&>(nb) = loadNodes<Id, AccId>(finp, membership, ahash
-			, cmin, cmax, verbose);
-	else perror((string("WARNING load(), can't open ") += filename).c_str());
-
-	return nb;
-}
-
 template <typename Count>
 Collection<Count> Collection<Count>::load(const char* filename, float membership, ::AggHash* ahash
 	, const NodeBaseI* nodebase, bool verbose)
@@ -319,10 +276,10 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 
 template <typename Count>
 Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
-	, bool weighted, bool verbose)
+	, Match mkind, bool verbose)
 {
-	if(kind == F1::NONE) {
-		fputs("WARNING f1(), f1 kind is not specified, the evaluation is skipped\n", stderr);
+	if(kind == F1::NONE || mkind == Match::NONE) {
+		fputs("WARNING f1(), f1 or match kind is not specified, the evaluation is skipped\n", stderr);
 		return 0;
 	}
 
@@ -353,29 +310,48 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 #if TRACE >= 3
 	fputs("f1(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
-	const AccProb  f1ga1 = cn1.avggms(cn2, weighted, prob);
-	if(equal<AccProb>(f1ga1, 0, cn1.m_cls.size()))
-		return 0;
+	// ATTENTION: gmatches() changes internal state of the collection parameter, so it should be
+	// called only once for each collection and with the same value of prob
+	const auto  gmats1 = cn1.gmatches(cn2, prob);
+	const AccProb  f1ga1 = cn1.avggms(gmats1, mkind==Match::WEIGHTED);
 #if TRACE >= 3
 	fputs("f1(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
-	const AccProb  f1ga2 = cn2.avggms(cn1, weighted, prob);
-	if(equal<AccProb>(f1ga2, 0, cn2.m_cls.size()))
-		return 0;
+	const auto  gmats2 = cn2.gmatches(cn1, prob);
+	const AccProb  f1ga2 = cn2.avggms(gmats2, mkind==Match::WEIGHTED);
 #if TRACE <= 1
 	if(verbose)
 #endif // TRACE
 	fprintf(verbose ? stdout : stderr, "f1(),  f1ga1: %G, f1ga2: %G\n", f1ga1, f1ga2);
-	return kind != F1::STANDARD
-		? 2 * f1ga1 / (f1ga1 + f1ga2) * f1ga2
+	const AccProb  res = kind != F1::STANDARD
+		? hmean(f1ga1, f1ga2)
 		: (f1ga1 + f1ga2) / 2;
+
+	if(mkind == Match::COMBINED) {
+		// ATTENTION: gmats already evaluated and should be reused, their reevaluation would
+		// affect internal states of the collections (counters) and requires reset of the state
+		const AccProb  f1ga1w = cn1.avggms(gmats1, true);
+		const AccProb  f1ga2w = cn2.avggms(gmats2, true);
+#if TRACE <= 1
+		if(verbose)
+#endif // TRACE
+		fprintf(verbose ? stdout : stderr, "f1(),  f1ga1w: %G, f1ga2w: %G\n", f1ga1w, f1ga2w);
+		const AccProb  resw = kind != F1::STANDARD
+			? hmean(f1ga1w, f1ga2w)
+			: (f1ga1w + f1ga2w) / 2;
+		return hmean(res, resw);
+	}
+	return res;
 }
 
 template <typename Count>
-AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool prob) const
+AccProb Collection<Count>::avggms(const Probs& gmats, bool weighted) const  // const CollectionT& cn,
 {
 	AccProb  accgm = 0;
-	const auto  gmats = gmatches(cn, prob);
+	// ATTENTION: gmatches() changes internal state of the collection parameter, so it should be
+	// called only once for each collection and with the same value of prob
+	//const auto  gmats = gmatches(cn, prob);
+
 	if(weighted) {
 		const Id  csnum = m_cls.size();
 #if VALIDATE >= 2
@@ -400,12 +376,9 @@ AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool pro
 		//assert(!less<AccCont>(csizesSum, csnum, csnum) && "avggms(), invalid sum of the cluster sizes");
 		accgm /= csizesSum / AccProb(csnum);
 	} else {
-#if VALIDATE >= 3
-		const Id  clsize = sqrt(cn.m_ndcs.size());  // An approximate expected average number of cluster members
-#endif // VALIDATE
 		for(auto gm: gmats) {
 #if VALIDATE >= 3
-			if(less<decltype(gm)>(1, gm, clsize))
+			if(less<decltype(gm)>(1, gm, gmats.size()))
 				throw overflow_error("avggms(), gm E (0, 1] is out of range: " + to_string(gm) + "\n");
 #endif // VALIDATE
 			accgm += gm;
@@ -413,8 +386,8 @@ AccProb Collection<Count>::avggms(const CollectionT& cn, bool weighted, bool pro
 	}
 #if VALIDATE >= 1
 	if(less<AccProb>(gmats.size(), accgm, gmats.size()))
-		throw overflow_error("avggms(), accgm is invalid (larger than the number"
-			" of clusters), probably invalid dataset is supplied\n");
+		throw overflow_error("avggms(), accgm is invalid (larger than the number of clusters: "
+			+ std::to_string(accgm / gmats.size()) + "), probably invalid dataset is supplied\n");
 #endif // VALIDATE
 	return accgm / gmats.size();
 }

@@ -1,8 +1,8 @@
 # xmeasures - Extrinsic Clustering Measures
-Extremely fast evaluation of the extrinsic clustering measures: *various F1 measures (including F1-Score) for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization)* and standard NMI for non-overlapping clustering on a single resolution.  
+Extremely fast evaluation of the extrinsic clustering measures: *various F1 measures (including F1-Score) for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization)* using various *matching policies (micro, macro and combined weighting)* and standard NMI for non-overlapping clustering on a single resolution.  
 `xmeasures` evaluates F1 and NMI for collections of hundreds thousands clusters withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) unlike O(N*C) of the existing state of the art implementations, where N is the number of nodes in the network and C is the number of clusters.
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark to evaluate clustering of large networks.  
-A paper about the implemented F1 measures (F1p is much more discriminative than the standard [Average F1-Score](https://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf)), [NMI measures](www.jmlr.org/papers/volume11/vinh10a/vinh10a.pdf) and their applicability is being written now and the reference will be specified soon...
+A paper about the implemented F1 measures (F1p is much more indicative and discriminative than the standard [Average F1-Score](https://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf)), [NMI measures](www.jmlr.org/papers/volume11/vinh10a/vinh10a.pdf) and their applicability is being written now and the reference will be specified soon...
 > Standard NMI is implemented considering overlapping and multi-resolution clustering only to demonstrate non-applicability of the standard NMI for such cases, where it yields unfair results. See [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for the fair generalized NMI evaluation.
 
 Author (c)  Artem Lutov <artem@exascale.info>
@@ -36,30 +36,38 @@ Then `g++-5` should be installed and `Makefile` might need to be edited replacin
 Execution Options:
 ```
 $ ../xmeasures -h
-xmeasures 3.0
+xmeasures 3.1
 
 Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping
 multi-resolution clusterings with possible unequal node base and standard NMI
 for non-overlapping clustering on a single resolution.
 
-Usage: xmeasures [OPTIONS] clustering1 clustering2
+Usage:  xmeasures [OPTIONS] clustering1 clustering2
 
   clustering  - input file, collection of the clusters to be evaluated.
+  
+Example:
+  $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl
 
 Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is
-compared to another collection, which is typically the ground-truth.
+compared to another clustering, which can be the ground-truth.
+NOTE: Each cluster should contain unique members, which is verified only in the
+debug mode.
 Evaluating measures are:
+
   - F1  - various F1 measures of the Greatest (Max) Match including the Average
-F1-Score with optional weighting;
+F1-Score with optional weighting.
+ NOTE: There are 3 matching policies available for each kind of F1. The most
+representative evaluation is performed by the F1p with combined matching
+policy (considers both micro and macro weightings). 
+
   - NMI  - Normalized Mutual Information, normalized by either max or also
 sqrt, avg and min information content denominators.
-ATTENTION: this is standard NMI, which should be used ONLY for the HARD
+ATTENTION: This is standard NMI, which should be used ONLY for the HARD
 partitioning evaluation (non-overlapping clustering on a single resolution).
-it penalizes overlapping and multi-resolution structures.
-NOTE: Unequal node base in the clusterings is allowed, it penalizes the match.
-Each cluster should contain unique members, which is verified only in the debug
-mode.
-Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or
+It penalizes overlapping and multi-resolution structures.
+NOTE: Unequal node base in the clusterings is allowed, it penalizes the
+match.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or
 [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation
 in the arbitrary collections (still each cluster should contain unique
 members).
@@ -102,8 +110,12 @@ F1 Options:
                             number of the Formal Constraints.
                               (possible values="partprob", "harmonic",
                             "standard" default=`partprob')
-  -u, --unweighted        evaluate simple average of the best matches instead
-                            of weighted by the cluster size  (default=off)
+  -k, --kind[=ENUM]       kind of the matching policy:
+                             - w  - weighted (default)
+                             - u  - unweighed
+                             - c  - combined: F1(w, u)
+                               (possible values="weighted", "unweighed",
+                            "combined" default=`weighted')
 
 NMI Options:
   -n, --nmi               evaluate NMI (Normalized Mutual Information)
