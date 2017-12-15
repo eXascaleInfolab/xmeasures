@@ -129,7 +129,7 @@ NMI Options:
 > Empty lines and comments (lines starting with #) in the input file (cnl format) are skipped.
 
 **Examples**
-Evaluate F1 of the weighted average of the greatest (maximal) match by partial probabilities (the most discriminative F1-measure):
+Evaluate F1 of the weighted average of the greatest (maximal) match by partial probabilities (the most discriminative F1-measure) and using macro weighting (default as the most frequently used, thought combined weighting is the most indicative one):
 ```
 $ ./xmeasures -f data/3cls5nds.cnl data/4cls6nds.cnl
 ```
@@ -141,7 +141,7 @@ $ ./xmeasures -fh data/3cls5nds.cnl data/4cls6nds.cnl
 
 Evaluate F1 of the [unweighted] average of the greatest (maximal) match by partial probabilities and synchronize the node base with the first evaluating collection, and considering overlapping clusters instead of multi-resolutions (`-o` does not matter for the case of non-overlapping single resolution collections):
 ```
-$ ./xmeasures -sufp -o data/3cls5nds.cnl data/4cls6nds.cnl
+$ ./xmeasures -sku -fp -o data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
 Evaluate F1-Score (weighted by the cluster size) and  NMI with all denominators synchronizing node base of the evaluating collections with `1lev4nds2cls.cnl`:
