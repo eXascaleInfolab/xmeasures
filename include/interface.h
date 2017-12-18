@@ -479,7 +479,7 @@ enum struct Match: MatchBase {
 	NONE = 0,  //!< Note initialized
 	WEIGHTED,  //!< Weighted matching by the number of members in each cluster (macro weighting)
 	UNWEIGHTED,  //!< Unweighted matching of each cluster (micro weighting)
-	COMBINED  //!< Combined weighting of macro and micro: F1(macro_weighting, micro_weighting)
+	COMBINED  //!< Combined of macro and micro weightings using geometric mean
 };
 
 //! \brief String representation of the Match
@@ -652,6 +652,13 @@ protected:
 //! \param b AccProb  - second item
 //! \return AccProb  - resulting mean
 AccProb hmean(AccProb a, AccProb b) noexcept;
+
+//! \brief Geometric mean
+//!
+//! \param a AccProb  - first item
+//! \param b AccProb  - second item
+//! \return AccProb  - resulting mean
+AccProb gmean(AccProb a, AccProb b) noexcept;
 
 //! \brief Arithmetic mean (average)
 //!

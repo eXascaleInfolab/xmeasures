@@ -339,7 +339,9 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 		const AccProb  resw = kind != F1::STANDARD
 			? hmean(f1ga1w, f1ga2w)
 			: (f1ga1w + f1ga2w) / 2;
-		return hmean(res, resw);
+		// Note: geometric mean >= harmonic mean for [0, 1] and yields more indicative values,
+		// dropping the value not so much when (usually) the weighted match is larger
+		return gmean(res, resw);
 	}
 	return res;
 }

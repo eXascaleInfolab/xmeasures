@@ -70,7 +70,7 @@ NOTE: F1p <= F1h <= F1s, where:
 option  "kind" k  "kind of the matching policy:
  - w  - weighted (default)
  - u  - unweighed
- - c  - combined: F1(w, u)
+ - c  - combined(w, u) using geometric mean
  "
   values ="weighted","unweighed","combined"  enum default="weighted" argoptional
   dependon="f1"

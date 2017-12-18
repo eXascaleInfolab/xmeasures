@@ -76,17 +76,17 @@ struct gengetopt_args_info
   enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
    - w  - weighted (default)
    - u  - unweighed
-   - c  - combined: F1(w, u)
+   - c  - combined(w, u) using geometric mean
     (default='weighted').  */
   char * kind_orig;	/**< @brief kind of the matching policy:
    - w  - weighted (default)
    - u  - unweighed
-   - c  - combined: F1(w, u)
+   - c  - combined(w, u) using geometric mean
     original value given at command line.  */
   const char *kind_help; /**< @brief kind of the matching policy:
    - w  - weighted (default)
    - u  - unweighed
-   - c  - combined: F1(w, u)
+   - c  - combined(w, u) using geometric mean
     help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */

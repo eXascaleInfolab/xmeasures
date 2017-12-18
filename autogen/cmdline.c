@@ -42,7 +42,7 @@ const char *gengetopt_args_info_help[] = {
   "  -d, --detailed          detailed (verbose) results output  (default=off)",
   "\nF1 Options:",
   "  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - p (F1p)  - Harmonic mean of the [weighted]\n                            average of Partial Probabilities, the most\n                            discriminative and satisfies the largest number of\n                            the Formal Constraints (homogeneity, completeness,\n                            rag bag,  size/quantity, balance);\n                             - h (F1h)  - Harmonic mean of the [weighted]\n                            average of F1s;\n                             - s (F1s)  - Arithmetic mean (average) of the\n                            [weighted] average of F1s, Standard F1-Score, the\n                            least discriminative and satisfies the lowest\n                            number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
-  "  -k, --kind[=ENUM]       kind of the matching policy:\n                             - w  - weighted (default)\n                             - u  - unweighed\n                             - c  - combined: F1(w, u)\n                               (possible values=\"weighted\", \"unweighed\",\n                            \"combined\" default=`weighted')",
+  "  -k, --kind[=ENUM]       kind of the matching policy:\n                             - w  - weighted (default)\n                             - u  - unweighed\n                             - c  - combined(w, u) using geometric mean\n                               (possible values=\"weighted\", \"unweighed\",\n                            \"combined\" default=`weighted')",
   "\nNMI Options:",
   "  -n, --nmi               evaluate NMI (Normalized Mutual Information)\n                            (default=off)",
   "  -a, --all               evaluate all NMIs using sqrt, avg and min\n                            denominators besides the max one  (default=off)",
@@ -716,7 +716,7 @@ cmdline_parser_internal (
         case 'k':	/* kind of the matching policy:
          - w  - weighted (default)
          - u  - unweighed
-         - c  - combined: F1(w, u)
+         - c  - combined(w, u) using geometric mean
          .  */
         
         

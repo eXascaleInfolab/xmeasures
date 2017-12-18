@@ -38,9 +38,9 @@ Execution Options:
 $ ../xmeasures -h
 xmeasures 3.1
 
-Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping
-multi-resolution clusterings with possible unequal node base and standard NMI
-for non-overlapping clustering on a single resolution.
+Extrinsic measures evaluation: F1 (probabilistic, harmonic and standard score) 
+for overlapping multi-resolution clusterings with possible unequal node base and
+standard NMI for non-overlapping clustering on a single resolution.
 
 Usage:  xmeasures [OPTIONS] clustering1 clustering2
 
@@ -113,7 +113,7 @@ F1 Options:
   -k, --kind[=ENUM]       kind of the matching policy:
                              - w  - weighted (default)
                              - u  - unweighed
-                             - c  - combined: F1(w, u)
+                             - c  - combined(w, u) using geometric mean
                                (possible values="weighted", "unweighed",
                             "combined" default=`weighted')
 
