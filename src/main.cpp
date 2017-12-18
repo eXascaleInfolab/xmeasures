@@ -97,6 +97,8 @@ int main(int argc, char **argv)
 		// Evaluate and output measures
 		// Note: evaluation of overlapping F1 after NMI allows to reuse some
 		// calculations, for other cases the order of evaluations does not matter
+		puts(string("= ").append(is_floating_point<Count>::value
+			? "Overlaps" : "Multi-resolution").append(" Evaluation =").c_str());
 		if(args_info.nmi_given) {
 			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag, args_info.detailed_flag);
 			// Set NMI to NULL if collections have no any mutual information
@@ -109,11 +111,11 @@ int main(int argc, char **argv)
 			}
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
 			if(args_info.all_flag)
-				printf("NMI_max: %G, NMI_sqrt: %G, NMI_avg: %G, NMI_min: %G"
+				printf("NMI_max: %G, NMI_sqrt: %G, NMI_avg: %G, NMI_min: %G\n"
 					, nmix, rnmi.mi / sqrt(rnmi.h1 * rnmi.h2)
 					, 2 * rnmi.mi / (rnmi.h1 + rnmi.h2)
 					, rnmi.mi / std::min(rnmi.h1, rnmi.h2));
-			else printf("NMI_max: %G", nmix);
+			else printf("NMI_max:\n%G\n", nmix);
 		}
 		if(args_info.f1_given) {
 			// Assign required F1 type
@@ -157,13 +159,11 @@ int main(int argc, char **argv)
 				throw invalid_argument("main(), UNKNOWN Matching policy specified\n");
 			}
 
-			if(args_info.nmi_flag)
-				fputs("; ", stdout);
-			printf("F1%c_%c (%s, %s): %G", f1suf, kindsuf, to_string(f1kind).c_str(), to_string(mkind).c_str()
+			//if(args_info.nmi_flag)
+			//	fputs("; ", stdout);
+			printf("F1%c_%c (%s, %s):\n%G\n", f1suf, kindsuf, to_string(f1kind).c_str(), to_string(mkind).c_str()
 				, Collection::f1(cn1, cn2, f1kind, mkind, args_info.detailed_flag));
 		}
-		puts(string(" (").append(is_floating_point<Count>::value
-			? "overlaps" : "multi-resolution").append(" evaluation)").c_str());  // \n
 
 		return 0;
 	};
