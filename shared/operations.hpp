@@ -139,7 +139,7 @@ constexpr ValT precision_limit()
 //! 	to consider accumulation error
 //! \return bool  - val1 < val2
 template <typename ValT, enable_if_t<is_floating_point<ValT>::value, float>* = nullptr>
-constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
+constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)  // , const float confidence=1
 {
 	static_assert(is_floating_point<ValT>::value, "less(), value type should be fractional");
 #if VALIDATE >= 2

@@ -8,7 +8,8 @@ purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlappin
  non-overlapping clustering on a single resolution."
 
 description "Extrinsic measures are evaluated, i.e. clustering (collection of\
- clusters) is compared to another clustering, which can be the ground-truth.
+ clusters) is compared to another clustering, which can be a ground-truth. Optional\
+ labeling of the evaluating clusters with the specified ground-truth clusters.
 NOTE: Each cluster should contain unique members, which is verified only in the debug\
  mode.
 Evaluating measures are:
@@ -83,6 +84,18 @@ option  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
  for the information measuring" flag off  dependon="nmi"
 # Note: log2 vs ln have no any influence on the resulting value
 
+section "Clusters Labeling"
+option  "label" l  "label evaluating clusters with the specified ground-truth (gt)\
+ cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
+ labeled clusters only (without the probable subclusters).
+NOTE: if 'sync' option is specified then the clusters labels file name should be\
+ the same as the node base (if specified) and should be in the .cnl format.\
+ The file name can be either a separate or an evaluating CNL file, in the\
+ latter case this option should precede the evaluating filename not repeating it"
+  string  typestr="gt_filename"
+option  "identifiers" i  "output labels (identifiers) of the evaluating clusters\
+ as lines of space-separated indices of the ground-truth clusters (.cll - clusters\
+ labels list)"  string  typestr="labels_filename"  dependon="label"
 
 args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allow input files to be unnamed parameters
 #args "--unamed-opts=clusterings"   # Allow input files to be unnamed parameters

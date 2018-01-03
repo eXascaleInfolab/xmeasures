@@ -25,10 +25,13 @@ using std::to_string;
 //using std::bitset;
 using std::min;
 using std::max;
+#if VALIDATE >= 1
+using std::domain_error;
 #if VALIDATE >= 2
 using std::sort;
 using std::adjacent_find;
 #endif // VALIDATE 2
+#endif // VALIDATE 1
 using namespace daoc;
 
 // Cluster definition ----------------------------------------------------------
@@ -206,11 +209,12 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 		auto& members = pcl->members;
 		members.reserve(line.length() / ndchars);  // Note: strtok() does not affect line.length()
 		do {
-			// Note: only node id is parsed, share part is skipped if exists,
+			// Note: only the node id is parsed, share part is skipped if exists,
 			// but potentially can be considered in NMI and F1 evaluation.
 			// In the latter case abs diff of shares instead of co occurrence
 			// counting should be performed.
-			Id  nid = strtoul(tok, nullptr, 10);
+			//Id  nid = strtoul(tok, nullptr, 10);
+			Id  nid = parseId(tok);
 #if VALIDATE >= 2
 			if(!nid && tok[0] != '0') {
 				fprintf(stderr, "WARNING load(), conversion error of '%s' into 0: %s\n"
@@ -252,7 +256,7 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 	if(cn.m_ndcs.size() < cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() / 2)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
 	// Assign hash to the results
-	cn.m_ndshash = mbhash.hash();  // Note: required to identify the unequal node base in processing collections
+	cn.m_ndshash = mbhash.hash();  // Note: required to identify the unequal node base in the processing collections
 	if(ahash)
 		*ahash = move(mbhash);
 #if TRACE >= 2

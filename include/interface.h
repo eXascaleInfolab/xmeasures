@@ -41,11 +41,8 @@ using std::is_same;
 using std::enable_if_t;
 using std::conditional_t;
 using std::numeric_limits;
-#if VALIDATE >= 1
-using std::domain_error;
 #if VALIDATE >= 2
 using std::invalid_argument;
-#endif // VALIDATE
 #endif // VALIDATE
 
 // Data Types ------------------------------------------------------------------
@@ -74,10 +71,11 @@ public:
 	using CountT = Count;  //!< Count type, arithmetic
 	using ClusterT = Cluster<Count>;
 private:
+	// Note: it's OK to copy this pointer on assignment since it is never
+	// allocated in this class
 	ClusterT*  m_orig;  //!<  Originator cluster
 	CountT  m_count;  //!<  Occurrences counter, <= members size
 public:
-
     //! Default constructor
 	Counter(): m_orig(nullptr), m_count(0)  {}
 
@@ -645,6 +643,12 @@ protected:
 };
 
 // Accessory functions ---------------------------------------------------------
+//! \brief Parse decimal c-string as id
+//!
+//! \param str char*  - id string
+//! \return Id  - id value
+Id  parseId(char* str);
+
 //! \brief Harmonic mean
 //! \note a + b = 0 are threated correctly resulting 0
 //!

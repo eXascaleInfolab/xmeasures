@@ -94,6 +94,18 @@ struct gengetopt_args_info
   const char *all_help; /**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one help description.  */
   int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring (default=off).  */
   const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
+  char * label_arg;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
+   labeled clusters only (without the probable subclusters).
+  NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+  char * label_orig;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
+   labeled clusters only (without the probable subclusters).
+  NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
+  const char *label_help; /**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
+   labeled clusters only (without the probable subclusters).
+  NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
+  char * identifiers_arg;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list).  */
+  char * identifiers_orig;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list) original value given at command line.  */
+  const char *identifiers_help; /**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list) help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -106,6 +118,8 @@ struct gengetopt_args_info
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
   unsigned int all_given ;	/**< @brief Whether all was given.  */
   unsigned int ln_given ;	/**< @brief Whether ln was given.  */
+  unsigned int label_given ;	/**< @brief Whether label was given.  */
+  unsigned int identifiers_given ;	/**< @brief Whether identifiers was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */

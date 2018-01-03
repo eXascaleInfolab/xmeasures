@@ -31,22 +31,25 @@ const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another clustering, which can be the ground-truth.\nNOTE: Each cluster should contain unique members, which is verified only in the\ndebug mode.\nEvaluating measures are:\n\n  - F1  - various F1 measures of the Greatest (Max) Match including the Average\nF1-Score with optional weighting.\n NOTE: There are 3 matching policies available for each kind of F1. The most\nrepresentative evaluation is performed by the F1p with combined matching\npolicy (considers both micro and macro weightings). \n\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: This is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\nNOTE: Unequal node base in the clusterings is allowed, it penalizes the\nmatch.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n";
+const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is\ncompared to another clustering, which can be a ground-truth. Optional labeling\nof the evaluating clusters with the specified ground-truth clusters.\nNOTE: Each cluster should contain unique members, which is verified only in the\ndebug mode.\nEvaluating measures are:\n\n  - F1  - various F1 measures of the Greatest (Max) Match including the Average\nF1-Score with optional weighting.\n NOTE: There are 3 matching policies available for each kind of F1. The most\nrepresentative evaluation is performed by the F1p with combined matching\npolicy (considers both micro and macro weightings). \n\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: This is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\nNOTE: Unequal node base in the clusterings is allowed, it penalizes the\nmatch.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n";
 
 const char *gengetopt_args_info_help[] = {
-  "  -h, --help              Print help and exit",
-  "  -V, --version           Print version and exit",
-  "  -o, --ovp               evaluate overlapping instead of multi-resolution\n                            clusters, where max matching for any shared member\n                            between R overlapping clusters is 1/R unlike 1 for\n                            the member existing in R distinct clusters on R\n                            resolutions  (default=off)",
-  "  -s, --sync=filename     synchronize with the node base, skipping the\n                            non-matching nodes.\n                            NOTE: the node base can be either a separate, or an\n                            evaluating CNL file, in the latter case this option\n                            should precede the evaluating filename not\n                            repeating it",
-  "  -m, --membership=FLOAT  average expected membership of the nodes in the\n                            clusters, > 0, typically >= 1. Used only for the\n                            containers preallocation facilitating estimation of\n                            the nodes number if not specified in the file\n                            header.  (default=`1')",
-  "  -d, --detailed          detailed (verbose) results output  (default=off)",
+  "  -h, --help                    Print help and exit",
+  "  -V, --version                 Print version and exit",
+  "  -o, --ovp                     evaluate overlapping instead of\n                                  multi-resolution clusters, where max matching\n                                  for any shared member between R overlapping\n                                  clusters is 1/R unlike 1 for the member\n                                  existing in R distinct clusters on R\n                                  resolutions  (default=off)",
+  "  -s, --sync=filename           synchronize with the node base, skipping the\n                                  non-matching nodes.\n                                  NOTE: the node base can be either a separate,\n                                  or an evaluating CNL file, in the latter case\n                                  this option should precede the evaluating\n                                  filename not repeating it",
+  "  -m, --membership=FLOAT        average expected membership of the nodes in the\n                                  clusters, > 0, typically >= 1. Used only for\n                                  the containers preallocation facilitating\n                                  estimation of the nodes number if not\n                                  specified in the file header.  (default=`1')",
+  "  -d, --detailed                detailed (verbose) results output\n                                  (default=off)",
   "\nF1 Options:",
-  "  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest\n                            (maximal) match by F1 or partial probability.\n                            NOTE: F1p <= F1h <= F1s, where:\n                             - p (F1p)  - Harmonic mean of the [weighted]\n                            average of Partial Probabilities, the most\n                            discriminative and satisfies the largest number of\n                            the Formal Constraints (homogeneity, completeness,\n                            rag bag,  size/quantity, balance);\n                             - h (F1h)  - Harmonic mean of the [weighted]\n                            average of F1s;\n                             - s (F1s)  - Arithmetic mean (average) of the\n                            [weighted] average of F1s, Standard F1-Score, the\n                            least discriminative and satisfies the lowest\n                            number of the Formal Constraints.\n                              (possible values=\"partprob\", \"harmonic\",\n                            \"standard\" default=`partprob')",
-  "  -k, --kind[=ENUM]       kind of the matching policy:\n                             - w  - weighted (default)\n                             - u  - unweighed\n                             - c  - combined(w, u) using geometric mean\n                               (possible values=\"weighted\", \"unweighed\",\n                            \"combined\" default=`weighted')",
+  "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1s, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  discriminative and satisfies the largest\n                                  number of the Formal Constraints\n                                  (homogeneity, completeness, rag bag,\n                                  size/quantity, balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1s;\n                                   - s (F1s)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1s, Standard\n                                  F1-Score, the least discriminative and\n                                  satisfies the lowest number of the Formal\n                                  Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"standard\"\n                                  default=`partprob')",
+  "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - weighted (default)\n                                   - u  - unweighed\n                                   - c  - combined(w, u) using geometric mean\n                                     (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
   "\nNMI Options:",
-  "  -n, --nmi               evaluate NMI (Normalized Mutual Information)\n                            (default=off)",
-  "  -a, --all               evaluate all NMIs using sqrt, avg and min\n                            denominators besides the max one  (default=off)",
-  "  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,\n                            bits) for the information measuring  (default=off)",
+  "  -n, --nmi                     evaluate NMI (Normalized Mutual Information)\n                                  (default=off)",
+  "  -a, --all                     evaluate all NMIs using sqrt, avg and min\n                                  denominators besides the max one\n                                  (default=off)",
+  "  -e, --ln                      use ln (exp base) instead of log2 (Shannon\n                                  entropy, bits) for the information measuring\n                                  (default=off)",
+  "\nClusters Labeling:",
+  "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED\n                                   labeled clusters only (without the probable\n                                  subclusters).\n                                  NOTE: if 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
+  "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)",
     0
 };
 
@@ -89,6 +92,8 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->nmi_given = 0 ;
   args_info->all_given = 0 ;
   args_info->ln_given = 0 ;
+  args_info->label_given = 0 ;
+  args_info->identifiers_given = 0 ;
 }
 
 static
@@ -108,6 +113,10 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->nmi_flag = 0;
   args_info->all_flag = 0;
   args_info->ln_flag = 0;
+  args_info->label_arg = NULL;
+  args_info->label_orig = NULL;
+  args_info->identifiers_arg = NULL;
+  args_info->identifiers_orig = NULL;
   
 }
 
@@ -127,6 +136,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->nmi_help = gengetopt_args_info_help[10] ;
   args_info->all_help = gengetopt_args_info_help[11] ;
   args_info->ln_help = gengetopt_args_info_help[12] ;
+  args_info->label_help = gengetopt_args_info_help[14] ;
+  args_info->identifiers_help = gengetopt_args_info_help[15] ;
   
 }
 
@@ -218,6 +229,10 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->membership_orig));
   free_string_field (&(args_info->f1_orig));
   free_string_field (&(args_info->kind_orig));
+  free_string_field (&(args_info->label_arg));
+  free_string_field (&(args_info->label_orig));
+  free_string_field (&(args_info->identifiers_arg));
+  free_string_field (&(args_info->identifiers_orig));
   
   
   for (i = 0; i < args_info->inputs_num; ++i)
@@ -316,6 +331,10 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "all", 0, 0 );
   if (args_info->ln_given)
     write_into_file(outfile, "ln", 0, 0 );
+  if (args_info->label_given)
+    write_into_file(outfile, "label", args_info->label_orig, 0);
+  if (args_info->identifiers_given)
+    write_into_file(outfile, "identifiers", args_info->identifiers_orig, 0);
   
 
   i = EXIT_SUCCESS;
@@ -447,6 +466,11 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   if (args_info->ln_given && ! args_info->nmi_given)
     {
       fprintf (stderr, "%s: '--ln' ('-e') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->identifiers_given && ! args_info->label_given)
+    {
+      fprintf (stderr, "%s: '--identifiers' ('-i') option depends on option 'label'%s\n", prog_name, (additional_error ? additional_error : ""));
       error_occurred = 1;
     }
 
@@ -632,10 +656,12 @@ cmdline_parser_internal (
         { "nmi",	0, NULL, 'n' },
         { "all",	0, NULL, 'a' },
         { "ln",	0, NULL, 'e' },
+        { "label",	1, NULL, 'l' },
+        { "identifiers",	1, NULL, 'i' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVos:m:df::k::nae", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVos:m:df::k::nael:i:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -755,6 +781,32 @@ cmdline_parser_internal (
           if (update_arg((void *)&(args_info->ln_flag), 0, &(args_info->ln_given),
               &(local_args_info.ln_given), optarg, 0, 0, ARG_FLAG,
               check_ambiguity, override, 1, 0, "ln", 'e',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'l':	/* label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
+         labeled clusters only (without the probable subclusters).
+        NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+        
+        
+          if (update_arg( (void *)&(args_info->label_arg), 
+               &(args_info->label_orig), &(args_info->label_given),
+              &(local_args_info.label_given), optarg, 0, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "label", 'l',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'i':	/* output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list).  */
+        
+        
+          if (update_arg( (void *)&(args_info->identifiers_arg), 
+               &(args_info->identifiers_orig), &(args_info->identifiers_given),
+              &(local_args_info.identifiers_given), optarg, 0, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "identifiers", 'i',
               additional_error))
             goto failure;
         

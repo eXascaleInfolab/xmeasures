@@ -10,9 +10,12 @@
 
 #include <cstdio>
 //#include <bitset>
+#include <errno.h>
 #include "interface.h"
 
 
+using std::overflow_error;
+using std::invalid_argument;
 using namespace daoc;
 
 //string to_string(Evaluation eval, bool bitstr)
@@ -110,6 +113,23 @@ bool xumatch(Match m) noexcept
 }
 
 // Accessory functions ---------------------------------------------------------
+Id  parseId(char* str)
+{
+#if VALIDATE >= 2
+	assert(!errno && "Initial errno should be zero");
+#endif // VALIDATE
+	auto nid = strtoul(str, nullptr, 10);
+	static_assert(sizeof(nid) >= sizeof(Id), "Parsing value type is too small for Id");
+	if(nid > numeric_limits<Id>::max() || (!nid && errno != 0)) {
+		if(nid > numeric_limits<Id>::max())
+			throw overflow_error("Loaded value of id is too large: " + std::to_string(nid) + "\n");
+		else if(errno != 0)
+			throw invalid_argument(string("Conversion to id can't be performed: ").append(str)
+				+ ", errno: " + std::to_string(errno).append("\n"));
+	}
+	return nid;
+}
+
 AccProb hmean(AccProb a, AccProb b) noexcept
 {
 	static_assert(is_floating_point<AccProb>::value, "AccProb should be a floating point type");

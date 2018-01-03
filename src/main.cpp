@@ -36,14 +36,18 @@ int main(int argc, char **argv)
 
 	{	// Validate the number of input files
 		// Note: sync_arg is specified if sync_given
-		const auto  inpfiles = args_info.inputs_num + args_info.sync_given;  // The number of input files
-		if(inpfiles < 2 || inpfiles > 2 + args_info.sync_given) {
+		const auto  inpfiles = args_info.inputs_num + (args_info.sync_given || args_info.label_given);  // The number of input files
+		if(inpfiles < 2 || inpfiles > 2 + args_info.sync_given + args_info.label_given) {
 			fputs("ERROR, 2 input clusterings are required with possibly additional"
-				" node base, i.e. 2-3 input files in total\n", stderr);
+				" node base and clusters labels, i.e. 2-4 input files in total\n", stderr);
 			cmdline_parser_print_help();
 			return EINVAL;
 		}
 	}
+
+	// Verify that labeled clusters correspond to the node base if any of them is specified
+	if(args_info.sync_given && args_info.label_given && strcmp(args_info.sync_arg, args_info.label_arg))
+		throw invalid_argument("ERROR, node base file should correspond to the labeled clusters if both are specified\m");
 
 	// Load node base if required
 	NodeBase  ndbase;
@@ -58,8 +62,10 @@ int main(int argc, char **argv)
 		// Load collections as relations
 		::AggHash  cn1hash, cn2hash;
 		// Note: cn1 is nodebase if specified and not in the separated file
-		const bool  cn1base = args_info.sync_given && args_info.inputs_num < 2;
-		auto cn1 = Collection::load(cn1base ? args_info.sync_arg : args_info.inputs[0]
+		const bool  cn1base = (args_info.sync_given || args_info.label_given) && args_info.inputs_num < 2;
+		//const char*  nbfile = args_info.sync_given
+		auto cn1 = Collection::load(cn1base ? args_info.sync_given ? args_info.sync_arg
+			: args_info.label_arg : args_info.inputs[0]
 			, args_info.membership_arg, &cn1hash
 			, ndbase ? &ndbase : nullptr, args_info.detailed_flag);
 		if(ndbase) {
@@ -84,10 +90,10 @@ int main(int argc, char **argv)
 		if(cn1hash != cn2hash) {
 			fprintf(stderr, "WARNING, the nodes in the collections differ: %u nodes"
 				" with hash %lu, size: %lu, ids: %lu, id2s: %lu) != %u nodes with hash %lu"
-				", size: %lu, ids: %lu, id2s: %lu);  synchronize: %s\n"
+				", size: %lu, ids: %lu, id2s: %lu);  synchronize: %s, label: %s\n"
 				, cn1.ndsnum(), cn1hash.hash(), cn1hash.size(), cn1hash.idsum(), cn1hash.id2sum()
 				, cn2.ndsnum(), cn2hash.hash(), cn2hash.size(), cn2hash.idsum(), cn2hash.id2sum()
-				, daoc::toYesNo(args_info.sync_given));
+				, daoc::toYesNo(args_info.sync_given), daoc::toYesNo(args_info.label_given));
 			if(args_info.sync_given) {
 				fputs("ERROR, the nodes base had to be synchronized\n", stderr);
 				return EINVAL;
