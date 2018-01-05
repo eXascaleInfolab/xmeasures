@@ -41,15 +41,15 @@ const char *gengetopt_args_info_help[] = {
   "  -m, --membership=FLOAT        average expected membership of the nodes in the\n                                  clusters, > 0, typically >= 1. Used only for\n                                  the containers preallocation facilitating\n                                  estimation of the nodes number if not\n                                  specified in the file header.  (default=`1')",
   "  -d, --detailed                detailed (verbose) results output\n                                  (default=off)",
   "\nF1 Options:",
-  "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1s, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  discriminative and satisfies the largest\n                                  number of the Formal Constraints\n                                  (homogeneity, completeness, rag bag,\n                                  size/quantity, balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1s;\n                                   - s (F1s)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1s, Standard\n                                  F1-Score, the least discriminative and\n                                  satisfies the lowest number of the Formal\n                                  Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"standard\"\n                                  default=`partprob')",
-  "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - Weighted (default)\n                                   - u  - Unweighed\n                                   - c  - Combined(w, u) using geometric mean\n                                     (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
+  "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1s, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  indicative as satisfies the largest number of\n                                  the Formal Constraints (homogeneity,\n                                  completeness, rag bag, size/quantity,\n                                  balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1s;\n                                   - s (F1s)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1s, Standard\n                                  F1-Score, the least discriminative and\n                                  satisfies the lowest number of the Formal\n                                  Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"standard\"\n                                  default=`partprob')",
+  "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - Weighted (default)\n                                   - u  - Unweighed\n                                   - c  - Combined(w, u) using geometric mean\n                                  (drops the value not so much as harmonic\n                                  mean)\n                                     (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
   "\nNMI Options:",
   "  -n, --nmi                     evaluate NMI (Normalized Mutual Information)\n                                  (default=off)",
   "  -a, --all                     evaluate all NMIs using sqrt, avg and min\n                                  denominators besides the max one\n                                  (default=off)",
   "  -e, --ln                      use ln (exp base) instead of log2 (Shannon\n                                  entropy, bits) for the information measuring\n                                  (default=off)",
   "\nClusters Labeling:",
   "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED\n                                   labeled clusters only (without the probable\n                                  subclusters).\n                                  NOTE: If 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
-  "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities\n                                   - h  - Harmonic\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`partprob')",
+  "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities\n                                   - h  - Harmonic Mean\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`partprob')",
   "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)",
     0
 };
@@ -739,7 +739,7 @@ cmdline_parser_internal (
           break;
         case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
         NOTE: F1p <= F1h <= F1s, where:
-         - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
+         - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
          - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
          - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
 .  */
@@ -757,7 +757,7 @@ cmdline_parser_internal (
         case 'k':	/* kind of the matching policy:
          - w  - Weighted (default)
          - u  - Unweighed
-         - c  - Combined(w, u) using geometric mean
+         - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
          .  */
         
         
@@ -816,7 +816,7 @@ cmdline_parser_internal (
           break;
         case 'p':	/* Labels matching policy:
          - p  - Partial Probabilities
-         - h  - Harmonic
+         - h  - Harmonic Mean
 .  */
         
         

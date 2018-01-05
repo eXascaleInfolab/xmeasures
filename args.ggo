@@ -60,7 +60,7 @@ option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)
  match by F1 or partial probability.
 NOTE: F1p <= F1h <= F1s, where:
  - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the\
- most discriminative and satisfies the largest number of the Formal Constraints\
+ most indicative as satisfies the largest number of the Formal Constraints\
  (homogeneity, completeness, rag bag, size/quantity, balance);
  - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
  - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s,\
@@ -71,7 +71,7 @@ NOTE: F1p <= F1h <= F1s, where:
 option  "kind" k  "kind of the matching policy:
  - w  - Weighted (default)
  - u  - Unweighed
- - c  - Combined(w, u) using geometric mean
+ - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
  "
   values ="weighted","unweighed","combined"  enum default="weighted" argoptional
   dependon="f1"
@@ -95,7 +95,7 @@ NOTE: If 'sync' option is specified then the clusters labels file name should be
   string  typestr="gt_filename"
 option  "policy" p  "Labels matching policy:
  - p  - Partial Probabilities
- - h  - Harmonic
+ - h  - Harmonic Mean
 "
  values="partprob","harmonic"  enum  default="partprob"  argoptional  dependon="label"
 option  "identifiers" i  "output labels (identifiers) of the evaluating clusters\

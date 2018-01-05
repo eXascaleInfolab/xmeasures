@@ -527,7 +527,9 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 					gmatch = match;
 			}
 		}
-		gmats.push_back(gmatch);
+		// Note: sqrt() is used to provide semantic values, geometric mean of the Precision
+		// and Recall, which is >= harmonic mean and <= arithmetic mean.
+		gmats.push_back(sqrt(gmatch));
 #if TRACE >= 3
 		fprintf(stderr, "  %p (%lu): %.3G", cl, cl->members.size(), gmatch);
 #endif // TRACE
