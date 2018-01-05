@@ -117,6 +117,14 @@ const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 
 // Collection definitions ------------------------------------------------------
 template <typename Count>
+Collection<Count>::~Collection()
+{
+    for(auto cl: m_cls)
+		delete cl;
+	m_cls.clear();
+}
+
+template <typename Count>
 Collection<Count> Collection<Count>::load(const char* filename, float membership, ::AggHash* ahash
 	, const NodeBaseI* nodebase, bool verbose)
 {
@@ -167,7 +175,7 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 #endif // TRACE
 
 	// Preallocate space for the clusters and nodes
-	if(cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() < csnum)
+	if(cn.m_cls.capacity() < csnum)  //  * cn.m_cls.max_load_factor()
 		cn.m_cls.reserve(csnum);
 	if(cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() < nsnum)
 		cn.m_ndcs.reserve(nsnum);
@@ -213,15 +221,15 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 			// but potentially can be considered in NMI and F1 evaluation.
 			// In the latter case abs diff of shares instead of co occurrence
 			// counting should be performed.
-			//Id  nid = strtoul(tok, nullptr, 10);
 			Id  nid = parseId(tok);
-#if VALIDATE >= 2
-			if(!nid && tok[0] != '0') {
-				fprintf(stderr, "WARNING load(), conversion error of '%s' into 0: %s\n"
-					, tok, strerror(errno));
-				continue;
-			}
-#endif // VALIDATE
+//			Id  nid = strtoul(tok, nullptr, 10);
+//#if VALIDATE >= 2
+//			if(!nid && tok[0] != '0') {
+//				fprintf(stderr, "WARNING load(), conversion error of '%s' into 0: %s\n"
+//					, tok, strerror(errno));
+//				continue;
+//			}
+//#endif // VALIDATE
 			// Filter out nodes if required
 			if(nodebase && !nodebase->nodeExists(nid))
 				continue;
@@ -244,15 +252,14 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 				throw invalid_argument("load(), the cluster contains duplicated members\n");
 			}
 #endif // VALIDATE
-			const bool  res = cn.m_cls.insert(move(chd)).second;
-			assert(res && "load(), the cluster insertion is skipped as it already present");
+			cn.m_cls.push_back(chd.release());
 			// Start filling a new cluster
 			chd.reset(new Cluster<Count>());
 		}
 	} while(line.readline(file));
 	// Rehash the clusters and nodes for faster traversing if required
-	if(cn.m_cls.size() < cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() / 2)
-		cn.m_cls.reserve(cn.m_cls.size());
+	//if(cn.m_cls.size() < cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() / 2)
+	//	cn.m_cls.reserve(cn.m_cls.size());
 	if(cn.m_ndcs.size() < cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() / 2)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
 	// Assign hash to the results
@@ -260,10 +267,10 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 	if(ahash)
 		*ahash = move(mbhash);
 #if TRACE >= 2
-	printf("load(), loaded %lu clusters (reserved %lu buckets, overhead: %0.2f %%) and"
+	printf("load(), loaded %lu clusters (capacity: %lu, overhead: %0.2f %%) and"
 		" %lu nodes (reserved %lu buckets, overhead: %0.2f %%) with hash %lu from %s\n"
-		, cn.m_cls.size(), cn.m_cls.bucket_count()
-		, cn.m_cls.size() ? float(cn.m_cls.bucket_count() - cn.m_cls.size()) / cn.m_cls.size() * 100
+		, cn.m_cls.size(), cn.m_cls.capacity()
+		, cn.m_cls.size() ? float(cn.m_cls.capacity() - cn.m_cls.size()) / cn.m_cls.size() * 100
 			: numeric_limits<float>::infinity()
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, cn.m_ndcs.size() ? float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.size() * 100
@@ -279,6 +286,108 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 }
 
 template <typename Count>
+void Collection<Count>::clearcounts() const noexcept
+{
+	for(auto cl: m_cls)
+		cl->counter.clear();
+}
+
+template <typename Count>
+PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, bool prob
+	, const char* flname, bool verbose)
+{
+	PrecRec  pr;  // Apply NRVO optimization
+
+	// Initialized accessory data for evaluations if has not been done yet
+	// (nmi also initializes mbscont)
+	if(is_floating_point<Count>::value && !(gt.m_contsum && cn.m_contsum)) {  // Note: strict ! is fine here
+		// Evaluate members contributions
+		initconts(gt);
+		initconts(cn);
+	}
+
+	// Label cn2 clusters from the ground-truth clusters cn1 and evaluate F1
+	// including precision and recall
+#if TRACE >= 3
+	fputs("label(), Labeling the target collection\n", stderr);
+#endif // TRACE
+	// ATTENTION: gmatches() changes internal state of the collection parameter, so
+	// it should be called only once for each collection and with the same value of prob
+	auto  cnlbs = gt.gmatches(cn, prob);
+
+//	// Output the resulting clusters labels to the specified file if required
+//	if(flname) {
+//	}
+
+	return pr;
+}
+
+template <typename Count>
+Labels Collection<Count>::mark(const CollectionT& cn, bool prob) const
+{
+	Labels  lbs;
+//	// Greatest matches (Max F1 or partial probability) for each cluster [of this collection, self];
+//	Probs  gmats;  // Uses NRVO return value optimization
+//	gmats.reserve(m_cls.size());  // Preallocate the space
+//
+//	// Whether overlapping or multi-resolution clusters are evaluated
+//	auto fmatch = prob ? &Cluster<Count>::pprob : &Cluster<Count>::f1;  // Function evaluating value of the match
+//
+//	// Traverse all clusters in the collection
+//	for(auto cl: m_cls) {
+//		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
+//		// Traverse all members (node ids)
+//		for(auto nid: cl->members) {
+//			// Find Matching clusters (containing the same member node id) in the foreign collection
+//			const auto imcls = cn.m_ndcs.find(nid);
+//			// Consider the case of unequal node base, i.e. missed node
+//			if(imcls == cn.m_ndcs.end())
+//				continue;
+//			for(auto mcl: imcls->second) {
+//				if(m_overlaps)
+//					// In case of overlap contributes the smallest share (of the largest number of owners)
+//					mcl->counter(cl.get(), AccProb(1)
+//						/ max(m_ndcs.at(nid).size(), cn.m_ndcs.at(nid).size()));
+//				else mcl->counter(cl.get(), 1);
+//				// Note: only the max value for match is sufficient
+//				// ATTENTION: F1 compares clusters per-pair, so it is much simpler and
+//				// has another semantics of contribution for the multi-resolution case
+//				const Prob  match = ((*cl).*fmatch)(mcl->counter(), m_overlaps
+//					? mcl->cont() : mcl->members.size());
+//				if(gmatch < match)  // Note: <  usage is fine here
+//					gmatch = match;
+//			}
+//		}
+//		gmats.push_back(gmatch);
+//#if TRACE >= 3
+//		fprintf(stderr, "  %p (%lu): %.3G", cl.get(), cl->members.size(), gmatch);
+//#endif // TRACE
+//	}
+//#if TRACE >= 3
+//	fputs("\n", stderr);
+//#endif // TRACE
+	return lbs;
+}
+
+template <typename Count>
+void Collection<Count>::initconts(const CollectionT& cn) noexcept
+{
+	// Skip already initialized collection
+	if(cn.m_contsum)
+		return;
+
+	for(auto& ndcs: cn.m_ndcs) {
+		// ATTENTION: in case of fuzzy (unequal) overlaps the shares are unequal and
+		// should be stored in the Collection (ncs clusters member or a map)
+		const AccProb  ndshare = AccProb(1) / ndcs.second.size();
+		for(auto cl: ndcs.second)
+			cl->mbscont += ndshare;
+	}
+	// Mark that mbscont of clusters are used
+	cn.m_contsum = -1;
+}
+
+template <typename Count>
 Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
 	, Match mkind, bool verbose)
 {
@@ -287,25 +396,10 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 		return 0;
 	}
 
-	// Initialized accessory data for evaluations
+	// Initialized accessory data for evaluations if has not been done yet
+	// (nmi also initializes mbscont)
 	if(is_floating_point<Count>::value && !(cn1.m_contsum && cn2.m_contsum)) {  // Note: strict ! is fine here
 		// Evaluate members contributions
-        //! \brief Initialized cluster members contributions
-        //!
-        //! \param cn const CollectionT&  - target collection to initialize cluster
-        //! members contributions
-        //! \return void
-		constexpr auto initconts = [](const CollectionT& cn) noexcept {
-			for(auto& ndcs: cn.m_ndcs) {
-				// ATTENTION: in case of fuzzy (unequal) overlaps the shares are unequal and
-				// should be stored in the Collection (ncs clusters member or a map)
-				const AccProb  ndshare = AccProb(1) / ndcs.second.size();
-				for(auto cl: ndcs.second)
-					cl->mbscont += ndshare;
-			}
-			// Mark that mbscont of clusters are used
-			cn.m_contsum = -1;
-		};
 		initconts(cn1);
 		initconts(cn2);
 	}
@@ -314,8 +408,8 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 #if TRACE >= 3
 	fputs("f1(), F1 Max Avg of the first collection\n", stderr);
 #endif // TRACE
-	// ATTENTION: gmatches() changes internal state of the collection parameter, so it should be
-	// called only once for each collection and with the same value of prob
+	// ATTENTION: gmatches() changes internal state of the collection parameter, so
+	// it should be called only once for each collection and with the same value of prob
 	const auto  gmats1 = cn1.gmatches(cn2, prob);
 	const AccProb  f1ga1 = cn1.avggms(gmats1, mkind==Match::WEIGHTED);
 #if TRACE >= 3
@@ -359,14 +453,13 @@ AccProb Collection<Count>::avggms(const Probs& gmats, bool weighted) const  // c
 	//const auto  gmats = gmatches(cn, prob);
 
 	if(weighted) {
-		const Id  csnum = m_cls.size();
-#if VALIDATE >= 2
-		assert(gmats.size() == csnum
+#if VALIDATE >= 1
+		assert(gmats.size() == m_cls.size()
 			&& "avggms(), matches are not synchronized with the clusters");
 #endif // VALIDATE
 		AccCont  csizesSum = 0;
 		auto icl = m_cls.begin();
-		for(size_t i = 0; i < csnum; ++i) {
+		for(auto gm: gmats) {
 			// Evaluate members considering their shared contributions
 			// ATTENTION: F1 compares clusters per-pair, so it is much simpler and
 			// has another semantics of contribution for the multi-resolution case
@@ -375,12 +468,12 @@ AccProb Collection<Count>::avggms(const Probs& gmats, bool weighted) const  // c
 			assert(ccont > 0 && "avggms(), the contribution should be positive");
 #endif // VALIDATE
 			++icl;
-			accgm += gmats[i] * ccont;
+			accgm += gm * ccont;
 			csizesSum += ccont;
 		}
 		// Note: this assert is not the case for the collections containing multiple resolutions
 		//assert(!less<AccCont>(csizesSum, csnum, csnum) && "avggms(), invalid sum of the cluster sizes");
-		accgm /= csizesSum / AccProb(csnum);
+		accgm /= csizesSum;
 	} else {
 		for(auto gm: gmats) {
 #if VALIDATE >= 3
@@ -389,13 +482,14 @@ AccProb Collection<Count>::avggms(const Probs& gmats, bool weighted) const  // c
 #endif // VALIDATE
 			accgm += gm;
 		}
+		accgm /= gmats.size();
 	}
 #if VALIDATE >= 1
-	if(less<AccProb>(gmats.size(), accgm, gmats.size()))
-		throw overflow_error("avggms(), accgm is invalid (larger than the number of clusters: "
-			+ std::to_string(accgm / gmats.size()) + "), probably invalid dataset is supplied\n");
+	if(less<AccProb>(1, accgm, gmats.size()))
+		throw overflow_error("avggms(), accgm is invalid (> 1: " + std::to_string(accgm)
+			+ "), probably invalid dataset is supplied\n");
 #endif // VALIDATE
-	return accgm / gmats.size();
+	return accgm;
 }
 
 template <typename Count>
@@ -409,7 +503,7 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 	auto fmatch = prob ? &Cluster<Count>::pprob : &Cluster<Count>::f1;  // Function evaluating value of the match
 
 	// Traverse all clusters in the collection
-	for(const auto& cl: m_cls) {
+	for(auto cl: m_cls) {
 		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
 		// Traverse all members (node ids)
 		for(auto nid: cl->members) {
@@ -421,13 +515,13 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 			for(auto mcl: imcls->second) {
 				if(m_overlaps)
 					// In case of overlap contributes the smallest share (of the largest number of owners)
-					mcl->counter(cl.get(), AccProb(1)
+					mcl->counter(cl, AccProb(1)
 						/ max(m_ndcs.at(nid).size(), cn.m_ndcs.at(nid).size()));
-				else mcl->counter(cl.get(), 1);
+				else mcl->counter(cl, 1);
 				// Note: only the max value for match is sufficient
 				// ATTENTION: F1 compares clusters per-pair, so it is much simpler and
 				// has another semantics of contribution for the multi-resolution case
-				const Prob  match = ((*cl).*fmatch)(mcl->counter(), m_overlaps
+				const Prob  match = (cl->*fmatch)(mcl->counter(), m_overlaps
 					? mcl->cont() : mcl->members.size());
 				if(gmatch < match)  // Note: <  usage is fine here
 					gmatch = match;
@@ -435,7 +529,7 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 		}
 		gmats.push_back(gmatch);
 #if TRACE >= 3
-		fprintf(stderr, "  %p (%lu): %.3G", cl.get(), cl->members.size(), gmatch);
+		fprintf(stderr, "  %p (%lu): %.3G", cl, cl->members.size(), gmatch);
 #endif // TRACE
 	}
 #if TRACE >= 3
@@ -727,7 +821,7 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	fprintf(stderr, "evalconts(), cls1 counts (%lu): ", m_cls.size());
 #endif // TRACE
 	m_contsum = econt1;
-	for(const auto& c1: m_cls) {
+	for(auto c1: m_cls) {
 		m_contsum += c1->cont();
 #ifdef TRACING_CLSCOUNTS_
 		fprintf(stderr, " %.3G", AccProb(c1->cont()));
@@ -787,7 +881,7 @@ void Collection<Count>::clearconts() const noexcept
 	// Reset member contributions if not zero
 	if(!m_contsum)  // Note: ! is fine here
 		return;
-	for(const auto& cl: m_cls)
+	for(auto cl: m_cls)
 		cl->mbscont = 0;
 	m_contsum = 0;
 }

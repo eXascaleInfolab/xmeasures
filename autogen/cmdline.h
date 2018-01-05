@@ -31,11 +31,12 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "3.1"
+#define CMDLINE_PARSER_VERSION "3.2"
 #endif
 
 enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_standard };
 enum enum_kind { kind__NULL = -1, kind_arg_weighted = 0, kind_arg_unweighed, kind_arg_combined };
+enum enum_policy { policy__NULL = -1, policy_arg_partprob = 0, policy_arg_harmonic };
 
 /** @brief Where the command line options are stored */
 struct gengetopt_args_info
@@ -45,11 +46,11 @@ struct gengetopt_args_info
   int ovp_flag;	/**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R unlike 1 for the member existing in R distinct clusters on R resolutions (default=off).  */
   const char *ovp_help; /**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R unlike 1 for the member existing in R distinct clusters on R resolutions help description.  */
   char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
-  NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+  NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
   char * sync_orig;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
-  NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
+  NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
   const char *sync_help; /**< @brief synchronize with the node base, skipping the non-matching nodes.
-  NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
+  NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
   float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. (default='1').  */
   char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. original value given at command line.  */
   const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. help description.  */
@@ -57,36 +58,36 @@ struct gengetopt_args_info
   const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
-   - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
    - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
    - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
  (default='partprob').  */
   char * f1_orig;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
-   - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
    - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
    - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
  original value given at command line.  */
   const char *f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
-   - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+   - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
    - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
    - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
  help description.  */
   enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
-   - w  - weighted (default)
-   - u  - unweighed
-   - c  - combined(w, u) using geometric mean
+   - w  - Weighted (default)
+   - u  - Unweighed
+   - c  - Combined(w, u) using geometric mean
     (default='weighted').  */
   char * kind_orig;	/**< @brief kind of the matching policy:
-   - w  - weighted (default)
-   - u  - unweighed
-   - c  - combined(w, u) using geometric mean
+   - w  - Weighted (default)
+   - u  - Unweighed
+   - c  - Combined(w, u) using geometric mean
     original value given at command line.  */
   const char *kind_help; /**< @brief kind of the matching policy:
-   - w  - weighted (default)
-   - u  - unweighed
-   - c  - combined(w, u) using geometric mean
+   - w  - Weighted (default)
+   - u  - Unweighed
+   - c  - Combined(w, u) using geometric mean
     help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */
@@ -96,13 +97,25 @@ struct gengetopt_args_info
   const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
   char * label_arg;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
    labeled clusters only (without the probable subclusters).
-  NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+  NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
   char * label_orig;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
    labeled clusters only (without the probable subclusters).
-  NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
+  NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
   const char *label_help; /**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
    labeled clusters only (without the probable subclusters).
-  NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
+  NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
+  enum enum_policy policy_arg;	/**< @brief Labels matching policy:
+   - p  - Partial Probabilities
+   - h  - Harmonic
+ (default='partprob').  */
+  char * policy_orig;	/**< @brief Labels matching policy:
+   - p  - Partial Probabilities
+   - h  - Harmonic
+ original value given at command line.  */
+  const char *policy_help; /**< @brief Labels matching policy:
+   - p  - Partial Probabilities
+   - h  - Harmonic
+ help description.  */
   char * identifiers_arg;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list).  */
   char * identifiers_orig;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list) original value given at command line.  */
   const char *identifiers_help; /**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list) help description.  */
@@ -119,6 +132,7 @@ struct gengetopt_args_info
   unsigned int all_given ;	/**< @brief Whether all was given.  */
   unsigned int ln_given ;	/**< @brief Whether ln was given.  */
   unsigned int label_given ;	/**< @brief Whether label was given.  */
+  unsigned int policy_given ;	/**< @brief Whether policy was given.  */
   unsigned int identifiers_given ;	/**< @brief Whether identifiers was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
@@ -248,6 +262,7 @@ int cmdline_parser_required (struct gengetopt_args_info *args_info,
 
 extern const char *cmdline_parser_f1_values[];  /**< @brief Possible values for f1. */
 extern const char *cmdline_parser_kind_values[];  /**< @brief Possible values for kind. */
+extern const char *cmdline_parser_policy_values[];  /**< @brief Possible values for policy. */
 
 
 #ifdef __cplusplus

@@ -1,7 +1,7 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "3.1"
+version "3.2"
 
 purpose "Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping\
  multi-resolution clusterings with possible unequal node base and standard NMI for\
@@ -42,12 +42,12 @@ Example:
 option  "ovp" o  "evaluate overlapping instead of multi-resolution clusters, where\
  max matching for any shared member between R overlapping clusters is 1/R unlike 1\
  for the member existing in R distinct clusters on R resolutions"  flag off
-#NOTE: multi-resolution mode can be used as approximation of the overlapping\
+#NOTE: Multi-resolution mode can be used as approximation of the overlapping\
 # clusters evaluation, but not vice verse"  flag off
 # Note: ovp option requires shares evaluation/reading and processing of the directory
 # of collections in case of both multi-resolution and overlapping  clustering evaluation
 option  "sync" s  "synchronize with the node base, skipping the non-matching nodes.
-NOTE: the node base can be either a separate, or an evaluating CNL file, in the\
+NOTE: The node base can be either a separate, or an evaluating CNL file, in the\
  latter case this option should precede the evaluating filename not repeating it"
   string  typestr="filename"
 option  "membership" m  "average expected membership of the nodes in the clusters,\
@@ -61,7 +61,7 @@ option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)
 NOTE: F1p <= F1h <= F1s, where:
  - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the\
  most discriminative and satisfies the largest number of the Formal Constraints\
- (homogeneity, completeness, rag bag,  size/quantity, balance);
+ (homogeneity, completeness, rag bag, size/quantity, balance);
  - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
  - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s,\
  Standard F1-Score, the least discriminative and satisfies the lowest number of the\
@@ -69,9 +69,9 @@ NOTE: F1p <= F1h <= F1s, where:
 "
  values="partprob","harmonic","standard"  enum  default="partprob"  argoptional
 option  "kind" k  "kind of the matching policy:
- - w  - weighted (default)
- - u  - unweighed
- - c  - combined(w, u) using geometric mean
+ - w  - Weighted (default)
+ - u  - Unweighed
+ - c  - Combined(w, u) using geometric mean
  "
   values ="weighted","unweighed","combined"  enum default="weighted" argoptional
   dependon="f1"
@@ -88,20 +88,27 @@ section "Clusters Labeling"
 option  "label" l  "label evaluating clusters with the specified ground-truth (gt)\
  cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
  labeled clusters only (without the probable subclusters).
-NOTE: if 'sync' option is specified then the clusters labels file name should be\
+NOTE: If 'sync' option is specified then the clusters labels file name should be\
  the same as the node base (if specified) and should be in the .cnl format.\
  The file name can be either a separate or an evaluating CNL file, in the\
  latter case this option should precede the evaluating filename not repeating it"
   string  typestr="gt_filename"
+option  "policy" p  "Labels matching policy:
+ - p  - Partial Probabilities
+ - h  - Harmonic
+"
+ values="partprob","harmonic"  enum  default="partprob"  argoptional  dependon="label"
 option  "identifiers" i  "output labels (identifiers) of the evaluating clusters\
  as lines of space-separated indices of the ground-truth clusters (.cll - clusters\
  labels list)"  string  typestr="labels_filename"  dependon="label"
 
-args "--default-optional --unamed-opts=clusterings"   # Set opional opions, allow input files to be unnamed parameters
+# Set optional options by default, allow input files to be unnamed parameters
+args "--default-optional --unamed-opts=clusterings"
 #args "--unamed-opts=clusterings"   # Allow input files to be unnamed parameters
 
 
 # = Changelog =
+# v3.2.0 - Clusters labeling and labels F1 evaluation added
 # v3.1.0 - Matching policy for the F measures parameterized (weighted, unweighted, combined)
 # v3.0.2 - NMI_sqrt added
 # v3.0 - Command line interface changed for F1

@@ -37,18 +37,19 @@ const char *gengetopt_args_info_help[] = {
   "  -h, --help                    Print help and exit",
   "  -V, --version                 Print version and exit",
   "  -o, --ovp                     evaluate overlapping instead of\n                                  multi-resolution clusters, where max matching\n                                  for any shared member between R overlapping\n                                  clusters is 1/R unlike 1 for the member\n                                  existing in R distinct clusters on R\n                                  resolutions  (default=off)",
-  "  -s, --sync=filename           synchronize with the node base, skipping the\n                                  non-matching nodes.\n                                  NOTE: the node base can be either a separate,\n                                  or an evaluating CNL file, in the latter case\n                                  this option should precede the evaluating\n                                  filename not repeating it",
+  "  -s, --sync=filename           synchronize with the node base, skipping the\n                                  non-matching nodes.\n                                  NOTE: The node base can be either a separate,\n                                  or an evaluating CNL file, in the latter case\n                                  this option should precede the evaluating\n                                  filename not repeating it",
   "  -m, --membership=FLOAT        average expected membership of the nodes in the\n                                  clusters, > 0, typically >= 1. Used only for\n                                  the containers preallocation facilitating\n                                  estimation of the nodes number if not\n                                  specified in the file header.  (default=`1')",
   "  -d, --detailed                detailed (verbose) results output\n                                  (default=off)",
   "\nF1 Options:",
   "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1s, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  discriminative and satisfies the largest\n                                  number of the Formal Constraints\n                                  (homogeneity, completeness, rag bag,\n                                  size/quantity, balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1s;\n                                   - s (F1s)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1s, Standard\n                                  F1-Score, the least discriminative and\n                                  satisfies the lowest number of the Formal\n                                  Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"standard\"\n                                  default=`partprob')",
-  "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - weighted (default)\n                                   - u  - unweighed\n                                   - c  - combined(w, u) using geometric mean\n                                     (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
+  "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - Weighted (default)\n                                   - u  - Unweighed\n                                   - c  - Combined(w, u) using geometric mean\n                                     (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
   "\nNMI Options:",
   "  -n, --nmi                     evaluate NMI (Normalized Mutual Information)\n                                  (default=off)",
   "  -a, --all                     evaluate all NMIs using sqrt, avg and min\n                                  denominators besides the max one\n                                  (default=off)",
   "  -e, --ln                      use ln (exp base) instead of log2 (Shannon\n                                  entropy, bits) for the information measuring\n                                  (default=off)",
   "\nClusters Labeling:",
-  "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED\n                                   labeled clusters only (without the probable\n                                  subclusters).\n                                  NOTE: if 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
+  "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED\n                                   labeled clusters only (without the probable\n                                  subclusters).\n                                  NOTE: If 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
+  "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities\n                                   - h  - Harmonic\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`partprob')",
   "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)",
     0
 };
@@ -74,6 +75,7 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
 
 const char *cmdline_parser_f1_values[] = {"partprob", "harmonic", "standard", 0}; /*< Possible values for f1. */
 const char *cmdline_parser_kind_values[] = {"weighted", "unweighed", "combined", 0}; /*< Possible values for kind. */
+const char *cmdline_parser_policy_values[] = {"partprob", "harmonic", 0}; /*< Possible values for policy. */
 
 static char *
 gengetopt_strdup (const char *s);
@@ -93,6 +95,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->all_given = 0 ;
   args_info->ln_given = 0 ;
   args_info->label_given = 0 ;
+  args_info->policy_given = 0 ;
   args_info->identifiers_given = 0 ;
 }
 
@@ -115,6 +118,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->ln_flag = 0;
   args_info->label_arg = NULL;
   args_info->label_orig = NULL;
+  args_info->policy_arg = policy_arg_partprob;
+  args_info->policy_orig = NULL;
   args_info->identifiers_arg = NULL;
   args_info->identifiers_orig = NULL;
   
@@ -137,7 +142,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->all_help = gengetopt_args_info_help[11] ;
   args_info->ln_help = gengetopt_args_info_help[12] ;
   args_info->label_help = gengetopt_args_info_help[14] ;
-  args_info->identifiers_help = gengetopt_args_info_help[15] ;
+  args_info->policy_help = gengetopt_args_info_help[15] ;
+  args_info->identifiers_help = gengetopt_args_info_help[16] ;
   
 }
 
@@ -231,6 +237,7 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->kind_orig));
   free_string_field (&(args_info->label_arg));
   free_string_field (&(args_info->label_orig));
+  free_string_field (&(args_info->policy_orig));
   free_string_field (&(args_info->identifiers_arg));
   free_string_field (&(args_info->identifiers_orig));
   
@@ -333,6 +340,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "ln", 0, 0 );
   if (args_info->label_given)
     write_into_file(outfile, "label", args_info->label_orig, 0);
+  if (args_info->policy_given)
+    write_into_file(outfile, "policy", args_info->policy_orig, cmdline_parser_policy_values);
   if (args_info->identifiers_given)
     write_into_file(outfile, "identifiers", args_info->identifiers_orig, 0);
   
@@ -466,6 +475,11 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   if (args_info->ln_given && ! args_info->nmi_given)
     {
       fprintf (stderr, "%s: '--ln' ('-e') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->policy_given && ! args_info->label_given)
+    {
+      fprintf (stderr, "%s: '--policy' ('-p') option depends on option 'label'%s\n", prog_name, (additional_error ? additional_error : ""));
       error_occurred = 1;
     }
   if (args_info->identifiers_given && ! args_info->label_given)
@@ -657,11 +671,12 @@ cmdline_parser_internal (
         { "all",	0, NULL, 'a' },
         { "ln",	0, NULL, 'e' },
         { "label",	1, NULL, 'l' },
+        { "policy",	2, NULL, 'p' },
         { "identifiers",	1, NULL, 'i' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVos:m:df::k::nael:i:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVos:m:df::k::nael:p::i:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -688,7 +703,7 @@ cmdline_parser_internal (
         
           break;
         case 's':	/* synchronize with the node base, skipping the non-matching nodes.
-        NOTE: the node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+        NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
         
         
           if (update_arg( (void *)&(args_info->sync_arg), 
@@ -724,7 +739,7 @@ cmdline_parser_internal (
           break;
         case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
         NOTE: F1p <= F1h <= F1s, where:
-         - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
+         - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most discriminative and satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
          - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
          - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
 .  */
@@ -740,9 +755,9 @@ cmdline_parser_internal (
         
           break;
         case 'k':	/* kind of the matching policy:
-         - w  - weighted (default)
-         - u  - unweighed
-         - c  - combined(w, u) using geometric mean
+         - w  - Weighted (default)
+         - u  - Unweighed
+         - c  - Combined(w, u) using geometric mean
          .  */
         
         
@@ -787,7 +802,7 @@ cmdline_parser_internal (
           break;
         case 'l':	/* label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
          labeled clusters only (without the probable subclusters).
-        NOTE: if 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
+        NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
         
         
           if (update_arg( (void *)&(args_info->label_arg), 
@@ -795,6 +810,21 @@ cmdline_parser_internal (
               &(local_args_info.label_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
               "label", 'l',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'p':	/* Labels matching policy:
+         - p  - Partial Probabilities
+         - h  - Harmonic
+.  */
+        
+        
+          if (update_arg( (void *)&(args_info->policy_arg), 
+               &(args_info->policy_orig), &(args_info->policy_given),
+              &(local_args_info.policy_given), optarg, cmdline_parser_policy_values, "partprob", ARG_ENUM,
+              check_ambiguity, override, 0, 0,
+              "policy", 'p',
               additional_error))
             goto failure;
         

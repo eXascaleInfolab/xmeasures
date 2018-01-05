@@ -88,6 +88,17 @@ string to_string(Match mkind)
 	return val;
 }
 
+bool xwmatch(Match m) noexcept
+{
+	return m == Match::WEIGHTED || m == Match::COMBINED;
+}
+
+
+bool xumatch(Match m) noexcept
+{
+	return m == Match::UNWEIGHTED || m == Match::COMBINED;
+}
+
 NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
 	, size_t cmin, size_t cmax, bool verbose)
 {
@@ -99,17 +110,6 @@ NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
 	else perror((string("WARNING load(), can't open ") += filename).c_str());
 
 	return nb;
-}
-
-bool xwmatch(Match m) noexcept
-{
-	return m == Match::WEIGHTED || m == Match::COMBINED;
-}
-
-
-bool xumatch(Match m) noexcept
-{
-	return m == Match::UNWEIGHTED || m == Match::COMBINED;
 }
 
 // Accessory functions ---------------------------------------------------------

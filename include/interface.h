@@ -227,10 +227,10 @@ struct Cluster {
 template <typename Count>
 using ClusterHolder = unique_ptr<Cluster<Count>>;
 
-//! Automatic storage for the Cluster;
-//! \tparam Count  - arithmetic counting type
-template <typename Count>
-using Clusters = unordered_set<ClusterHolder<Count>>;
+////! Automatic storage for the Cluster;
+////! \tparam Count  - arithmetic counting type
+//template <typename Count>
+//using Clusters = unordered_set<ClusterHolder<Count>>;
 
 //! Cluster pointers, unordered
 //! \tparam Count  - arithmetic counting type
@@ -244,6 +244,25 @@ using NodeClusters = unordered_map<Id, ClusterPtrs<Count>>;
 
 //! Resulting greatest matches for 2 input collections of clusters in a single direction
 using Probs = vector<Prob>;
+
+// Label-related types --------------------------------------------------------
+////! Cluster indices
+//using Indices = vector<Id>;
+
+struct ClusterMatch {
+	Prob  gmatch;  //!< Cluster match value
+	Id  id;  //!< Cluster id
+};
+
+//! Cluster Matches
+using ClusterMatches = vector<ClusterMatch>;
+
+struct Label {
+	Prob gmatch;  //!< Greatest match
+	ClusterMatches cls;  //!<
+};
+
+using Labels = vector<Label>;
 
 // F1-related types -----------------------------------------------------------
 using F1Base = uint8_t;
@@ -501,6 +520,14 @@ bool xwmatch(Match m) noexcept;
 //! \return bool  - unweighted matching included
 bool xumatch(Match m) noexcept;
 
+//! Precision and recall
+struct PrecRec {
+	Prob prec;  //!< Precision
+	Prob rec;  //!< Recall
+
+	PrecRec(): prec(), rec()  {}  // Explicit members initialization by value to avoid uninitialized members
+};
+
 //! Collection describing cluster-node relations
 //! \tparam Count  - arithmetic counting type
 template <typename Count>
@@ -514,16 +541,27 @@ public:
 	//! Clusters matching matrix
 	using ClustersMatching = SparseMatrix<Cluster<Count>*, AccCont>;  // Used only for NMI
 private:
-	Clusters<Count>  m_cls;  //!< Clusters
+	// ATTENTNION: Collection manages the memory of the m_cls
+	ClusterPtrs<Count>  m_cls;  //!< Clusters
 	NodeClusters<Count>  m_ndcs;  //!< Node clusters relations
 	size_t  m_ndshash;  //!< Nodes hash (of unique node ids only, not all members), 0 means was not evaluated
 	//mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
 	//! Sum of contributions of all members in each cluster
-	mutable AccCont  m_contsum;  // Used by NMI only
+	mutable AccCont  m_contsum;  // Used by NMI only, marked also by overlapping F1
 protected:
     //! Default constructor
 	Collection(): m_cls(), m_ndcs(), m_ndshash(0), m_contsum(0)  {}  //, m_dirty(false)  {}
+
+	// Note: Actual for NMI and overlapping F1
+	//! \brief Initialized cluster members contributions
+	//!
+	//! \param cn const CollectionT&  - target collection to initialize cluster
+	//! members contributions
+	//! \return void
+	static void initconts(const CollectionT& cn) noexcept;
 public:
+	~Collection();
+
     //! \brief The number of clusters
     //!
     //! \return Id  - the number of clusters in the collection
@@ -553,6 +591,22 @@ public:
 	static CollectionT load(const char* filename, float membership=1
 		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
 		, bool verbose=false);
+
+    //! \brief Clear cluster counters
+    //!
+    //! \return void
+	void clearcounts() const noexcept;
+
+    //! \brief Label collection clusters according to the ground-truth cluster indices
+    //!
+    //! \param gt const CollectionT&  - ground-truth cluster collection
+    //! \param cn const CollectionT&  - processing cluster collection
+    //! \param prob bool  - Partial Probabilities or F1 (harmonic) matching policy
+    //! \param flname=nullptr const char*  - resulting label indices filename (.cll format)
+    //! \param verbose=false bool  - print intermediate results to the stdout
+    //! \return PrecRec  - resulting precision and recall for the labeled items
+	static PrecRec label(const CollectionT& gt, const CollectionT& cn, bool prob
+		, const char* flname=nullptr, bool verbose=false);
 
 	//! \brief Specified F1 evaluation of the Greatest (Max) Match for the
 	//! multi-resolution clustering with possibly unequal node base
@@ -590,6 +644,15 @@ public:
 	static RawNmi nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase=false
 		, bool verbose=false);
 protected:
+	// Label related functions -------------------------------------------------
+    //! \brief Mark specified collection with the labels (of this collection)
+    //!
+    //! \param cn const CollectionT&  - the collection to be labeled
+    //! \param prob bool  - match labels by the Partial Probabilities or F1
+    //! \return Labels  - resulting labels for the specified collection as
+    //! cluster indices of this collection
+	Labels mark(const CollectionT& cn, bool prob) const;
+
 	// F1-related functions ----------------------------------------------------
     //! \brief Average of the maximal matches (by F1 or partial probabilities)
     //! relative to the specified collection FROM this one
@@ -606,6 +669,7 @@ protected:
 	inline AccProb avggms(const Probs& gmats, bool weighted) const;  // const CollectionT& cn
 
     //! \brief Greatest (Max) matching value (F1 or partial probability) for each cluster
+    //! to the corresponding clusters of the specified collection
     //! \note External cn collection can have unequal node base and overlapping
     //! clusters on multiple resolutions
     //! \attention Directed (non-symmetric) evaluation

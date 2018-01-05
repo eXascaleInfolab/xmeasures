@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
 	// Verify that labeled clusters correspond to the node base if any of them is specified
 	if(args_info.sync_given && args_info.label_given && strcmp(args_info.sync_arg, args_info.label_arg))
-		throw invalid_argument("ERROR, node base file should correspond to the labeled clusters if both are specified\m");
+		throw invalid_argument("ERROR, node base file should correspond to the labeled clusters if both are specified\n");
 
 	// Load node base if required
 	NodeBase  ndbase;
@@ -167,8 +167,26 @@ int main(int argc, char **argv)
 
 			//if(args_info.nmi_flag)
 			//	fputs("; ", stdout);
-			printf("F1%c_%c (%s, %s):\n%G\n", f1suf, kindsuf, to_string(f1kind).c_str(), to_string(mkind).c_str()
-				, Collection::f1(cn1, cn2, f1kind, mkind, args_info.detailed_flag));
+			const auto  f1val = Collection::f1(cn1, cn2, f1kind, mkind, args_info.detailed_flag);
+			printf("F1%c_%c (%s, %s):\n%G\n", f1suf, kindsuf, to_string(f1kind).c_str()
+				, to_string(mkind).c_str(), f1val);
+		}
+		// Label clusters with the ground-truth clusters indices and output F1 for the labels if required
+		if(args_info.label_given) {
+			if(args_info.policy_arg == policy__NULL) {
+				fputs("WARNING f1(), labels matching policy is not specified, the evaluation is skipped\n", stderr);
+				return 0;
+			}
+			const bool  prob = args_info.policy_arg == policy_arg_partprob;  // Partial Probabilities matching policy
+			// Reset cluster counters if they were set (could be set only by F1)
+			if(args_info.f1_given) {
+				cn1.clearcounts();
+				cn2.clearcounts();
+			}
+			PrecRec pr = Collection::label(cn1, cn2, prob, args_info.identifiers_arg
+				, args_info.detailed_flag);
+			printf("F1 labels: %G (precision: %G, recall: %G)\n"
+				, hmean(pr.prec, pr.rec), pr.prec, pr.rec);
 		}
 
 		return 0;
