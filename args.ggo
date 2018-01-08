@@ -35,8 +35,9 @@ usage "xmeasures [OPTIONS] clustering1 clustering2
 
   clustering  - input file, collection of the clusters to be evaluated.
   
-Example:
+Examples:
   $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl
+  $ ./xmeasures -fh -kc -i tests/5K25.cll -ph -l networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl
 "
 
 option  "ovp" o  "evaluate overlapping instead of multi-resolution clusters, where\
@@ -111,6 +112,7 @@ args "--default-optional --unamed-opts=clusterings"
 
 
 # = Changelog =
+# v3.2.1 - Iterpretation of F1p modified to have semantic of geometric mean, now F1h < F1p < F1s
 # v3.2.0 - Clusters labeling and labels F1 evaluation added
 # v3.1.0 - Matching policy for the F measures parameterized (weighted, unweighted, combined)
 # v3.0.2 - NMI_sqrt added

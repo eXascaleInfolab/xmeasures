@@ -27,7 +27,7 @@
 
 const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping\nmulti-resolution clusterings with possible unequal node base and standard NMI\nfor non-overlapping clustering on a single resolution.";
 
-const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.\n  \nExample:\n  $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl\n";
+const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.\n  \nExamples:\n  $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl\n  $ ./xmeasures -fh -kc -i tests/5K25.cll -ph -l networks/5K25.cnl\ntests/5K25_l0.825/5K25_l0.825_796.cnl\n";
 
 const char *gengetopt_args_info_versiontext = "";
 

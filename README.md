@@ -1,5 +1,5 @@
 # xmeasures - Extrinsic Clustering Measures
-Extremely fast evaluation of the extrinsic clustering measures: *various F1 measures (including F1-Score) for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization)* using various *matching policies (micro, macro and combined weighting)* and standard NMI for non-overlapping clustering on a single resolution.  
+Extremely fast evaluation of the extrinsic clustering measures: *various F1 measures (including F1-Score) for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization)* using various *matching policies (micro, macro and combined weighting)* and standard NMI for non-overlapping clustering on a single resolution. `xmeasures` also provides clusters labeling with the indices of the ground-truth clusters considering 1:n match and evaluating F1, precision and recall of the labeled clusters.  
 `xmeasures` evaluates F1 and NMI for collections of hundreds thousands clusters withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) unlike O(N*C) of the existing state of the art implementations, where N is the number of nodes in the network and C is the number of clusters.
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark to evaluate clustering of large networks.  
 A paper about the implemented F1 measures (F1p is much more indicative and discriminative than the standard [Average F1-Score](https://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf)), [NMI measures](www.jmlr.org/papers/volume11/vinh10a/vinh10a.pdf) and their applicability is being written now and the reference will be specified soon...
@@ -36,21 +36,24 @@ Then `g++-5` should be installed and `Makefile` might need to be edited replacin
 Execution Options:
 ```
 $ ../xmeasures -h
-xmeasures 3.1
+xmeasures 3.2
 
-Extrinsic measures evaluation: F1 (probabilistic, harmonic and standard score) 
-for overlapping multi-resolution clusterings with possible unequal node base and
-standard NMI for non-overlapping clustering on a single resolution.
+Extrinsic measures evaluation: F1 (prob, harm and score) for overlapping
+multi-resolution clusterings with possible unequal node base and standard NMI
+for non-overlapping clustering on a single resolution.
 
-Usage:  xmeasures [OPTIONS] clustering1 clustering2
+Usage: xmeasures [OPTIONS] clustering1 clustering2
 
   clustering  - input file, collection of the clusters to be evaluated.
   
-Example:
+Examples:
   $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl
+  $ ./xmeasures -fh -kc -i tests/5K5_l8.cll -ph -l gt/5K5.cnl tests/5K5_l8.cnl
+
 
 Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is
-compared to another clustering, which can be the ground-truth.
+compared to another clustering, which can be a ground-truth. Optional labeling
+of the evaluating clusters with the specified ground-truth clusters.
 NOTE: Each cluster should contain unique members, which is verified only in the
 debug mode.
 Evaluating measures are:
@@ -73,57 +76,99 @@ in the arbitrary collections (still each cluster should contain unique
 members).
 
 
-  -h, --help              Print help and exit
-  -V, --version           Print version and exit
-  -o, --ovp               evaluate overlapping instead of multi-resolution
-                            clusters, where max matching for any shared member
-                            between R overlapping clusters is 1/R unlike 1 for
-                            the member existing in R distinct clusters on R
-                            resolutions  (default=off)
-  -s, --sync=filename     synchronize with the node base, skipping the
-                            non-matching nodes.
-                            NOTE: the node base can be either a separate, or an
-                            evaluating CNL file, in the latter case this option
-                            should precede the evaluating filename not
-                            repeating it
-  -m, --membership=FLOAT  average expected membership of the nodes in the
-                            clusters, > 0, typically >= 1. Used only for the
-                            containers preallocation facilitating estimation of
-                            the nodes number if not specified in the file
-                            header.  (default=`1')
-  -d, --detailed          detailed (verbose) results output  (default=off)
+
+  -h, --help                    Print help and exit
+  -V, --version                 Print version and exit
+  -o, --ovp                     evaluate overlapping instead of
+                                  multi-resolution clusters, where max matching
+                                  for any shared member between R overlapping
+                                  clusters is 1/R unlike 1 for the member
+                                  existing in R distinct clusters on R
+                                  resolutions  (default=off)
+  -s, --sync=filename           synchronize with the node base, skipping the
+                                  non-matching nodes.
+                                  NOTE: The node base can be either a separate,
+                                  or an evaluating CNL file, in the latter case
+                                  this option should precede the evaluating
+                                  filename not repeating it
+  -m, --membership=FLOAT        average expected membership of the nodes in the
+                                  clusters, > 0, typically >= 1. Used only for
+                                  the containers preallocation facilitating
+                                  estimation of the nodes number if not
+                                  specified in the file header.  (default=`1')
+  -d, --detailed                detailed (verbose) results output
+                                  (default=off)
 
 F1 Options:
-  -f, --f1[=ENUM]         evaluate F1 of the [weighted] average of the greatest
-                            (maximal) match by F1 or partial probability.
-                            NOTE: F1p <= F1h <= F1s, where:
-                             - p (F1p)  - Harmonic mean of the [weighted]
-                            average of Partial Probabilities, the most
-                            discriminative and satisfies the largest number of
-                            the Formal Constraints (homogeneity, completeness,
-                            rag bag,  size/quantity, balance);
-                             - h (F1h)  - Harmonic mean of the [weighted]
-                            average of F1s;
-                             - s (F1s)  - Arithmetic mean (average) of the
-                            [weighted] average of F1s, Standard F1-Score, the
-                            least discriminative and satisfies the lowest
-                            number of the Formal Constraints.
-                              (possible values="partprob", "harmonic",
-                            "standard" default=`partprob')
-  -k, --kind[=ENUM]       kind of the matching policy:
-                             - w  - weighted (default)
-                             - u  - unweighed
-                             - c  - combined(w, u) using geometric mean
-                               (possible values="weighted", "unweighed",
-                            "combined" default=`weighted')
+  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the
+                                  greatest (maximal) match by F1 or partial
+                                  probability.
+                                  NOTE: F1p <= F1h <= F1s, where:
+                                   - p (F1p)  - Harmonic mean of the [weighted]
+                                  average of Partial Probabilities, the most
+                                  indicative as satisfies the largest number of
+                                  the Formal Constraints (homogeneity,
+                                  completeness, rag bag, size/quantity,
+                                  balance);
+                                   - h (F1h)  - Harmonic mean of the [weighted]
+                                  average of F1s;
+                                   - s (F1s)  - Arithmetic mean (average) of
+                                  the [weighted] average of F1s, Standard
+                                  F1-Score, the least discriminative and
+                                  satisfies the lowest number of the Formal
+                                  Constraints.
+                                    (possible values="partprob",
+                                  "harmonic", "standard"
+                                  default=`partprob')
+  -k, --kind[=ENUM]             kind of the matching policy:
+                                   - w  - Weighted (default)
+                                   - u  - Unweighed
+                                   - c  - Combined(w, u) using geometric mean
+                                  (drops the value not so much as harmonic
+                                  mean)
+                                     (possible values="weighted",
+                                  "unweighed", "combined"
+                                  default=`weighted')
 
 NMI Options:
-  -n, --nmi               evaluate NMI (Normalized Mutual Information)
-                            (default=off)
-  -a, --all               evaluate all NMIs using sqrt, avg and min
-                            denominators besides the max one  (default=off)
-  -e, --ln                use ln (exp base) instead of log2 (Shannon entropy,
-                            bits) for the information measuring  (default=off)
+  -n, --nmi                     evaluate NMI (Normalized Mutual Information)
+                                  (default=off)
+  -a, --all                     evaluate all NMIs using sqrt, avg and min
+                                  denominators besides the max one
+                                  (default=off)
+  -e, --ln                      use ln (exp base) instead of log2 (Shannon
+                                  entropy, bits) for the information measuring
+                                  (default=off)
+
+Clusters Labeling:
+  -l, --label=gt_filename       label evaluating clusters with the specified
+                                  ground-truth (gt) cluster indices and
+                                  evaluate F1 (including Precision and Recall)
+                                  of the MATCHED
+                                   labeled clusters only (without the probable
+                                  subclusters).
+                                  NOTE: If 'sync' option is specified then the
+                                  clusters labels file name should be the same
+                                  as the node base (if specified) and should be
+                                  in the .cnl format. The file name can be
+                                  either a separate or an evaluating CNL file,
+                                  in the latter case this option should precede
+                                  the evaluating filename not repeating it
+  -p, --policy[=ENUM]           Labels matching policy:
+                                   - p  - Partial Probabilities
+                                   - h  - Harmonic Mean
+                                    (possible values="partprob", "harmonic"
+                                  default=`partprob')
+  -i, --identifiers=labels_filename
+                                output labels (identifiers) of the evaluating
+                                  clusters as lines of space-separated indices
+                                  of the ground-truth clusters (.cll - clusters
+                                  labels list)
+                                  NOTE: If 'sync' option is specified then the
+                                  reduce collection is outputted to the
+                                  <labels_filename>.cnl besides the
+                                  <labels_filename>
+
 ```
 
 > Empty lines and comments (lines starting with #) in the input file (cnl format) are skipped.
@@ -148,6 +193,12 @@ Evaluate F1-Score (weighted by the cluster size) and  NMI with all denominators 
 ```
 $ ./xmeasures -fs -na -s data/1lev4nds2cls.cnl data/3cls5nds.cnl data/4cls6nds.cnl
 ```
+
+Evaluate combined weighed and unweighted F1h (harmonic F1 average), label the clusters with the indices of provided labels, evaluate F1, precision and recall of the labeled clusters and output the labels to the `clslbs.cll`:
+```
+$ ./xmeasures -fh -kc -i clslbs.cll -l labels.cnl clusters.cnl
+```
+
 
 **Note:** Please, [star this project](https://github.com/eXascaleInfolab/xmeasures) if you use it.
 
