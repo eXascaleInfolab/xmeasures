@@ -119,6 +119,8 @@ const Value& SparseMatrix<Index, Value>::at(Index i, Index j)
 template <typename Count>
 Collection<Count>::~Collection()
 {
+	// Note: exception on double memory release occurs if m_cls contain non-unique pointers,
+	// which should never happen
     for(auto cl: m_cls)
 		delete cl;
 	m_cls.clear();
@@ -126,7 +128,7 @@ Collection<Count>::~Collection()
 
 template <typename Count>
 Collection<Count> Collection<Count>::load(const char* filename, float membership, ::AggHash* ahash
-	, const NodeBaseI* nodebase, bool verbose)
+	, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
 
@@ -255,8 +257,12 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 			cn.m_cls.push_back(chd.release());
 			// Start filling a new cluster
 			chd.reset(new Cluster<Count>());
-		}
+		} else if(lostcls)
+			lostcls->push_back(lostcls->size() + cn.m_cls.size());
 	} while(line.readline(file));
+	// Save some space if it is essential
+	if(cn.m_cls.size() < cn.m_cls.capacity() / 2)
+		cn.m_cls.shrink_to_fit();
 	// Rehash the clusters and nodes for faster traversing if required
 	//if(cn.m_cls.size() < cn.m_cls.bucket_count() * cn.m_cls.max_load_factor() / 2)
 	//	cn.m_cls.reserve(cn.m_cls.size());
@@ -293,11 +299,9 @@ void Collection<Count>::clearcounts() const noexcept
 }
 
 template <typename Count>
-PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, bool prob
-	, const char* flname, bool verbose)
+PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
+	, bool prob, const char* flname, bool verbose)
 {
-	PrecRec  pr;  // Apply NRVO optimization
-
 	// Initialized accessory data for evaluations if has not been done yet
 	// (nmi also initializes mbscont)
 	if(is_floating_point<Count>::value && !(gt.m_contsum && cn.m_contsum)) {  // Note: strict ! is fine here
@@ -311,62 +315,169 @@ PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, b
 #if TRACE >= 3
 	fputs("label(), Labeling the target collection\n", stderr);
 #endif // TRACE
-	// ATTENTION: gmatches() changes internal state of the collection parameter, so
+	// ATTENTION: mark() (and gmatches() changes internal state of the collection parameter, so
 	// it should be called only once for each collection and with the same value of prob
-	auto  cnlbs = gt.gmatches(cn, prob);
+	// Note: it's more convenient for the subsequent processing to assign labels to the clusters
+	ClsLabels  csls;  // Clusters labels to be outputted
+	auto pr = gt.mark(cn, prob, &csls);
 
-//	// Output the resulting clusters labels to the specified file if required
-//	if(flname) {
-//	}
+	// Evaluate labels for each node by the node clusters and cluster labels
+
+	// Output the resulting clusters labels to the specified file if required
+	if(flname) {
+		// Create the output file
+		NamedFileWrapper  flbs(flname, "w");
+		if(flbs) {
+			fprintf(flbs, "# Clusters: %lu, Labels: %lu\n", csls.size(), gt.m_cls.size());
+			// Map labels to their indices
+			using LabelIndices = unordered_map<Cluster<Count>*, Id>;
+			LabelIndices  lids;
+			lids.reserve(gt.m_cls.size());
+            for(size_t i = 0; i < gt.m_cls.size(); ++i)
+				lids[gt.m_cls[i]] = i;
+			// Output clusters marked with label indices
+			for(auto cl: cn.m_cls) {
+				auto iclbs = csls.find(cl);
+				if(iclbs == csls.end()) {
+					fprintf(flbs, "-\n");
+					continue;
+				}
+				for(auto lb: iclbs->second)
+					fprintf(flbs, "%u ", lids.at(lb));
+				fputs("\n", flbs);
+			}
+		} else fprintf(stderr, "WARNING label(), labels output is omitted"
+			": '%s' file can't be created\n", flname);
+	}
 
 	return pr;
 }
 
 template <typename Count>
-Labels Collection<Count>::mark(const CollectionT& cn, bool prob) const
+PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csls) const
 {
-	Labels  lbs;
-//	// Greatest matches (Max F1 or partial probability) for each cluster [of this collection, self];
-//	Probs  gmats;  // Uses NRVO return value optimization
-//	gmats.reserve(m_cls.size());  // Preallocate the space
-//
-//	// Whether overlapping or multi-resolution clusters are evaluated
-//	auto fmatch = prob ? &Cluster<Count>::pprob : &Cluster<Count>::f1;  // Function evaluating value of the match
-//
-//	// Traverse all clusters in the collection
-//	for(auto cl: m_cls) {
-//		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
-//		// Traverse all members (node ids)
-//		for(auto nid: cl->members) {
-//			// Find Matching clusters (containing the same member node id) in the foreign collection
-//			const auto imcls = cn.m_ndcs.find(nid);
-//			// Consider the case of unequal node base, i.e. missed node
-//			if(imcls == cn.m_ndcs.end())
-//				continue;
-//			for(auto mcl: imcls->second) {
-//				if(m_overlaps)
-//					// In case of overlap contributes the smallest share (of the largest number of owners)
-//					mcl->counter(cl.get(), AccProb(1)
-//						/ max(m_ndcs.at(nid).size(), cn.m_ndcs.at(nid).size()));
-//				else mcl->counter(cl.get(), 1);
-//				// Note: only the max value for match is sufficient
-//				// ATTENTION: F1 compares clusters per-pair, so it is much simpler and
-//				// has another semantics of contribution for the multi-resolution case
-//				const Prob  match = ((*cl).*fmatch)(mcl->counter(), m_overlaps
-//					? mcl->cont() : mcl->members.size());
-//				if(gmatch < match)  // Note: <  usage is fine here
-//					gmatch = match;
-//			}
-//		}
-//		gmats.push_back(gmatch);
-//#if TRACE >= 3
-//		fprintf(stderr, "  %p (%lu): %.3G", cl.get(), cl->members.size(), gmatch);
-//#endif // TRACE
-//	}
-//#if TRACE >= 3
-//	fputs("\n", stderr);
-//#endif // TRACE
-	return lbs;
+	// Reserve space for all clusters of the collection (but not more than the number of labels) to avoid reallocations
+	if(csls)
+		csls->reserve(min(m_cls.size(), cn.m_cls.size()));
+	// Function evaluating value of the match
+	auto fmatch = prob ? &Cluster<Count>::pprob : &Cluster<Count>::f1;
+	// Traverse all gt clusters (labels)
+	using MarkCands = unordered_set<Cluster<Count>*>;
+	MarkCands  mcands;  // Marking candidates
+	// Marked nodes of multiple clusters merged to the flat set
+	using MarkNodes = unordered_set<Id>;
+	MarkNodes  mnds;
+	// Aggregated precision and recall
+	AccProb  prec = 0;
+	AccProb  rec = 0;
+#if TRACE >= 2
+	Id  nmlbs = 0;  // The number of labels with multiple clusters
+#endif // TRACE
+
+	for(auto gtc: m_cls) {
+		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
+		// Traverse all members (node ids)
+		for(auto nid: gtc->members) {
+			// Find Matching clusters (containing the same member node id) in the foreign collection
+			const auto imcls = cn.m_ndcs.find(nid);
+			// Consider the case of unequal node base, i.e. missed node
+			if(imcls == cn.m_ndcs.end())
+				continue;
+			for(auto mcl: imcls->second) {
+				// Greatest matches (Max F1 or partial probability) for each ground-truth cluster
+				// [of this collection, self] (label);
+				if(m_overlaps)
+					// In case of overlap contributes the smallest share (of the largest number of owners)
+					mcl->counter(gtc, AccProb(1)
+						/ max(m_ndcs.at(nid).size(), cn.m_ndcs.at(nid).size()));
+				else mcl->counter(gtc, 1);
+				// Note: only the max value for match is sufficient
+				// ATTENTION: F1 compares clusters per-pair, so it is much simpler and
+				// has another semantics of contribution for the multi-resolution case
+				const Prob  match = (gtc->*fmatch)(mcl->counter(), m_overlaps
+					? mcl->cont() : mcl->members.size());
+				if(!less<Prob>(match, gmatch)) {
+					if(!equal<Prob>(match, gmatch)) {
+						gmatch = match;
+						mcands.clear();
+					}
+					mcands.insert(mcl);
+				}
+			}
+		}
+#if TRACE >= 3
+		// Note: sqrt() is used to provide semantic values, geometric mean of the Precision
+		// and Recall, which is >= harmonic mean and <= arithmetic mean
+		fprintf(stderr, "  %p (%lu) => %lu cands: %.3G", gtc, gtc->members.size(), mcands.size(), sqrt(gmatch));
+#endif // TRACE
+		assert(mcands.size() >= 1 && "mark(), each label should be matched to at least one cluster");
+		// For the rare case of matching single label to multiple cn clusters, merge nodes
+		// of that clusters to evaluate Precision and Recall of the aggregated match of the cluster nodes
+		if(mcands.size() >= 2 && mnds.bucket_count() / mnds.max_load_factor()
+		< max((*mcands.begin())->members.size(), (*++mcands.begin())->members.size()))
+			mnds.reserve(max((*mcands.begin())->members.size(), (*++mcands.begin())->members.size()) * 1.5);
+		// Mark candidate clusters with the labels, keep the labels ordered in each cluster
+		// Note: on each iteration distinct label (ground-truth cluster) is provided
+		if(csls) {
+			for(auto cl: mcands) {
+				auto& lbs = (*csls)[cl];
+				// Note: typically the number of labels is small (1 or 2 even when the clusters are heavily overlapping)
+				lbs.insert(linear_ifind(lbs, cl, bsVal<Cluster<Count>*>), gtc);
+			}
+		}
+		// Aggregate clusters nodes
+		if(mcands.size() >= 2) {
+			for(auto cl: mcands)
+				mnds.insert(cl->members.begin(), cl->members.end());
+		}
+		// Evaluate precision and recall
+		if(mnds.empty()) {
+			// The label marked a single cluster
+			auto& mcl = **mcands.begin();
+			prec += mcl.counter() / static_cast<AccProb>(m_overlaps ? gtc->cont() : gtc->members.size());
+			rec += mcl.counter() / static_cast<AccProb>(m_overlaps ? mcl.cont() : mcl.members.size());
+		} else {
+			// The label marked multiple clusters, compared it's nodes with the
+			// nodes of the merged respective clusters
+#if TRACE >= 2
+			++nmlbs;
+#endif // TRACE
+			AccProb  accgm = 0;  // Matches
+			if(m_overlaps) {
+				AccProb  accont = 0;  // Accumulated contribution
+				for(auto cl: mcands) {
+					accgm += cl->counter();
+					accont += cl->cont();
+				}
+#if TRACE >= 2
+				assert(!less<Prob>(min<AccProb>(accont, gtc->cont()), accgm)
+					&& "mark(), accgm ovp validation failed");
+#endif // TRACE
+				prec += accgm / static_cast<AccProb>(gtc->cont());
+				// Note: mnds.size() <= mcands.size()
+				rec += accgm / static_cast<AccProb>(accont);
+			} else {
+				// Evaluate the number of matched nodes from the aggregated clusters (<= sum(cls_matches))
+				for(auto nid: gtc->members)
+					accgm += mnds.count(nid);
+#if TRACE >= 2
+				assert(accgm <= min(mnds.size(), gtc->members.size())
+					&& "mark(), accgm multires validation failed");
+#endif // TRACE
+				prec += accgm / static_cast<AccProb>(gtc->members.size());
+				rec += accgm / static_cast<AccProb>(mnds.size());
+			}
+			mnds.clear();
+		}
+		mcands.clear();
+	}
+#if TRACE >= 3
+	fputs("\n", stderr);
+#endif // TRACE
+#if TRACE >= 2
+	fprintf(stderr, "  >> mark(), multi-cluster labels %u / %lu\n", nmlbs, m_cls.size());
+#endif // TRACE
+	return PrecRec(prec / m_cls.size(), rec / m_cls.size());
 }
 
 template <typename Count>
@@ -470,9 +581,15 @@ AccProb Collection<Count>::avggms(const Probs& gmats, bool weighted) const  // c
 			++icl;
 			accgm += gm * ccont;
 			csizesSum += ccont;
+#if VALIDATE >= 3
+			fprintf(stderr, "	wgm %G, gm: %G, w: %G\n", gm * ccont, gm, AccProb(ccont));
+#endif // VALIDATE
 		}
 		// Note: this assert is not the case for the collections containing multiple resolutions
 		//assert(!less<AccCont>(csizesSum, csnum, csnum) && "avggms(), invalid sum of the cluster sizes");
+#if VALIDATE >= 2
+		fprintf(stderr, "avggms(), accgm: %G (%G / %G)\n", accgm / csizesSum, accgm, AccProb(csizesSum));
+#endif // VALIDATE
 		accgm /= csizesSum;
 	} else {
 		for(auto gm: gmats) {
@@ -499,8 +616,8 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 	Probs  gmats;  // Uses NRVO return value optimization
 	gmats.reserve(m_cls.size());  // Preallocate the space
 
-	// Whether overlapping or multi-resolution clusters are evaluated
-	auto fmatch = prob ? &Cluster<Count>::pprob : &Cluster<Count>::f1;  // Function evaluating value of the match
+	// Function evaluating value of the match
+	auto fmatch = prob ? &Cluster<Count>::pprob : &Cluster<Count>::f1;
 
 	// Traverse all clusters in the collection
 	for(auto cl: m_cls) {
@@ -528,8 +645,10 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 			}
 		}
 		// Note: sqrt() is used to provide semantic values, geometric mean of the Precision
-		// and Recall, which is >= harmonic mean and <= arithmetic mean.
-		gmats.push_back(sqrt(gmatch));
+		// and Recall, which is >= harmonic mean and <= arithmetic mean
+		if(prob)
+			gmatch = sqrt(gmatch);
+		gmats.push_back(gmatch);
 #if TRACE >= 3
 		fprintf(stderr, "  %p (%lu): %.3G", cl, cl->members.size(), gmatch);
 #endif // TRACE

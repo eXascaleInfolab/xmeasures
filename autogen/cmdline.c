@@ -50,7 +50,7 @@ const char *gengetopt_args_info_help[] = {
   "\nClusters Labeling:",
   "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED\n                                   labeled clusters only (without the probable\n                                  subclusters).\n                                  NOTE: If 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
   "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities\n                                   - h  - Harmonic Mean\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`partprob')",
-  "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)",
+  "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)\n                                  NOTE: If 'sync' option is specified then the\n                                  reduce collection is outputted to the\n                                  <labels_filename>.cnl besides the\n                                  <labels_filename>\n",
     0
 };
 
@@ -829,7 +829,9 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'i':	/* output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list).  */
+        case 'i':	/* output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
+        NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
+.  */
         
         
           if (update_arg( (void *)&(args_info->identifiers_arg), 

@@ -29,6 +29,10 @@
 namespace daoc {
 
 // Internal MACROSES:
+//	- CONFIDENCE  - confidence of the operating values for the comparison
+//	operations to work in the same confidence range. Float, E (0, 1]
+//  NOTE: Affects only less() and equal() operations, not the memory address
+//  related ordering.
 //	- INSORTED_NONUNIQUE  - insorted() does not validate that the inserting
 //	element is not present
 //
@@ -50,6 +54,21 @@ using std::max;
 using std::enable_if_t;
 using std::distance;
 
+
+// Global parameters
+//! Confidence of the operating values for the comparison operations to work in
+//! the same confidence range. Float, E (0, 1].
+//! NOTE: Affects only less() and equal() operations, not the memory address related
+//! ordering.
+#ifndef CONFIDENCE
+	#define CONFIDENCE  1
+#endif // CONFIDENCE
+static_assert(CONFIDENCE > 0 && CONFIDENCE <= 1, "Macrodef, values CONFIDENCE should E (0, 1]");
+using ConfidanceInt = uint32_t;  //!< Integral type of Confidence
+//! Confidence Denominator, Max possible value of the confidence
+static constexpr ConfidanceInt  CONFIDENCE_DEN = 1E9;
+//! Confidence Multiplier, E [1, CONFIDENCE_DEN]
+static constexpr ConfidanceInt  CONFIDENCE_MUL = ceil(CONFIDENCE * CONFIDENCE_DEN);
 
 // Tracing file
 //!\brief Global trace log
@@ -114,6 +133,7 @@ constexpr bool is_hashContainer_v = is_hashContainer<T>::value;
 
 // Accessory math functions ---------------------------------------------------
 //! \brief Precision limit (error) for the specified floating type
+// NOTE: at least GCC provides numeric_limits<ValT>::epsilon() / ValT(2) > 0
 template <typename ValT>
 constexpr ValT precision_limit()
 {
@@ -132,16 +152,18 @@ constexpr ValT precision_limit()
 //! \brief Strict less for floating point numbers
 //! \pre size should be positive (!= 0)
 //! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
+//! 	CONFIM < CONFIDENCE_DEN provides less strict (looser) equal and stricter less comparisons
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2
 //! \param size=1 float  - average number of elements in a and b
 //! 	to consider accumulation error
 //! \return bool  - val1 < val2
-template <typename ValT, enable_if_t<is_floating_point<ValT>::value, float>* = nullptr>
-constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)  // , const float confidence=1
+template <typename ValT, ConfidanceInt CONFIM=CONFIDENCE_MUL, enable_if_t<is_floating_point<ValT>::value, float>* = nullptr>
+constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
 {
 	static_assert(is_floating_point<ValT>::value, "less(), value type should be fractional");
+	static_assert(CONFIM > 0 && CONFIM <= CONFIDENCE_DEN, "less(), values CONFIDENCE should E (0, 1]");
 #if VALIDATE >= 2
 	assert(size && "less(), positive size is expected for the imprecise values");
 #endif // VALIDATE
@@ -155,32 +177,38 @@ constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)  // 
 	// Exact solution:
 	//return a - b + precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b)) < 0;
 	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
+	// NOTE: CONFID multiplier in the end to not affect accuracy if sizeof(ValT) > sizeof(CONFID)
+	// NOTE: either <= with precision_limit<ValT>() or < with epsilon<ValT>()
 	// Faster computation with sufficient accuracy:
-	return 2 * (a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
+	return (CONFIM < CONFIDENCE_DEN ? static_cast<ValT>(2 * CONFIM) / CONFIDENCE_DEN : 2)
+		* (a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
 		+ precision_limit<ValT>() * (1 + log2(size)) < 0;
 }
 
 //! \brief Strict less for integral numbers
-template <typename ValT, enable_if_t<is_integral<ValT>::value, int>* = nullptr>
+template <typename ValT, ConfidanceInt CONFIM=CONFIDENCE_MUL, enable_if_t<is_integral<ValT>::value, int>* = nullptr>
 constexpr bool less(const ValT a, const ValT b=ValT(0), const float size=1)
 {
 	static_assert(is_integral<ValT>::value, "less(), value type should be integral");
-	return a < b;
+	static_assert(CONFIM > 0 && CONFIM <= CONFIDENCE_DEN, "less(), values CONFIDENCE should E (0, 1]");
+	return CONFIM == CONFIDENCE_DEN ? a < b : less<double, CONFIM>(a, b);
 }
 
 //! \brief Check equality of 2 floating point numbers
 //! \pre size should be positive (!= 0)
 //! \note Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
+//! 	CONFIM < CONFIDENCE_DEN provides less strict (looser) equal and stricter less comparisons
 //!
 //! \param a ValT  - val1
 //! \param b ValT  - val2
 //! \param size=1 float  - average number of elements in a and b
 //! 	to consider accumulation error
 //! \return bool  - whether val1 ~= val2
-template <typename ValT, enable_if_t<is_floating_point<ValT>::value, float>* = nullptr>
+template <typename ValT, ConfidanceInt CONFIM=CONFIDENCE_MUL, enable_if_t<is_floating_point<ValT>::value, float>* = nullptr>
 constexpr bool equal(const ValT a, const ValT b=ValT(0), const float size=1)
 {
 	static_assert(is_floating_point<ValT>::value, "equal(), value type should be fractional");
+	static_assert(CONFIM > 0 && CONFIM <= CONFIDENCE_DEN, "equal(), values CONFIDENCE should E (0, 1]");
 #if VALIDATE >= 2
 	assert(size && "equal(), positive size is expected for the imprecise values");
 #endif // VALIDATE
@@ -205,16 +233,20 @@ constexpr bool equal(const ValT a, const ValT b=ValT(0), const float size=1)
 	//// - "fabs(a + b)" is not appropriate here in case of a = -b && b > 0  => fabs(a) + fabs(b)
 	//return fabs(a - b) <= precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b));
 	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
-	return 2 * fabs(a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
+	// NOTE: CONFID multiplier in the end to not affect accuracy if sizeof(ValT) > sizeof(CONFID)
+	// NOTE: either <= with precision_limit<ValT>() or < with epsilon<ValT>()
+	return (CONFIM < CONFIDENCE_DEN ? static_cast<ValT>(2 * CONFIM) / CONFIDENCE_DEN : 2)
+		* fabs(a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
 		<= precision_limit<ValT>() * (1 + log2(size));
 }
 
 //! \brief Strict equal for integral numbers
-template <typename ValT, enable_if_t<is_integral<ValT>::value, int>* = nullptr>
+template <typename ValT, ConfidanceInt CONFIM=CONFIDENCE_MUL, enable_if_t<is_integral<ValT>::value, int>* = nullptr>
 constexpr bool equal(const ValT a, const ValT b=ValT(0), const float size=1)
 {
 	static_assert(is_integral<ValT>::value, "equal(), value type should be integral");
-	return a == b;
+	static_assert(CONFIM > 0 && CONFIM <= CONFIDENCE_DEN, "equal(), values CONFIDENCE should E (0, 1]");
+	return CONFIM == CONFIDENCE_DEN ? a == b : equal<double, CONFIM>(a, b);
 }
 
 // Comparison functions -------------------------------------------------------
@@ -457,16 +489,16 @@ RandIT binary_ifind(RandIT begin, const RandIT end, const T val
 		//	return pos;
 	}
 #if VALIDATE >= 2
-#if TRACE >= 3
-	if(!(iend == end || cmp(*iend, val) <= 0)) {
-		// Note: iend != end is always true here
-		fprintf(ftrace, "  >>>>> binary_ifind(), iend: %s, val: %s. Container: "
-			, iend->idstr().c_str(), val->idstr().c_str());
-		for(auto ic = begin; ic != end; ++ic)
-			fprintf(ftrace, " %s", ic->idstr().c_str());
-		fputs("\n", ftrace);
-	}
-#endif // TRACE
+//#if TRACE >= 3
+//	if(!(iend == end || cmp(*iend, val) <= 0)) {
+//		// Note: iend != end is always true here
+//		fprintf(ftrace, "  >>>>> binary_ifind(), iend: %s, val: %s. Container: "
+//			, iend->idstr().c_str(), val->idstr().c_str());
+//		for(auto ic = begin; ic != end; ++ic)
+//			fprintf(ftrace, " %s", ic->idstr().c_str());
+//		fputs("\n", ftrace);
+//	}
+//#endif // TRACE
 	assert((iend == end || cmp(*iend, val) >= 0)
 	&& "binary_ifind(), iterator verification failed");
 #endif // VALIDATE

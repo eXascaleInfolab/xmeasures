@@ -227,11 +227,6 @@ struct Cluster {
 template <typename Count>
 using ClusterHolder = unique_ptr<Cluster<Count>>;
 
-////! Automatic storage for the Cluster;
-////! \tparam Count  - arithmetic counting type
-//template <typename Count>
-//using Clusters = unordered_set<ClusterHolder<Count>>;
-
 //! Cluster pointers, unordered
 //! \tparam Count  - arithmetic counting type
 template <typename Count>
@@ -246,23 +241,9 @@ using NodeClusters = unordered_map<Id, ClusterPtrs<Count>>;
 using Probs = vector<Prob>;
 
 // Label-related types --------------------------------------------------------
-////! Cluster indices
-//using Indices = vector<Id>;
-
-struct ClusterMatch {
-	Prob  gmatch;  //!< Cluster match value
-	Id  id;  //!< Cluster id
-};
-
-//! Cluster Matches
-using ClusterMatches = vector<ClusterMatch>;
-
-struct Label {
-	Prob gmatch;  //!< Greatest match
-	ClusterMatches cls;  //!<
-};
-
-using Labels = vector<Label>;
+//! Clusters Labels, Labels are ORDERED by cmpBase
+template <typename Count>
+using ClustersLabels = unordered_map<Cluster<Count>*, ClusterPtrs<Count>>;
 
 // F1-related types -----------------------------------------------------------
 using F1Base = uint8_t;
@@ -465,7 +446,9 @@ struct NodeBaseI {
 using UniqIds = unordered_set<Id>;
 
 //! Node base
-struct NodeBase: UniqIds, NodeBaseI {
+struct NodeBase: protected UniqIds, NodeBaseI {
+	using UniqIds::clear;
+
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
 	Id ndsnum() const noexcept  { return size(); }
 
@@ -525,7 +508,8 @@ struct PrecRec {
 	Prob prec;  //!< Precision
 	Prob rec;  //!< Recall
 
-	PrecRec(): prec(), rec()  {}  // Explicit members initialization by value to avoid uninitialized members
+	// Explicit members initialization by value to avoid uninitialized members
+	PrecRec(Prob prec=0, Prob rec=0): prec(prec), rec(rec)  {}
 };
 
 //! Collection describing cluster-node relations
@@ -540,6 +524,7 @@ public:
 	using AccCont = conditional_t<m_overlaps, Count, AccId>;
 	//! Clusters matching matrix
 	using ClustersMatching = SparseMatrix<Cluster<Count>*, AccCont>;  // Used only for NMI
+	using ClsLabels = ClustersLabels<Count>;
 private:
 	// ATTENTNION: Collection manages the memory of the m_cls
 	ClusterPtrs<Count>  m_cls;  //!< Clusters
@@ -586,11 +571,13 @@ public:
     //! \param ahash=nullptr AggHash*  - resulting hash of the loaded
     //! member ids base (unique ids only are hashed, not all ids) if not nullptr
 	//! \param const nodebase=nullptr NodeBaseI*  - node base to filter-out nodes if required
+	//! \param lostcls=nullptr RawIds*  - indices of the lost clusters during the node base
+	//! synchronization
 	//! \param verbose=false bool  - print the number of loaded nodes to the stdout
     //! \return CollectionT  - the collection is loaded successfully
 	static CollectionT load(const char* filename, float membership=1
 		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
-		, bool verbose=false);
+		, RawIds* lostcls=nullptr, bool verbose=false);
 
     //! \brief Clear cluster counters
     //!
@@ -601,12 +588,14 @@ public:
     //!
     //! \param gt const CollectionT&  - ground-truth cluster collection
     //! \param cn const CollectionT&  - processing cluster collection
+	//! \param lostcls const RawIds&  - indices of the lost clusters during the node base
+	//! synchronization
     //! \param prob bool  - Partial Probabilities or F1 (harmonic) matching policy
     //! \param flname=nullptr const char*  - resulting label indices filename (.cll format)
     //! \param verbose=false bool  - print intermediate results to the stdout
     //! \return PrecRec  - resulting precision and recall for the labeled items
-	static PrecRec label(const CollectionT& gt, const CollectionT& cn, bool prob
-		, const char* flname=nullptr, bool verbose=false);
+	static PrecRec label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
+		, bool prob, const char* flname=nullptr, bool verbose=false);
 
 	//! \brief Specified F1 evaluation of the Greatest (Max) Match for the
 	//! multi-resolution clustering with possibly unequal node base
@@ -645,13 +634,20 @@ public:
 		, bool verbose=false);
 protected:
 	// Label related functions -------------------------------------------------
-    //! \brief Mark specified collection with the labels (of this collection)
+    //! \brief Mark clusters of the argument collection with the labels
+    //! \note For EACH label the best matching cluster is identified. Mutual match
+    //! is not applied to guarantee coverage of the all ground-truth clusters to
+    //! have meaningful F1
     //!
     //! \param cn const CollectionT&  - the collection to be labeled
     //! \param prob bool  - match labels by the Partial Probabilities or F1
-    //! \return Labels  - resulting labels for the specified collection as
-    //! cluster indices of this collection
-	Labels mark(const CollectionT& cn, bool prob) const;
+    //! \param csls=nullptr ClsLabels*  - resulting labels as clusters of the
+    //! ground-truth collection if not nullptr
+    //! \return PrecRec  - resulting average over all labels Precision and Recall
+    //! for all nodes of the marked clusters, where each label can be assigned
+    //! to multiple cn clusters and then all nodes of that clusters are matched
+    //! to the ground truth cluster (label) nodes
+	PrecRec mark(const CollectionT& cn, bool prob, ClsLabels* csls=nullptr) const;
 
 	// F1-related functions ----------------------------------------------------
     //! \brief Average of the maximal matches (by F1 or partial probabilities)

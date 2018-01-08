@@ -46,13 +46,16 @@ int main(int argc, char **argv)
 	}
 
 	// Verify that labeled clusters correspond to the node base if any of them is specified
-	if(args_info.sync_given && args_info.label_given && strcmp(args_info.sync_arg, args_info.label_arg))
-		throw invalid_argument("ERROR, node base file should correspond to the labeled clusters if both are specified\n");
+	if(args_info.sync_given && args_info.label_given && (strcmp(args_info.sync_arg, args_info.label_arg)
+	|| (args_info.inputs_num == 2 && strcmp(args_info.sync_arg, args_info.inputs[0]))))
+		throw invalid_argument("ERROR, node base file should correspond to the labeled clusters and"
+			" represent the first evaluating collection if both are specified\n");
 
 	// Load node base if required
 	NodeBase  ndbase;
 	::AggHash  nbhash;
-	if(args_info.sync_given && args_info.inputs_num == 2)
+	// Note: if label_given then either inputs_num < 2 or inputs_num[0] = sync_arg = label_arg
+	if(args_info.sync_given && args_info.inputs_num == 2 && !args_info.label_given)
 		ndbase = NodeBase::load(args_info.sync_arg, args_info.membership_arg, &nbhash
 			, 0, 0, args_info.detailed_flag);
 
@@ -67,7 +70,7 @@ int main(int argc, char **argv)
 		auto cn1 = Collection::load(cn1base ? args_info.sync_given ? args_info.sync_arg
 			: args_info.label_arg : args_info.inputs[0]
 			, args_info.membership_arg, &cn1hash
-			, ndbase ? &ndbase : nullptr, args_info.detailed_flag);
+			, ndbase ? &ndbase : nullptr, nullptr, args_info.detailed_flag);
 		if(ndbase) {
 			if(nbhash != cn1hash) {
 				fprintf(stderr, "ERROR, nodebase hash %lu (%lu nodes) != filtered"
@@ -77,8 +80,11 @@ int main(int argc, char **argv)
 			}
 			ndbase.clear();
 		}
+		RawIds  lostcls;
 		auto cn2 = Collection::load(args_info.inputs[!cn1base], args_info.membership_arg, &cn2hash
-			, args_info.sync_given ? &cn1 : nullptr, args_info.detailed_flag);
+			, args_info.sync_given ? &cn1 : nullptr
+			, args_info.sync_given && args_info.label_given ? &lostcls : nullptr
+			, args_info.detailed_flag);
 
 		if(!cn1.ndsnum() || ! cn2.ndsnum()) {
 			fprintf(stderr, "WARNING, at least one of the collections is empty, there is nothing"
@@ -183,10 +189,10 @@ int main(int argc, char **argv)
 				cn1.clearcounts();
 				cn2.clearcounts();
 			}
-			PrecRec pr = Collection::label(cn1, cn2, prob, args_info.identifiers_arg
+			PrecRec pr = Collection::label(cn1, cn2, lostcls, prob, args_info.identifiers_arg
 				, args_info.detailed_flag);
-			printf("F1 labels: %G (precision: %G, recall: %G)\n"
-				, hmean(pr.prec, pr.rec), pr.prec, pr.rec);
+			printf("F1 labels %cmatch: %G (precision: %G, recall: %G)\n"
+				, prob ? 'p' : 'h', hmean(pr.prec, pr.rec), pr.prec, pr.rec);
 		}
 
 		return 0;

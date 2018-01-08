@@ -100,7 +100,10 @@ option  "policy" p  "Labels matching policy:
  values="partprob","harmonic"  enum  default="partprob"  argoptional  dependon="label"
 option  "identifiers" i  "output labels (identifiers) of the evaluating clusters\
  as lines of space-separated indices of the ground-truth clusters (.cll - clusters\
- labels list)"  string  typestr="labels_filename"  dependon="label"
+ labels list)
+NOTE: If 'sync' option is specified then the reduce collection is outputted to the\
+ <labels_filename>.cnl besides the <labels_filename>
+"  string  typestr="labels_filename"  dependon="label"
 
 # Set optional options by default, allow input files to be unnamed parameters
 args "--default-optional --unamed-opts=clusterings"
