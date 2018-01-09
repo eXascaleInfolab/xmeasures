@@ -373,6 +373,9 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 #if TRACE >= 2
 	Id  nmlbs = 0;  // The number of labels with multiple clusters
 #endif // TRACE
+	// The number of missed (non-matched) labels, which is possible only when
+	// the node base is not synchronized
+	Id lbmissed = 0;
 
 	for(auto gtc: m_cls) {
 		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
@@ -410,7 +413,12 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 		// and Recall, which is >= harmonic mean and <= arithmetic mean
 		fprintf(stderr, "  %p (%lu) => %lu cands: %.3G", gtc, gtc->members.size(), mcands.size(), sqrt(gmatch));
 #endif // TRACE
-		assert(mcands.size() >= 1 && "mark(), each label should be matched to at least one cluster");
+		// Note: mcands can be empty only if the node base is not synchronized
+		//assert(mcands.size() >= 1 && "mark(), each label should be matched to at least one cluster");
+		if(mcands.empty()) {
+			++lbmissed;
+			continue;
+		}
 		// For the rare case of matching single label to multiple cn clusters, merge nodes
 		// of that clusters to evaluate Precision and Recall of the aggregated match of the cluster nodes
 		if(mcands.size() >= 2 && mnds.bucket_count() / mnds.max_load_factor()
@@ -474,6 +482,9 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 #if TRACE >= 3
 	fputs("\n", stderr);
 #endif // TRACE
+	if(lbmissed)
+		fprintf(stderr, "WARNING mark(), the number of non-matched labels: %u"
+			" (possible only when the node base is not synchronized)\n", lbmissed);
 #if TRACE >= 2
 	fprintf(stderr, "  >> mark(), multi-cluster labels %u / %lu\n", nmlbs, m_cls.size());
 #endif // TRACE
