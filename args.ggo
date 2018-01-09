@@ -115,6 +115,7 @@ args "--default-optional --unamed-opts=clusterings"
 
 
 # = Changelog =
+# v3.2.2 - F1 weighting considered for the labels
 # v3.2.1 - Interpretation of F1p modified to have semantic of geometric mean, now F1h < F1p < F1s
 # v3.2.0 - Clusters labeling, labels F1 (with precision and recall) evaluation
 # v3.1.0 - Matching policy for the F measures parameterized (weighted, unweighted, combined)

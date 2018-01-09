@@ -76,7 +76,6 @@ in the arbitrary collections (still each cluster should contain unique
 members).
 
 
-
   -h, --help                    Print help and exit
   -V, --version                 Print version and exit
   -o, --ovp                     evaluate overlapping instead of
@@ -121,8 +120,10 @@ F1 Options:
                                   "harmonic", "standard"
                                   default=`partprob')
   -k, --kind[=ENUM]             kind of the matching policy:
-                                   - w  - Weighted (default)
-                                   - u  - Unweighed
+                                   - w  - Weighted by the number of nodes in
+                                  each cluster
+                                   - u  - Unweighed, where each cluster is
+                                  treated equally
                                    - c  - Combined(w, u) using geometric mean
                                   (drops the value not so much as harmonic
                                   mean)
@@ -161,6 +162,10 @@ Clusters Labeling:
                                   maximizes F1)
                                     (possible values="partprob", "harmonic"
                                   default=`harmonic')
+  -u, --unweighted              Labels weighting policy on F1 evaluation:
+                                  weighted by the number of instances in each
+                                  label or unweighed, where each label is
+                                  treated equally  (default=off)
   -i, --identifiers=labels_filename
                                 output labels (identifiers) of the evaluating
                                   clusters as lines of space-separated indices
@@ -170,7 +175,6 @@ Clusters Labeling:
                                   reduce collection is outputted to the
                                   <labels_filename>.cnl besides the
                                   <labels_filename>
-
 ```
 
 > Empty lines and comments (lines starting with #) in the input file (cnl format) are skipped.
