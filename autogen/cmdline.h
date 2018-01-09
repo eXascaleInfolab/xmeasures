@@ -75,18 +75,18 @@ struct gengetopt_args_info
    - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
  help description.  */
   enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
-   - w  - Weighted (default)
-   - u  - Unweighed
+   - w  - Weighted by the number of nodes in each cluster
+   - u  - Unweighed, where each cluster is treated equally
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
     (default='weighted').  */
   char * kind_orig;	/**< @brief kind of the matching policy:
-   - w  - Weighted (default)
-   - u  - Unweighed
+   - w  - Weighted by the number of nodes in each cluster
+   - u  - Unweighed, where each cluster is treated equally
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
     original value given at command line.  */
   const char *kind_help; /**< @brief kind of the matching policy:
-   - w  - Weighted (default)
-   - u  - Unweighed
+   - w  - Weighted by the number of nodes in each cluster
+   - u  - Unweighed, where each cluster is treated equally
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
     help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
@@ -116,6 +116,8 @@ struct gengetopt_args_info
    - p  - Partial Probabilities (maximizes gain)
    - h  - Harmonic Mean (minimizes loss, maximizes F1)
  help description.  */
+  int unweighted_flag;	/**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label or unweighed, where each label is treated equally (default=off).  */
+  const char *unweighted_help; /**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label or unweighed, where each label is treated equally help description.  */
   char * identifiers_arg;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
   NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
 .  */
@@ -139,6 +141,7 @@ struct gengetopt_args_info
   unsigned int ln_given ;	/**< @brief Whether ln was given.  */
   unsigned int label_given ;	/**< @brief Whether label was given.  */
   unsigned int policy_given ;	/**< @brief Whether policy was given.  */
+  unsigned int unweighted_given ;	/**< @brief Whether unweighted was given.  */
   unsigned int identifiers_given ;	/**< @brief Whether identifiers was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */

@@ -591,11 +591,13 @@ public:
 	//! \param lostcls const RawIds&  - indices of the lost clusters during the node base
 	//! synchronization
     //! \param prob bool  - Partial Probabilities or F1 (harmonic) matching policy
+    //! \param weighted=true bool  - weight labels by the number of instances or
+    //! treat each label equally
     //! \param flname=nullptr const char*  - resulting label indices filename (.cll format)
     //! \param verbose=false bool  - print intermediate results to the stdout
     //! \return PrecRec  - resulting precision and recall for the labeled items
 	static PrecRec label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
-		, bool prob, const char* flname=nullptr, bool verbose=false);
+		, bool prob, bool weighted=true, const char* flname=nullptr, bool verbose=false);
 
 	//! \brief Specified F1 evaluation of the Greatest (Max) Match for the
 	//! multi-resolution clustering with possibly unequal node base
@@ -640,14 +642,17 @@ protected:
     //! have meaningful F1
     //!
     //! \param cn const CollectionT&  - the collection to be labeled
-    //! \param prob bool  - match labels by the Partial Probabilities or F1
+    //! \param prob bool  - match labels by the Partial Probabilities or F1;
+    //! prob maximizes gain otherwise loss is minimized and F1 is maximized
+    //! \param weighted=true bool  - weight labels by the number of instances or
+    //! treat each label equally
     //! \param csls=nullptr ClsLabels*  - resulting labels as clusters of the
     //! ground-truth collection if not nullptr
     //! \return PrecRec  - resulting average over all labels Precision and Recall
     //! for all nodes of the marked clusters, where each label can be assigned
     //! to multiple cn clusters and then all nodes of that clusters are matched
     //! to the ground truth cluster (label) nodes
-	PrecRec mark(const CollectionT& cn, bool prob, ClsLabels* csls=nullptr) const;
+	PrecRec mark(const CollectionT& cn, bool prob, bool weighted=true, ClsLabels* csls=nullptr) const;
 
 	// F1-related functions ----------------------------------------------------
     //! \brief Average of the maximal matches (by F1 or partial probabilities)

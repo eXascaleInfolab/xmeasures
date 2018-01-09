@@ -300,7 +300,7 @@ void Collection<Count>::clearcounts() const noexcept
 
 template <typename Count>
 PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
-	, bool prob, const char* flname, bool verbose)
+	, bool prob, bool weighted, const char* flname, bool verbose)
 {
 	// Initialized accessory data for evaluations if has not been done yet
 	// (nmi also initializes mbscont)
@@ -319,7 +319,7 @@ PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, c
 	// it should be called only once for each collection and with the same value of prob
 	// Note: it's more convenient for the subsequent processing to assign labels to the clusters
 	ClsLabels  csls;  // Clusters labels to be outputted
-	auto pr = gt.mark(cn, prob, &csls);
+	auto pr = gt.mark(cn, prob, weighted, &csls);
 
 	// Evaluate labels for each node by the node clusters and cluster labels
 
@@ -354,7 +354,7 @@ PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, c
 }
 
 template <typename Count>
-PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csls) const
+PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted, ClsLabels* csls) const
 {
 	// Reserve space for all clusters of the collection (but not more than the number of labels) to avoid reallocations
 	if(csls)
@@ -376,6 +376,7 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 	// The number of missed (non-matched) labels, which is possible only when
 	// the node base is not synchronized
 	Id lbmissed = 0;
+	AccProb  accw = 0;  // Accumulated weight of the labels or just their number (if !weighted)
 
 	for(auto gtc: m_cls) {
 		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
@@ -413,6 +414,8 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 		// and Recall, which is >= harmonic mean and <= arithmetic mean
 		fprintf(stderr, "  %p (%lu) => %lu cands: %.3G", gtc, gtc->members.size(), mcands.size(), sqrt(gmatch));
 #endif // TRACE
+		// ATTENTION: update before the iteration skipping
+		accw += weighted ? gtc->members.size() : 1;
 		// Note: mcands can be empty only if the node base is not synchronized
 		//assert(mcands.size() >= 1 && "mark(), each label should be matched to at least one cluster");
 		if(mcands.empty()) {
@@ -442,8 +445,11 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 		if(mnds.empty()) {
 			// The label marked a single cluster
 			auto& mcl = **mcands.begin();
-			prec += mcl.counter() / static_cast<AccProb>(m_overlaps ? gtc->cont() : gtc->members.size());
-			rec += mcl.counter() / static_cast<AccProb>(m_overlaps ? mcl.cont() : mcl.members.size());
+			AccProb  gm = mcl.counter();  // Matches
+			if(weighted)
+				gm *= gtc->members.size();
+			prec += gm / static_cast<AccProb>(m_overlaps ? gtc->cont() : gtc->members.size());
+			rec += gm / static_cast<AccProb>(m_overlaps ? mcl.cont() : mcl.members.size());
 		} else {
 			// The label marked multiple clusters, compared it's nodes with the
 			// nodes of the merged respective clusters
@@ -461,6 +467,8 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 				assert(!less<Prob>(min<AccProb>(accont, gtc->cont()), accgm)
 					&& "mark(), accgm ovp validation failed");
 #endif // TRACE
+				if(weighted)
+					accgm *= gtc->members.size();
 				prec += accgm / static_cast<AccProb>(gtc->cont());
 				// Note: mnds.size() <= mcands.size()
 				rec += accgm / static_cast<AccProb>(accont);
@@ -472,6 +480,8 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 				assert(accgm <= min(mnds.size(), gtc->members.size())
 					&& "mark(), accgm multires validation failed");
 #endif // TRACE
+				if(weighted)
+					accgm *= gtc->members.size();
 				prec += accgm / static_cast<AccProb>(gtc->members.size());
 				rec += accgm / static_cast<AccProb>(mnds.size());
 			}
@@ -488,7 +498,12 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, ClsLabels* csl
 #if TRACE >= 2
 	fprintf(stderr, "  >> mark(), multi-cluster labels %u / %lu\n", nmlbs, m_cls.size());
 #endif // TRACE
-	return PrecRec(prec / m_cls.size(), rec / m_cls.size());
+#if VALIDATE >= 2
+	if(!weighted)
+		assert(equal<Prob>(accw, m_cls.size()) && "mark(), total weight on unweighted eval"
+			" should be equal to the number of labels");
+#endif // VALIDATE
+	return PrecRec(prec / accw, rec / accw);
 }
 
 template <typename Count>

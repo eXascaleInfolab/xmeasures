@@ -183,16 +183,18 @@ int main(int argc, char **argv)
 				fputs("WARNING f1(), labels matching policy is not specified, the evaluation is skipped\n", stderr);
 				return 0;
 			}
-			const bool  prob = args_info.policy_arg == policy_arg_partprob;  // Partial Probabilities matching policy
 			// Reset cluster counters if they were set (could be set only by F1)
 			if(args_info.f1_given) {
 				cn1.clearcounts();
 				cn2.clearcounts();
 			}
-			PrecRec pr = Collection::label(cn1, cn2, lostcls, prob, args_info.identifiers_arg
-				, args_info.detailed_flag);
-			printf("F1 labels %cmatch: %G (precision: %G, recall: %G)\n"
-				, prob ? 'p' : 'h', hmean(pr.prec, pr.rec), pr.prec, pr.rec);
+			const bool  prob = args_info.policy_arg == policy_arg_partprob;  // Partial Probabilities matching policy
+			const bool  weighted = !args_info.unweighted_flag;
+			PrecRec pr = Collection::label(cn1, cn2, lostcls, prob, weighted
+				, args_info.identifiers_arg, args_info.detailed_flag);
+			printf("F1 labels %c%cmatch: %G (precision: %G, recall: %G)\n"
+				, prob ? 'p' : 'h', weighted ? 'w' : 'u'
+				, hmean(pr.prec, pr.rec), pr.prec, pr.rec);
 		}
 
 		return 0;

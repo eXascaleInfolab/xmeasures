@@ -42,7 +42,7 @@ const char *gengetopt_args_info_help[] = {
   "  -d, --detailed                detailed (verbose) results output\n                                  (default=off)",
   "\nF1 Options:",
   "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1s, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  indicative as satisfies the largest number of\n                                  the Formal Constraints (homogeneity,\n                                  completeness, rag bag, size/quantity,\n                                  balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1s;\n                                   - s (F1s)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1s, Standard\n                                  F1-Score, the least discriminative and\n                                  satisfies the lowest number of the Formal\n                                  Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"standard\"\n                                  default=`partprob')",
-  "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - Weighted (default)\n                                   - u  - Unweighed\n                                   - c  - Combined(w, u) using geometric mean\n                                  (drops the value not so much as harmonic\n                                  mean)\n                                     (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
+  "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - Weighted by the number of nodes in\n                                  each cluster\n                                   - u  - Unweighed, where each cluster is\n                                  treated equally\n                                   - c  - Combined(w, u) using geometric mean\n                                  (drops the value not so much as harmonic\n                                  mean)\n                                     (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
   "\nNMI Options:",
   "  -n, --nmi                     evaluate NMI (Normalized Mutual Information)\n                                  (default=off)",
   "  -a, --all                     evaluate all NMIs using sqrt, avg and min\n                                  denominators besides the max one\n                                  (default=off)",
@@ -50,6 +50,7 @@ const char *gengetopt_args_info_help[] = {
   "\nClusters Labeling:",
   "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED\n                                   labeled clusters only (without the probable\n                                  subclusters).\n                                  NOTE: If 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
   "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities (maximizes\n                                  gain)\n                                   - h  - Harmonic Mean (minimizes loss,\n                                  maximizes F1)\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`harmonic')",
+  "  -u, --unweighted              Labels weighting policy on F1 evaluation:\n                                  weighted by the number of instances in each\n                                  label or unweighed, where each label is\n                                  treated equally  (default=off)",
   "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)\n                                  NOTE: If 'sync' option is specified then the\n                                  reduce collection is outputted to the\n                                  <labels_filename>.cnl besides the\n                                  <labels_filename>\n",
     0
 };
@@ -96,6 +97,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->ln_given = 0 ;
   args_info->label_given = 0 ;
   args_info->policy_given = 0 ;
+  args_info->unweighted_given = 0 ;
   args_info->identifiers_given = 0 ;
 }
 
@@ -120,6 +122,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->label_orig = NULL;
   args_info->policy_arg = policy_arg_harmonic;
   args_info->policy_orig = NULL;
+  args_info->unweighted_flag = 0;
   args_info->identifiers_arg = NULL;
   args_info->identifiers_orig = NULL;
   
@@ -143,7 +146,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->ln_help = gengetopt_args_info_help[12] ;
   args_info->label_help = gengetopt_args_info_help[14] ;
   args_info->policy_help = gengetopt_args_info_help[15] ;
-  args_info->identifiers_help = gengetopt_args_info_help[16] ;
+  args_info->unweighted_help = gengetopt_args_info_help[16] ;
+  args_info->identifiers_help = gengetopt_args_info_help[17] ;
   
 }
 
@@ -342,6 +346,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "label", args_info->label_orig, 0);
   if (args_info->policy_given)
     write_into_file(outfile, "policy", args_info->policy_orig, cmdline_parser_policy_values);
+  if (args_info->unweighted_given)
+    write_into_file(outfile, "unweighted", 0, 0 );
   if (args_info->identifiers_given)
     write_into_file(outfile, "identifiers", args_info->identifiers_orig, 0);
   
@@ -480,6 +486,11 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   if (args_info->policy_given && ! args_info->label_given)
     {
       fprintf (stderr, "%s: '--policy' ('-p') option depends on option 'label'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->unweighted_given && ! args_info->label_given)
+    {
+      fprintf (stderr, "%s: '--unweighted' ('-u') option depends on option 'label'%s\n", prog_name, (additional_error ? additional_error : ""));
       error_occurred = 1;
     }
   if (args_info->identifiers_given && ! args_info->label_given)
@@ -672,11 +683,12 @@ cmdline_parser_internal (
         { "ln",	0, NULL, 'e' },
         { "label",	1, NULL, 'l' },
         { "policy",	2, NULL, 'p' },
+        { "unweighted",	0, NULL, 'u' },
         { "identifiers",	1, NULL, 'i' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVos:m:df::k::nael:p::i:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVos:m:df::k::nael:p::ui:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -755,8 +767,8 @@ cmdline_parser_internal (
         
           break;
         case 'k':	/* kind of the matching policy:
-         - w  - Weighted (default)
-         - u  - Unweighed
+         - w  - Weighted by the number of nodes in each cluster
+         - u  - Unweighed, where each cluster is treated equally
          - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
          .  */
         
@@ -825,6 +837,16 @@ cmdline_parser_internal (
               &(local_args_info.policy_given), optarg, cmdline_parser_policy_values, "harmonic", ARG_ENUM,
               check_ambiguity, override, 0, 0,
               "policy", 'p',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'u':	/* Labels weighting policy on F1 evaluation: weighted by the number of instances in each label or unweighed, where each label is treated equally.  */
+        
+        
+          if (update_arg((void *)&(args_info->unweighted_flag), 0, &(args_info->unweighted_given),
+              &(local_args_info.unweighted_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "unweighted", 'u',
               additional_error))
             goto failure;
         
