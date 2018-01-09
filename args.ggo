@@ -95,10 +95,10 @@ NOTE: If 'sync' option is specified then the clusters labels file name should be
  latter case this option should precede the evaluating filename not repeating it"
   string  typestr="gt_filename"
 option  "policy" p  "Labels matching policy:
- - p  - Partial Probabilities
- - h  - Harmonic Mean
+ - p  - Partial Probabilities (maximizes gain)
+ - h  - Harmonic Mean (minimizes loss, maximizes F1)
 "
- values="partprob","harmonic"  enum  default="partprob"  argoptional  dependon="label"
+ values="partprob","harmonic"  enum  default="harmonic"  argoptional  dependon="label"
 option  "identifiers" i  "output labels (identifiers) of the evaluating clusters\
  as lines of space-separated indices of the ground-truth clusters (.cll - clusters\
  labels list)

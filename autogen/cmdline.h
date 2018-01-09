@@ -105,16 +105,16 @@ struct gengetopt_args_info
    labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
   enum enum_policy policy_arg;	/**< @brief Labels matching policy:
-   - p  - Partial Probabilities
-   - h  - Harmonic Mean
- (default='partprob').  */
+   - p  - Partial Probabilities (maximizes gain)
+   - h  - Harmonic Mean (minimizes loss, maximizes F1)
+ (default='harmonic').  */
   char * policy_orig;	/**< @brief Labels matching policy:
-   - p  - Partial Probabilities
-   - h  - Harmonic Mean
+   - p  - Partial Probabilities (maximizes gain)
+   - h  - Harmonic Mean (minimizes loss, maximizes F1)
  original value given at command line.  */
   const char *policy_help; /**< @brief Labels matching policy:
-   - p  - Partial Probabilities
-   - h  - Harmonic Mean
+   - p  - Partial Probabilities (maximizes gain)
+   - h  - Harmonic Mean (minimizes loss, maximizes F1)
  help description.  */
   char * identifiers_arg;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
   NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>

@@ -155,10 +155,12 @@ Clusters Labeling:
                                   in the latter case this option should precede
                                   the evaluating filename not repeating it
   -p, --policy[=ENUM]           Labels matching policy:
-                                   - p  - Partial Probabilities
-                                   - h  - Harmonic Mean
+                                   - p  - Partial Probabilities (maximizes
+                                  gain)
+                                   - h  - Harmonic Mean (minimizes loss,
+                                  maximizes F1)
                                     (possible values="partprob", "harmonic"
-                                  default=`partprob')
+                                  default=`harmonic')
   -i, --identifiers=labels_filename
                                 output labels (identifiers) of the evaluating
                                   clusters as lines of space-separated indices

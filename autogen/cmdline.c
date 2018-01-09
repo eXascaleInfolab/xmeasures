@@ -49,7 +49,7 @@ const char *gengetopt_args_info_help[] = {
   "  -e, --ln                      use ln (exp base) instead of log2 (Shannon\n                                  entropy, bits) for the information measuring\n                                  (default=off)",
   "\nClusters Labeling:",
   "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED\n                                   labeled clusters only (without the probable\n                                  subclusters).\n                                  NOTE: If 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
-  "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities\n                                   - h  - Harmonic Mean\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`partprob')",
+  "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities (maximizes\n                                  gain)\n                                   - h  - Harmonic Mean (minimizes loss,\n                                  maximizes F1)\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`harmonic')",
   "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)\n                                  NOTE: If 'sync' option is specified then the\n                                  reduce collection is outputted to the\n                                  <labels_filename>.cnl besides the\n                                  <labels_filename>\n",
     0
 };
@@ -118,7 +118,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->ln_flag = 0;
   args_info->label_arg = NULL;
   args_info->label_orig = NULL;
-  args_info->policy_arg = policy_arg_partprob;
+  args_info->policy_arg = policy_arg_harmonic;
   args_info->policy_orig = NULL;
   args_info->identifiers_arg = NULL;
   args_info->identifiers_orig = NULL;
@@ -815,14 +815,14 @@ cmdline_parser_internal (
         
           break;
         case 'p':	/* Labels matching policy:
-         - p  - Partial Probabilities
-         - h  - Harmonic Mean
+         - p  - Partial Probabilities (maximizes gain)
+         - h  - Harmonic Mean (minimizes loss, maximizes F1)
 .  */
         
         
           if (update_arg( (void *)&(args_info->policy_arg), 
                &(args_info->policy_orig), &(args_info->policy_given),
-              &(local_args_info.policy_given), optarg, cmdline_parser_policy_values, "partprob", ARG_ENUM,
+              &(local_args_info.policy_given), optarg, cmdline_parser_policy_values, "harmonic", ARG_ENUM,
               check_ambiguity, override, 0, 0,
               "policy", 'p',
               additional_error))
