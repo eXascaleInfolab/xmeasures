@@ -51,12 +51,14 @@
 
 // SWIG related macro definitions
 // Swig 3.0.12 does not understand some structures, workarounds are applied
+// Note: defined only for SWIG interfaces
 #ifdef SWIG
 	// Just skip the static assert
     #define static_assert(a, b)
 #endif // SWIG
 
 // Note: SWIG_VERSION is not defined for SWIGJAVA and SWIGCSHARP
+// Note: defined both for the SWIG interfaces and implementation
 #if defined(SWIG_VERSION) || defined(SWIGJAVA) || defined(SWIGCSHARP)
 	// Defined automatically when any SWIG processing is performed
 	// (either the included as SWIG interface or implementation)

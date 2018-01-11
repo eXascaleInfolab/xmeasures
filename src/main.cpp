@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 		return err;
 
 	// Validate required xmeasure
-	if(!args_info.f1_given && !args_info.nmi_given) {
+	if(!args_info.f1_given && !args_info.nmi_given && !args_info.label_given) {
 		fputs("WARNING, no any measures to evaluate specified\n", stderr);
 		cmdline_parser_print_help();
 		return EINVAL;
