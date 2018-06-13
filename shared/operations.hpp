@@ -1,5 +1,6 @@
-//! \brief The Dao of Clustering library - Robust & Fine-grained Deterministic Clustering for Large Networks
-//! 	Definition of basic common operations.
+//! \brief Basic common operations.
+//! The Dao (Deterministic Agglomerative Overlapping) of Clustering library:
+//! Robust & Fine-grained Deterministic Clustering for Large Networks.
 //!
 //! \license Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0.html
 //! > 	Simple explanation: https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)
@@ -15,7 +16,7 @@
 #include <cstddef>  // ptrdiff_t
 #include <cmath>  // fabs(), isinf()
 #include <limits>  // Type limits
-#include <type_traits>  // conditional, type check
+#include <type_traits>  // type check, enable_if_t
 #include <cassert>
 #include <utility>  // declval, move, forward
 #include <iterator>  // iterator_traits
@@ -273,6 +274,7 @@ constexpr bool cmpDest(const T& a, const T& b)
 //! Comparison function for the objects weight
 template <typename ObjsT, typename WeightT>
 constexpr bool cmpObjsWeight(typename ObjsT::const_reference a, typename ObjsT::const_reference b)
+// Note: strict < affects the results making them non-deterministic
 { return less<WeightT>(a.weight, b.weight); }
 
 // Binary search --------------------------------------------------------------

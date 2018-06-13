@@ -1,5 +1,4 @@
-//! \brief The Dao of Clustering library - Robust & Fine-grained Deterministic Clustering for Large Networks
-//! 	Shared [en/de]coding types and operations.
+//! \brief AggHash simple (Aggregating Order Invariant Hashing) of the DAOC clustering library
 //!
 //! \license Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0.html
 //! > 	Simple explanation: https://tldrlegal.com/license/apache-license-2.0-(apache-2.0)
@@ -18,12 +17,16 @@
 #include <functional>  // hash
 //#include <cstring>  // memcmp
 #include <type_traits>  // is_integral
+#include <limits>  // numeric_limits
+#include <stdexcept> // numeric_limits
 
 
 namespace daoc {
 
 using std::string;
 using std::is_integral;
+using std::numeric_limits;
+using std::domain_error;
 
 // Type Declarations ---------------------------------------------------
 //! \brief Aggregation hash of ids
@@ -47,6 +50,9 @@ class AggHash {
 	AccId  m_size;  //!< Size of the container
 	AccId  m_idsum;  //!< Sum of the member ids
 	AccId  m_id2sum;  //!< Sum of the squared member ids
+protected:
+	//! Id correction to prevent collisions
+	constexpr static Id  idcor = sqrt(numeric_limits<Id>::max());
 public:
 	// Export the template parameter types
 	using IdT = Id;  //!< Type of the member ids
@@ -60,7 +66,7 @@ public:
     //!
     //! \param id Id  - id to be included into the hash
     //! \return void
-	void add(Id id) noexcept;
+	void add(Id id);
 
     //! \brief Clear/reset the aggregation
     //!
@@ -131,8 +137,13 @@ public:
 
 // Type Definitions ----------------------------------------------------
 template <typename Id, typename AccId>
-void AggHash<Id, AccId>::add(Id id) noexcept
+void AggHash<Id, AccId>::add(Id id)
 {
+	id += idcor;  // Correct id to prevent collisions (see AgordiHash for details)
+	// Check for the overflow after the correction
+	if(id < idcor)
+		throw domain_error(string("The corrected value of ").append(std::to_string(id))
+			.append(" is too large and causes the overflow\n"));
 	++m_size;
 	m_idsum += id;
 	m_id2sum += id * id;

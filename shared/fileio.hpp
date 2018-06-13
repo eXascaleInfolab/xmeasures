@@ -37,7 +37,7 @@
 #endif // __has_include
 #endif // INCLUDE_STL_FS
 
-#include "coding.hpp"
+#include "agghash.hpp"
 
 //#include "types.h"
 
