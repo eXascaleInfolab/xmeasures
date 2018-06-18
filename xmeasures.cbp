@@ -54,6 +54,7 @@
 			<Add option="-std=c++14" />
 			<Add option="-fexceptions" />
 			<Add option="-fstack-protector-strong" />
+			<Add option="-Wno-float-equal" />
 			<Add option="-D_FORTIFY_SOURCE=2" />
 			<Add directory="include" />
 			<Add directory="autogen" />

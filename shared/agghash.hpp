@@ -58,34 +58,36 @@ public:
 	using IdT = Id;  //!< Type of the member ids
 	using AccIdT = AccId;  //!< Type of the accumulated Ids and accumulated squares of Ids
 
-    //! \brief Default constructor
+	//! \brief Default constructor
 	AggHash() noexcept
 	: m_size(0), m_idsum(0), m_id2sum(0) {}
 
-    //! \brief Add id to the aggregation
-    //!
-    //! \param id Id  - id to be included into the hash
-    //! \return void
-	void add(Id id);
+	//! \brief Add id to the aggregation
+	//! \note In case correction is used and id becomes out of range (initial id > IDMAX - IDCORR)
+	//! 	then an exception is thrown, which crashes the whole application, which is OK
+	//!
+	//! \param id Id  - id to be included into the hash
+	//! \return void
+	void add(Id id) noexcept;
 
-    //! \brief Clear/reset the aggregation
-    //!
-    //! \return void
+	//! \brief Clear/reset the aggregation
+	//!
+	//! \return void
 	void clear() noexcept;
 
-    //! \brief Number of the aggregated ids
-    //!
-    //! \return size_t  - number of the aggregated ids
+	//! \brief Number of the aggregated ids
+	//!
+	//! \return size_t  - number of the aggregated ids
 	size_t size() const noexcept  { return m_size; }
 
-    //! \brief Sum of the aggregated ids
-    //!
-    //! \return size_t  - sum of the aggregated ids
+	//! \brief Sum of the aggregated ids
+	//!
+	//! \return size_t  - sum of the aggregated ids
 	size_t idsum() const noexcept  { return m_idsum; }
 
-    //! \brief Sum of squares of the aggregated ids
-    //!
-    //! \return size_t  - sum of squares of the aggregated ids
+	//! \brief Sum of squares of the aggregated ids
+	//!
+	//! \return size_t  - sum of squares of the aggregated ids
 	size_t id2sum() const noexcept  { return m_id2sum; }
 
 //    //! \brief The hash is empty
@@ -93,54 +95,55 @@ public:
 //    //! \return bool  - the hash is empty
 //	bool empty() const noexcept  { return !m_size; }
 
-    //! \brief Evaluate hash of the aggregation
-    //!
-    //! \return size_t  - resulting hash
+	//! \brief Evaluate hash of the aggregation
+	//!
+	//! \return size_t  - resulting hash
 	size_t hash() const;
 
-    //! \brief Operator less
-    //!
-    //! \param ah const AggHash&  - comparing object
-    //! \return bool operator  - result of the comparison
+	//! \brief Operator less
+	//!
+	//! \param ah const AggHash&  - comparing object
+	//! \return bool operator  - result of the comparison
 	inline bool operator <(const AggHash& ah) const noexcept;
 
-    //! \brief Operator less or equal
-    //!
-    //! \param ah const AggHash&  - comparing object
-    //! \return bool operator  - result of the comparison
+	//! \brief Operator less or equal
+	//!
+	//! \param ah const AggHash&  - comparing object
+	//! \return bool operator  - result of the comparison
 	inline bool operator <=(const AggHash& ah) const noexcept;
 
-    //! \brief Operator greater
-    //!
-    //! \param ah const AggHash&  - comparing object
-    //! \return bool operator  - result of the comparison
+	//! \brief Operator greater
+	//!
+	//! \param ah const AggHash&  - comparing object
+	//! \return bool operator  - result of the comparison
 	bool operator >(const AggHash& ah) const noexcept  { return !(*this <= ah); }
 
-    //! \brief Operator greater or equal
-    //!
-    //! \param ah const AggHash&  - comparing object
-    //! \return bool operator  - result of the comparison
+	//! \brief Operator greater or equal
+	//!
+	//! \param ah const AggHash&  - comparing object
+	//! \return bool operator  - result of the comparison
 	bool operator >=(const AggHash& ah) const noexcept  { return !(*this < ah); }
 
-    //! \brief Operator equal
-    //!
-    //! \param ah const AggHash&  - comparing object
-    //! \return bool operator  - result of the comparison
+	//! \brief Operator equal
+	//!
+	//! \param ah const AggHash&  - comparing object
+	//! \return bool operator  - result of the comparison
 	inline bool operator ==(const AggHash& ah) const noexcept;
 
-    //! \brief Operator unequal (not equal)
-    //!
-    //! \param ah const AggHash&  - comparing object
-    //! \return bool operator  - result of the comparison
+	//! \brief Operator unequal (not equal)
+	//!
+	//! \param ah const AggHash&  - comparing object
+	//! \return bool operator  - result of the comparison
 	bool operator !=(const AggHash& ah) const noexcept  { return !(*this == ah); }
 };
 
 // Type Definitions ----------------------------------------------------
 template <typename Id, typename AccId>
-void AggHash<Id, AccId>::add(Id id)
+void AggHash<Id, AccId>::add(Id id) noexcept
 {
 	id += idcor;  // Correct id to prevent collisions (see AgordiHash for details)
 	// Check for the overflow after the correction
+    // Note: the exception will crash the whole app since noexcept is used but it is fine
 	if(id < idcor)
 		throw domain_error(string("The corrected value of ").append(std::to_string(id))
 			.append(" is too large and causes the overflow\n"));

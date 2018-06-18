@@ -12,7 +12,7 @@ LD = g++
 WINDRES = windres
 
 INC = -Iinclude -Iautogen -Ishared
-CFLAGS = -Wnon-virtual-dtor -Winit-self -Wcast-align -Wundef -Wfloat-equal -Wunreachable-code -Wmissing-include-dirs -Weffc++ -Wzero-as-null-pointer-constant -std=c++14 -fexceptions -fstack-protector-strong -D_FORTIFY_SOURCE=2
+CFLAGS = -Wnon-virtual-dtor -Winit-self -Wcast-align -Wundef -Wfloat-equal -Wunreachable-code -Wmissing-include-dirs -Weffc++ -Wzero-as-null-pointer-constant -std=c++14 -fexceptions -fstack-protector-strong -Wno-float-equal -D_FORTIFY_SOURCE=2
 RESINC = 
 LIBDIR = 
 LIB = -lstdc++fs
@@ -40,9 +40,9 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
 OUT_RELEASE = bin/Release/xmeasures
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/autogen/cmdline.o $(OBJDIR_DEBUG)/shared/fileio.o $(OBJDIR_DEBUG)/src/main.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/autogen/cmdline.o $(OBJDIR_DEBUG)/shared/fileio.o $(OBJDIR_DEBUG)/src/interface.o $(OBJDIR_DEBUG)/src/main.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/autogen/cmdline.o $(OBJDIR_RELEASE)/shared/fileio.o $(OBJDIR_RELEASE)/src/main.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/autogen/cmdline.o $(OBJDIR_RELEASE)/shared/fileio.o $(OBJDIR_RELEASE)/src/interface.o $(OBJDIR_RELEASE)/src/main.o
 
 all: debug release
 
@@ -66,6 +66,9 @@ $(OBJDIR_DEBUG)/autogen/cmdline.o: autogen/cmdline.c
 
 $(OBJDIR_DEBUG)/shared/fileio.o: shared/fileio.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c shared/fileio.cpp -o $(OBJDIR_DEBUG)/shared/fileio.o
+
+$(OBJDIR_DEBUG)/src/interface.o: src/interface.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/interface.cpp -o $(OBJDIR_DEBUG)/src/interface.o
 
 $(OBJDIR_DEBUG)/src/main.o: src/main.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/main.cpp -o $(OBJDIR_DEBUG)/src/main.o
@@ -95,6 +98,9 @@ $(OBJDIR_RELEASE)/autogen/cmdline.o: autogen/cmdline.c
 
 $(OBJDIR_RELEASE)/shared/fileio.o: shared/fileio.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c shared/fileio.cpp -o $(OBJDIR_RELEASE)/shared/fileio.o
+
+$(OBJDIR_RELEASE)/src/interface.o: src/interface.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/interface.cpp -o $(OBJDIR_RELEASE)/src/interface.o
 
 $(OBJDIR_RELEASE)/src/main.o: src/main.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/main.cpp -o $(OBJDIR_RELEASE)/src/main.o
