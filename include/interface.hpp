@@ -557,10 +557,11 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 #if TRACE <= 1
 	if(verbose)
 #endif // TRACE
-	fprintf(verbose ? stdout : stderr, "f1(),  f1ga1: %G, f1ga2: %G\n", f1ga1, f1ga2);
+	fprintf(verbose ? stdout : stderr, "f1(), f1ga1: %G, f1ga2: %G\n", f1ga1, f1ga2);
 	const AccProb  res = kind != F1::STANDARD
 		? hmean(f1ga1, f1ga2)
 		: (f1ga1 + f1ga2) / 2;
+	fprintf(verbose ? stdout : stderr, "f1(), f1ga: %G\n", res);
 
 	if(mkind == Match::COMBINED) {
 		// ATTENTION: gmats already evaluated and should be reused, their reevaluation would
@@ -570,10 +571,11 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 #if TRACE <= 1
 		if(verbose)
 #endif // TRACE
-		fprintf(verbose ? stdout : stderr, "f1(),  f1ga1w: %G, f1ga2w: %G\n", f1ga1w, f1ga2w);
+		fprintf(verbose ? stdout : stderr, "f1(), f1ga1w: %G, f1ga2w: %G\n", f1ga1w, f1ga2w);
 		const AccProb  resw = kind != F1::STANDARD
 			? hmean(f1ga1w, f1ga2w)
 			: (f1ga1w + f1ga2w) / 2;
+		fprintf(verbose ? stdout : stderr, "f1(), f1gaw: %G\n", resw);
 		// Note: geometric mean >= harmonic mean for [0, 1] and yields more indicative values,
 		// dropping the value not so much when (usually) the weighted match is larger
 		return gmean(res, resw);
@@ -700,7 +702,7 @@ RawNmi Collection<Count>::nmi(const CollectionT& cn1, const CollectionT& cn2, bo
 	{
 		// Check NMI value for the inverse order of collections
 		auto rnmi2 = cn2.nmi(cn1, expbase);
-		fprintf(stderr, "nmi(), mi1: %G, mi2: %G,  dmi: %G\n", rnmi1.mi, rnmi2.mi
+		fprintf(stderr, "nmi(),  mi1: %G, mi2: %G,  dmi: %G\n", rnmi1.mi, rnmi2.mi
 			, rnmi1.mi - rnmi2.mi);
 		assert((rnmi1.mi - rnmi2.mi) < precision_limit<Prob>() * 2
 			&& "nmi(), rnmi is not symmetric, most likely overlaps are present and not considered but this implementation");

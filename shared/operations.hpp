@@ -217,8 +217,8 @@ constexpr bool equal(const ValT a, const ValT b=ValT(0), const float size=1)
 //	// Allow stand-alone nodes
 //	//assert(size >= 1 && "equal(), size should be positive");
 //#if TRACE >= 3
-//	fprintf(ftrace, "equal()  a: %g, b: %g, cnt: %lu, precLim: %G (from %G)"
-//		"\n\tres: %d, val: %g, lim: %g (lmul: %g)\n"
+//	fprintf(ftrace, "equal()  a: %G, b: %G, cnt: %lu, precLim: %G (from %G)"
+//		"\n\tres: %d, val: %G, lim: %G (lmul: %G)\n"
 //		, a, b, size, precision_limit<ValT>(), numeric_limits<ValT>::epsilon()
 //		, fabs(a - b) <= precision_limit<ValT>() * size * (1 + fabs(a) + fabs(b))
 //		, fabs(a - b), precision_limit<ValT>() * size * (1 + fabs(a) + fabs(b))
