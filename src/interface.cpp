@@ -11,6 +11,8 @@
 #include <cstdio>
 //#include <bitset>
 #include <errno.h>
+
+#include "operations.hpp"
 #include "interface.h"
 
 
@@ -18,6 +20,56 @@ using std::overflow_error;
 using std::invalid_argument;
 using namespace daoc;
 
+
+// Omega Index related types and functions -------------------------------------
+Id mutualnum(const RawClusterPtrs* a, const RawClusterPtrs* b, const Id nmax) noexcept
+{
+#if VALIDATE >= 2
+	assert(a && b && "mutualnum(), valid containers are expected");
+#endif // VALIDATE
+	Id num = 0;
+	if(b->size() < a->size()) {
+		auto t = b;
+		b = a;
+		a = t;
+	}
+	const auto  eb = b->end();
+	auto  ib = b->begin();
+	for(auto acp: *a) {
+		while(ib != eb && cmpBase(*ib, acp))
+			++ib;
+		if(ib == eb
+		|| (*ib == acp && ++num >= nmax))
+			break;
+	}
+	return num;
+}
+
+Id mutualnum(const RawClusterPtrs* a, const RawClusterPtrs* b) noexcept
+{
+#if VALIDATE >= 2
+	assert(a && b && "mutualnum(), valid containers are expected");
+#endif // VALIDATE
+	Id num = 0;
+	if(b->size() < a->size()) {
+		auto t = b;
+		b = a;
+		a = t;
+	}
+	const auto  eb = b->end();
+	auto  ib = b->begin();
+	for(auto acp: *a) {
+		while(ib != eb && cmpBase(*ib, acp))
+			++ib;
+		if(ib == eb)
+			break;
+		if(*ib == acp)
+			++num;
+	}
+	return num;
+}
+
+// Other Measures related functions --------------------------------------------
 //string to_string(Evaluation eval, bool bitstr)
 //{
 //	static_assert(sizeof(Evaluation) == sizeof(EvalBase)

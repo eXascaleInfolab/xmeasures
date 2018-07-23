@@ -52,6 +52,7 @@ using std::is_reference;
 using std::is_base_of;
 using std::declval;
 using std::max;
+using std::min;
 using std::enable_if_t;
 using std::distance;
 
@@ -810,6 +811,24 @@ inline typename ContainerT::iterator insortedLight(ContainerT& els, const ItemT 
 #endif // VALIDATE
 	return iel;
 }
+
+//! \brief Find min value among the specified arguments of the same type
+//!
+//! \param val ValT  - first argument
+//! \param vs Ts...  - remained arguments
+//! \return ValtT  - minimal argument
+template <typename ValT, typename ...Ts>
+ValT minval(ValT val, Ts... vs) noexcept
+{
+	static_assert(sizeof(ValT) <= sizeof(void*), "minval(), input types validation failed");
+	return min(val, minval(vs...));  // Note: Tail call optimization is expected here instead of the recursion
+}
+
+//template <typename ValT, typename ...Ts>
+//enable_if_t<!(sizeof(ValT) <= sizeof(void*)), ValT&> minval(ValT& val, Ts... vs) noexcept
+//{
+//	return min(val, minval(vs...));
+//}
 
 }  // daoc
 

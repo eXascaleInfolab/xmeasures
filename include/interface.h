@@ -48,16 +48,48 @@ using std::invalid_argument;
 
 // Data Types ------------------------------------------------------------------
 using Id = uint32_t;  //!< Node id type
-
-//! Accumulated Id type
 // Note: Size should a magnitude larger than Id to hold Id*Id
-using AccId = uint64_t;
+using AccId = uint64_t;  //!< Accumulated Id type
+
+using Prob = float;  //!< Probability
+using AccProb = double;  //!< Accumulated Probability
 
 //! Aggregated Hash of the loading cluster member ids
 using AggHash = daoc::AggHash<Id, AccId>;
 
 using RawIds = vector<Id>;  //!< Node ids, unordered
 
+// Omega Index related types and functions -------------------------------------
+using RawCluster = RawIds;  //!< Raw cluster of member node ids
+using RawClusters = vector<RawCluster>;  //!< Raw clustering, container of the raw clusters
+using RawClusterPtrs = vector<RawCluster*>;
+using NodeRClusters = unordered_map<Id, pair<RawClusterPtrs, RawClusterPtrs>>;  //!< Raw node membership in the clusters
+
+//! \brief Omega Index evaluation
+//!
+//! \tparam OVP bool  - consider node shares in overlaps or take them equal to 1 (standard)
+//!
+//! \param ndrcs const NodeRClusters&  - node raw clusters relations
+//! \param cls1 const RawClusters&  - clusters of the first collection
+//! \param cls2 const RawClusters&  - clusters of the second collection
+//! \return Prob  - omega index
+template <bool OVP=false>
+Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2);
+
+//! \brief Evaluate the number of mutual raw cluster pointers in the containers
+//!
+//! \pre Input raw clusters pointer containers are ordered by the cmpBase<RawCluster*>
+//!
+//! \param a const RawClusterPtrs*  - first raw cluster pointers
+//! \param b const RawClusterPtrs*  - second raw cluster pointers
+//! \param nmax const Id  - max number of matches for the early termination,
+//! 	0 is allowed but senseless.
+//! \return Id  - the number of mutual members
+Id mutualnum(const RawClusterPtrs* a, const RawClusterPtrs* b, const Id nmax) noexcept;
+
+Id mutualnum(const RawClusterPtrs* a, const RawClusterPtrs* b) noexcept;
+
+// F1 & NMI related data types -------------------------------------------------
 template <typename Count>
 struct Cluster;
 
@@ -124,9 +156,6 @@ public:
 		m_count = 0;
 	}
 };
-
-using Prob = float;  //!< Probability
-using AccProb = double;  //!< Accumulated Probability
 
 //! Cluster
 //! \tparam Count  - nodes contribution counter type
@@ -270,12 +299,6 @@ enum struct F1: F1Base {
 //! \param f1 F1  - the value to be converted
 //! \return string  - string value
 string to_string(F1 f1);
-
-// Omega Index related types ---------------------------------------------------
-using RawCluster = RawIds;  //!< Raw cluster of member node ids
-using RawClusters = vector<RawCluster>;  //!< Raw clustering, container of the raw clusters
-using RawClusterPtrs = vector<RawCluster*>;
-using NodeRClusters = unordered_map<Id, pair<RawClusterPtrs, RawClusterPtrs>>;  //!< Raw node membership in the clusters
 
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
@@ -727,17 +750,6 @@ protected:
     //! \return void
 	void clearconts() const noexcept;
 };
-
-//! \brief Omega Index evaluation
-//!
-//! \tparam OVP bool  - consider node shares in overlaps or take them equal to 1 (standard)
-//!
-//! \param ndrcs const NodeRClusters&  - node raw clusters relations
-//! \param cls1 const RawClusters&  - clusters of the first collection
-//! \param cls2 const RawClusters&  - clusters of the second collection
-//! \return Prob  - omega index
-template <bool OVP=false>
-Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2);
 
 // Accessory functions ---------------------------------------------------------
 //! \brief Compile time pair selector

@@ -34,6 +34,48 @@ using std::domain_error;
 #endif // VALIDATE 1
 using namespace daoc;
 
+
+template <bool OVP=false>
+Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2)
+{
+//	using AccContrib = conditional_t<OVP, AccProb, AccId>;  // Accumulated contribution of the pair to OI
+//	AccContrib  od = 0;  // Observed diagonal contribution to OI
+	AccId  od = 0;  // Observed diagonal contribution to OI
+	AccId  ed = 0;  // Expected diagonal contribution to OI
+	AccId  oh = 0;  // Observed contribution of the high (top right) part of the matrix
+	AccId  eh = 0;  // Expected contribution of the high (top right) part of the matrix
+	const auto encs = ndrcs.end();
+	for(auto iincs = ndrcs.begin(); iincs != encs;) {
+		auto& incs = *iincs;
+		const Id  icsize = min(incs.second.first.size(), incs.second.second.size());
+		od += icsize;
+		ed += AccId(icsize) * icsize;
+		// Note: diagonal items for ovp always equal to 1 (or contrib_max) and will be added later
+		for(auto ijncs = ++iincs; ijncs != encs; ++ijncs) {
+//			const Id  jcsize = min(ijncs->second.first.size(), ijncs->second.second.size());
+//			eh += AccId(icsize) * jcsize;
+//			Id  mutnum = min(icsize, jcsize);
+//			mutnum = mutualnum(&incs.second.first, &ijncs->second.first, mutnum);
+//			if(!mutnum)
+//				continue;
+//			mutnum = mutualnum(&incs.second.second, &ijncs->second.second, mutnum);
+//			oh += mutnum;
+			const Id  inum = mutualnum(&incs.second.first, &ijncs->second.first);
+			if(!inum)
+				continue;
+			const Id  jnum = mutualnum(&incs.second.second, &ijncs->second.second);
+			oh += min(inum, jnum);
+			eh += AccId(inum) * jnum;
+		}
+	}
+	AccId  npairs = ndrcs.size();
+	npairs *= npairs;  // The number of pairs = nodes_num ^ 2
+	const AccProb  enorm = AccProb(eh * 2 + ed) / npairs;
+	printf("> Observed: %lu (high: %lu, diag: %lu), expected normalized: %G, %lu nodes\n"
+		, oh * 2 + od, oh, od, enorm, ndrcs.size());
+	return (oh * 2 + od - enorm) / (npairs - enorm);
+}
+
 // Cluster definition ----------------------------------------------------------
 template <typename Count>
 Cluster<Count>::Cluster(): members(), counter(), mbscont()
@@ -1072,10 +1114,4 @@ void Collection<Count>::clearconts() const noexcept
 	for(auto cl: m_cls)
 		cl->mbscont = 0;
 	m_contsum = 0;
-}
-
-template <bool OVP=false>
-Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2)
-{
-	return 0;
 }
