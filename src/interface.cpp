@@ -58,7 +58,7 @@ string to_string(F1 f1)
 		val = "HARMONIC";
 		break;
 	case F1::AVERAGE:
-		val = "AVERAGE";  // Standard
+		val = "AVERAGE";  // Suggested by Leskovec
 		break;
 	case F1::NONE:
 	default:
@@ -110,6 +110,12 @@ NodeBase NodeBase::load(const char* filename, float membership
 	else perror((string("WARNING load(), can't open ") += filename).c_str());
 
 	return nb;
+}
+
+Prob  omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2
+	, bool ovp)
+{
+	return 0;
 }
 
 // Accessory functions ---------------------------------------------------------

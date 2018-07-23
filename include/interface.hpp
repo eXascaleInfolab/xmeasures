@@ -304,6 +304,29 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 }
 
 template <typename Count>
+template <bool FIRST>
+void Collection<Count>::transfer(RawClusters& cls, NodeRClusters& ndrcs)
+{
+	// Clear node clusters relations of the collection
+	m_ndcs.clear();
+	m_ndcs.rehash(0);
+	// Prepare target containers
+	cls.reserve(m_cls.size());
+	ndrcs.reserve(m_ndcs.size());
+
+	for(auto cl: m_cls) {
+		cls.push_back(move(cl->members));
+		delete cl;
+		auto& craw = cls.back();
+		for(auto nd: craw)
+			(FIRST ? ndrcs[nd].first : ndrcs[nd].second).push_back(&craw);
+	}
+	// Clear collection clusters
+	m_cls.clear();
+	m_cls.shrink_to_fit();
+}
+
+template <typename Count>
 void Collection<Count>::clearcounts() const noexcept
 {
 	for(auto cl: m_cls)

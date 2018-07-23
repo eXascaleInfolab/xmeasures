@@ -32,6 +32,7 @@ using std::unordered_set;
 using std::unordered_map;
 using std::unique_ptr;
 using std::string;
+using std::pair;
 using std::is_integral;
 using std::is_pointer;
 using std::is_floating_point;
@@ -82,6 +83,7 @@ public:
     //! \brief Update the counter from the specified origin
     //!
     //! \param orig ClusterT*  - counter origin
+    //! \param cont Count  - contribution or share, actual only for the floating point counter
     //! \return void
 	void operator()(ClusterT* orig, Count cont)
 #if VALIDATE < 2
@@ -140,8 +142,8 @@ struct Cluster {
 	////! Accumulated contribution
 	//using AccCont = conditional_t<m_overlaps, Count, AccId>;
 	//!< Contribution from members
-	// Note: used only in case of overlaps by all measures, and by NMI only
-	// in case of multiple resolutions
+	// Note: used only in case of a) overlaps (by all measures) or
+	// b) multiple resolutions (by NMI only)
 	Count  mbscont;
 	static_assert(!is_floating_point<Count>::value || sizeof(mbscont) >= sizeof(double)
 		, "operator(), types validation failed");
@@ -259,7 +261,7 @@ enum struct F1: F1Base {
 	HARMONIC,
 	//! Arithmetic mean (average) of the [weighted] average of the greatest (maximal)
 	//! match by F1s, i.e. F1-Score
-	AVERAGE  // Standard
+	AVERAGE  // Suggested by Leskovec
 };
 
 //! \brief String representation of the F1
@@ -268,6 +270,12 @@ enum struct F1: F1Base {
 //! \param f1 F1  - the value to be converted
 //! \return string  - string value
 string to_string(F1 f1);
+
+// Omega Index related types ---------------------------------------------------
+using RawCluster = RawIds;  //!< Raw cluster of member node ids
+using RawClusters = vector<RawCluster>;  //!< Raw clustering, container of the raw clusters
+using RawClusterPtrs = vector<RawCluster*>;
+using NodeRClusters = unordered_map<Id, pair<RawClusterPtrs, RawClusterPtrs>>;  //!< Raw node membership in the clusters
 
 // NMI-related types -----------------------------------------------------------
 //! Internal element of the Sparse Matrix with Vector Rows
@@ -581,6 +589,17 @@ public:
 		, float membership=1, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
 		, RawIds* lostcls=nullptr, bool verbose=false);
 
+    //! \brief Transfer collection data
+    //! \post This collection becomes empty
+    //!
+    //! \tparam FIRST bool  - fill first of second node clusters relations container
+    //!
+    //! \param cls RawClusters&  - raw clusters to be extended
+    //! \param nds NodeRClusters&  - node raw clusters relations to be extended
+    //! \return void
+    template <bool FIRST>
+	void transfer(RawClusters& cls, NodeRClusters& ndrcs);
+
     //! \brief Clear cluster counters
     //!
     //! \return void
@@ -609,7 +628,7 @@ public:
 	//! 	the most discriminative and satisfies the largest number of the Formal
 	//! 	Constraints (homogeneity, completeness, rag bag,  size/quantity, balance);
 	//! - F1h  - Harmonic mean of the [weighted] average of F1s;
-	//! - F1s  - Standard F1-Score, i.e. arithmetic mean (average) of the [weighted]
+	//! - F1a  - Average F1-Score, i.e. arithmetic mean (average) of the [weighted]
 	//! 	average of F1s, the least discriminative and satisfies the lowest number
 	//! 	of the Formal Constraints.
 	//!
@@ -708,6 +727,16 @@ protected:
     //! \return void
 	void clearconts() const noexcept;
 };
+
+//! \brief Omega Index evaluation
+//!
+//! \param ndrcs const NodeRClusters&  - node raw clusters relations
+//! \param cls1 const RawClusters&  - clusters of the first collection
+//! \param cls2 const RawClusters&  - clusters of the second collection
+//! \param ovp bool  - consider node shares in overlaps or take them equal to 1 (standard)
+//! \return Prob  - omega index
+Prob  omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2
+	, bool ovp=false);
 
 // Accessory functions ---------------------------------------------------------
 //! \brief Parse decimal c-string as id

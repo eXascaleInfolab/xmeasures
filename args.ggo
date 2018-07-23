@@ -4,7 +4,7 @@ package "xmeasures"
 version "4.0"
 
 purpose "Extrinsic measures evaluation. In particular, Omega Index (a fuzzy version of the\
- Adjusted Rand Index, identical to the Fuzzy Rand Index) and F1-score (prob, harm and avg)\
+ Adjusted Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score (prob, harm and avg)\
  for the overlapping multi-resolution clusterings,\
  and standard NMI for the non-overlapping clustering on a single resolution.\
  Unequal node base is"
@@ -12,13 +12,20 @@ purpose "Extrinsic measures evaluation. In particular, Omega Index (a fuzzy vers
 description "Extrinsic measures are evaluated, i.e. two input clusterings\
  (collections of clusters) are compared to each other. Optionally, a labeling\
  of the evaluating clusters with the specified ground-truth clusters is performed.
-NOTE: Each cluster should contain unique members, which is verified only in the debug\
- mode.
+NOTE:
+  - Multiple evaluating measures can be specified
+  - Each cluster should contain unique members, which is ensured only if the\
+ 'unique' option is specified.
+  - Uncorrected unequal node base in the clusterings is allowed, it penalizes the match.\
+Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\
+ [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\
+ in the arbitrary collections (still each cluster should contain unique members).
+ 
 Evaluating measures are:
   - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\
   the Fuzzy Rand Index).
 
-  - F1  - various F1 measures of the Greatest (Max) Match including the Average\
+  - F1  - various [mean] F1 measures of the Greatest (Max) Match including the Average\
  F1-Score with optional weighting.
  NOTE: There are 3 matching policies available for each kind of F1. The most\
   representative evaluation is performed by the F1p with combined matching\
@@ -29,10 +36,6 @@ Evaluating measures are:
 ATTENTION: This is standard NMI, which should be used ONLY for the HARD\
  partitioning evaluation (non-overlapping clustering on a single resolution).\
   It penalizes overlapping and multi-resolution structures.
-NOTE: Unequal node base in the clusterings is allowed, it penalizes the match.\
-Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\
- [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\
- in the arbitrary collections (still each cluster should contain unique members).
 "
 
 usage "xmeasures [OPTIONS] clustering1 clustering2
@@ -70,7 +73,7 @@ option  "omega" o  "evaluate Omega Index (a fuzzy version of the Adjusted Rand I
   the Fuzzy Rand Index)."
   flag off
 
-section "F1 Options"
+section "Mean F1 Options"
 option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\
  match by F1 or partial probability.
 NOTE: F1p <= F1h <= F1s, where:
@@ -90,15 +93,7 @@ option  "kind" k  "kind of the matching policy:
   values ="weighted","unweighed","combined"  enum default="weighted" argoptional
   dependon="f1"
 
-section "NMI Options"
-option  "nmi" n  "evaluate NMI (Normalized Mutual Information)"  flag off
-option  "all" a  "evaluate all NMIs using sqrt, avg and min denominators besides\
- the max one"  flag off  dependon="nmi"
-option  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
- for the information measuring" flag off  dependon="nmi"
-# Note: log2 vs ln have no any influence on the resulting value
-
-section "Clusters Labeling"
+section "Clusters Labeling & standard F1"
 option  "label" l  "label evaluating clusters with the specified ground-truth (gt)\
  cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED\
  labeled clusters only (without the probable subclusters).
@@ -121,6 +116,14 @@ option  "identifiers" i  "output labels (identifiers) of the evaluating clusters
 NOTE: If 'sync' option is specified then the reduce collection is outputted to the\
  <labels_filename>.cnl besides the <labels_filename>
 "  string  typestr="labels_filename"  dependon="label"
+
+section "NMI Options"
+option  "nmi" n  "evaluate NMI (Normalized Mutual Information)"  flag off
+option  "all" a  "evaluate all NMIs using sqrt, avg and min denominators besides\
+ the max one"  flag off  dependon="nmi"
+option  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
+ for the information measuring" flag off  dependon="nmi"
+# Note: log2 vs ln have no any influence on the resulting value
 
 # Set optional options by default, allow input files to be unnamed parameters
 args "--default-optional --unamed-opts=clusterings"

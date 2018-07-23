@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 		return err;
 
 	// Validate required xmeasure
-	if(!args_info.f1_given && !args_info.nmi_given && !args_info.label_given && !args_info.omega_given) {
+	if(!args_info.omega_flag && !args_info.nmi_flag && !args_info.f1_given && !args_info.label_given) {
 		fputs("WARNING, no any measures to evaluate are specified\n", stderr);
 		cmdline_parser_print_help();
 		return EINVAL;
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 		// calculations, for other cases the order of evaluations does not matter
 		puts(string("= ").append(is_floating_point<Count>::value
 			? "Overlaps" : "Multi-resolution").append(" Evaluation =").c_str());
-		if(args_info.nmi_given) {
+		if(args_info.nmi_flag) {
 			auto rnmi = Collection::nmi(cn1, cn2, args_info.ln_flag, args_info.detailed_flag);
 			// Set NMI to NULL if collections have no any mutual information
 			// ATTENTION: for some cases, for example when one of the collections is a single cluster,
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 				f1suf = 'h';
 				break;
 			case f1_arg_average:
-				f1kind = F1::AVERAGE;  // Standard
+				f1kind = F1::AVERAGE;  // Suggested by Leskovec
 				f1suf = 's';
 				break;
 			default:
@@ -196,6 +196,17 @@ int main(int argc, char **argv)
 			printf("F1 labels %c%cmatch: %G (precision: %G, recall: %G)\n"
 				, prob ? 'p' : 'h', weighted ? 'w' : 'u'
 				, hmean(pr.prec, pr.rec), pr.prec, pr.rec);
+		}
+		if(args_info.omega_flag) {
+			// Transform loaded and pre-processed collection to the representation
+			// suitable for Omega Index evaluation
+			RawClusters  cls1;
+			RawClusters  cls2;
+			NodeRClusters  ndrcs;
+
+			cn1.template transfer<true>(cls1, ndrcs);
+			cn2.template transfer<false>(cls2, ndrcs);
+			printf("OI:\n%G\n", omega(ndrcs, cls1, cls2, args_info.ovp_flag));
 		}
 
 		return 0;
