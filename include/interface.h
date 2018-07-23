@@ -740,6 +740,18 @@ template <bool OVP=false>
 Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2);
 
 // Accessory functions ---------------------------------------------------------
+//! \brief Compile time pair selector
+//!
+//! \tparam FIRST bool  - select .first or .second
+//!
+//! \param pr P&  - pair
+//! \return selected field
+template <bool FIRST, typename P>
+enable_if_t<FIRST, typename P::first_type>& pairsel(P& pr) noexcept  { return pr.first; }
+
+template <bool FIRST, typename P>
+enable_if_t<!FIRST, typename P::second_type>& pairsel(P& pr) noexcept  { return pr.second; }
+
 //! \brief Parse decimal c-string as id
 //!
 //! \param str char*  - id string

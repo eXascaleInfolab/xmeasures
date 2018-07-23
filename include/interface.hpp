@@ -319,13 +319,11 @@ void Collection<Count>::transfer(RawClusters& cls, NodeRClusters& ndrcs)
 		delete cl;
 		auto& craw = cls.back();
 		for(auto nd: craw)
-			(FIRST ? ndrcs[nd].first : ndrcs[nd].second).push_back(&craw);
+			pairsel<FIRST>(ndrcs[nd]).push_back(&craw);
 	}
 	// Order node clusters
 	for(auto& val: ndrcs)
-		sort((FIRST ? val.second.first : val.second.second).begin()
-			, (FIRST ? val.second.first : val.second.second).end()
-			, cmpBase<RawCluster*>);
+		sort(pairsel<FIRST>(val.second).begin(), pairsel<FIRST>(val.second).end(), cmpBase<RawCluster*>);
 
 	// Clear collection clusters
 	m_cls.clear();
