@@ -112,12 +112,6 @@ NodeBase NodeBase::load(const char* filename, float membership
 	return nb;
 }
 
-Prob  omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2
-	, bool ovp)
-{
-	return 0;
-}
-
 // Accessory functions ---------------------------------------------------------
 Id  parseId(char* str)
 {

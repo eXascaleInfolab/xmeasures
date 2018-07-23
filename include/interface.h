@@ -730,13 +730,14 @@ protected:
 
 //! \brief Omega Index evaluation
 //!
+//! \tparam OVP bool  - consider node shares in overlaps or take them equal to 1 (standard)
+//!
 //! \param ndrcs const NodeRClusters&  - node raw clusters relations
 //! \param cls1 const RawClusters&  - clusters of the first collection
 //! \param cls2 const RawClusters&  - clusters of the second collection
-//! \param ovp bool  - consider node shares in overlaps or take them equal to 1 (standard)
 //! \return Prob  - omega index
-Prob  omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2
-	, bool ovp=false);
+template <bool OVP=false>
+Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2);
 
 // Accessory functions ---------------------------------------------------------
 //! \brief Parse decimal c-string as id

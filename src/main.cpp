@@ -206,7 +206,11 @@ int main(int argc, char **argv)
 
 			cn1.template transfer<true>(cls1, ndrcs);
 			cn2.template transfer<false>(cls2, ndrcs);
-			printf("OI:\n%G\n", omega(ndrcs, cls1, cls2, args_info.ovp_flag));
+			const auto oi = args_info.ovp_flag
+				? omega<true>(ndrcs, cls1, cls2)
+				: omega<false>(ndrcs, cls1, cls2)
+				;
+			printf("OI:\n%G\n", oi);
 		}
 
 		return 0;

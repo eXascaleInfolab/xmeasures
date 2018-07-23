@@ -321,6 +321,12 @@ void Collection<Count>::transfer(RawClusters& cls, NodeRClusters& ndrcs)
 		for(auto nd: craw)
 			(FIRST ? ndrcs[nd].first : ndrcs[nd].second).push_back(&craw);
 	}
+	// Order node clusters
+	for(auto& val: ndrcs)
+		sort((FIRST ? val.second.first : val.second.second).begin()
+			, (FIRST ? val.second.first : val.second.second).end()
+			, cmpBase<RawCluster*>);
+
 	// Clear collection clusters
 	m_cls.clear();
 	m_cls.shrink_to_fit();
@@ -1068,4 +1074,10 @@ void Collection<Count>::clearconts() const noexcept
 	for(auto cl: m_cls)
 		cl->mbscont = 0;
 	m_contsum = 0;
+}
+
+template <bool OVP=false>
+Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2)
+{
+	return 0;
 }
