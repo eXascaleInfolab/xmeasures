@@ -259,7 +259,7 @@ enum struct F1: F1Base {
 	HARMONIC,
 	//! Arithmetic mean (average) of the [weighted] average of the greatest (maximal)
 	//! match by F1s, i.e. F1-Score
-	STANDARD
+	AVERAGE  // Standard
 };
 
 //! \brief String representation of the F1
@@ -455,7 +455,7 @@ struct NodeBase: protected UniqIds, NodeBaseI {
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
 	bool nodeExists(Id nid) const noexcept  { return count(nid); }
 
-	//! \brief Load nodes from the CNL file with optional filtering by the cluster size
+	//! \brief Load all unique nodes from the CNL file with optional filtering by the cluster size
 	//!
 	//! \param filename const char*  - name of the input file
     //! \param ahash=nullptr AggHash*  - resulting aggregated hash of the loaded
@@ -562,9 +562,11 @@ public:
 
 	//! \brief Load collection from the CNL file
 	//! \pre All clusters in the file are expected to be unique and not validated for
-	//! the mutual match
+	//! the mutual match until makeunique is set
 	//!
 	//! \param filename const char*  - name of the input file
+	//! \param makeunique=false bool  - ensure that clusters contain unique members by
+	//! 	removing the duplicates
 	//! \param membership=1 float  - expected membership of the nodes, >0, typically >= 1.
 	//! Used only for the node container preallocation to estimate the number of nodes
 	//! if not specified in the file header
@@ -575,8 +577,8 @@ public:
 	//! synchronization
 	//! \param verbose=false bool  - print the number of loaded nodes to the stdout
     //! \return CollectionT  - the collection is loaded successfully
-	static CollectionT load(const char* filename, float membership=1
-		, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
+	static CollectionT load(const char* filename, bool makeunique=false
+		, float membership=1, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
 		, RawIds* lostcls=nullptr, bool verbose=false);
 
     //! \brief Clear cluster counters

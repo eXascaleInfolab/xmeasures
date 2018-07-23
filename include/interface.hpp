@@ -10,9 +10,7 @@
 
 #include <cstring>  // strlen, strtok
 //#include <cmath>  // sqrt
-#if VALIDATE >= 2
 #include <algorithm>
-#endif // VALIDATE 2
 
 #include "operations.hpp"
 #include "interface.h"
@@ -25,12 +23,14 @@ using std::to_string;
 //using std::bitset;
 using std::min;
 using std::max;
-#if VALIDATE >= 1
-using std::domain_error;
-#if VALIDATE >= 2
 using std::sort;
+#if VALIDATE <= 1
+using std::unique;
+#else
 using std::adjacent_find;
 #endif // VALIDATE 2
+#if VALIDATE >= 1
+using std::domain_error;
 #endif // VALIDATE 1
 using namespace daoc;
 
@@ -127,8 +127,8 @@ Collection<Count>::~Collection()
 }
 
 template <typename Count>
-Collection<Count> Collection<Count>::load(const char* filename, float membership, ::AggHash* ahash
-	, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose)
+Collection<Count> Collection<Count>::load(const char* filename, bool makeunique, float membership
+	, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
 
@@ -244,16 +244,28 @@ Collection<Count> Collection<Count>::load(const char* filename, float membership
 		} while((tok = strtok(nullptr, mbdelim)));
 		if(!members.empty()) {
 			members.shrink_to_fit();  // Free over reserved space
-#if VALIDATE >= 2
-			// Validate that members are unique
-			sort(members.begin(), members.end());
-			const auto im = adjacent_find(members.begin(), members.end());
-			if(im != members.end()) {
-				fprintf(stderr, "load(), the cluster #%lu contains duplicated member #%lu: %u\n"
-					, cn.m_cls.size(), distance(members.begin(), im), *im);
-				throw invalid_argument("load(), the cluster contains duplicated members\n");
-			}
+#if VALIDATE <= 1
+			if(makeunique)
 #endif // VALIDATE
+			{
+				// Ensure or validate that members are unique
+				sort(members.begin(), members.end());
+#if VALIDATE <= 1
+				const auto im = unique(members.begin(), members.end());
+#else
+				const auto im = adjacent_find(members.begin(), members.end());
+#endif // VALIDATE
+				if(im != members.end()) {
+#if VALIDATE <= 1
+					fprintf(stderr, "WARNING load(), the cluster #%lu contained %lu duplicated members, corrected.\n"
+						, cn.m_cls.size(), distance(im, members.end()));
+#else
+					fprintf(stderr, "WARNING load(), the cluster #%lu contains duplicated member #%lu: %u\n"
+						, cn.m_cls.size(), distance(members.begin(), im), *im);
+					throw invalid_argument("load(), the cluster contains duplicated members\n");
+#endif // VALIDATE
+				}
+			}
 			cn.m_cls.push_back(chd.release());
 			// Start filling a new cluster
 			chd.reset(new Cluster<Count>());
@@ -558,7 +570,7 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 	if(verbose)
 #endif // TRACE
 	fprintf(verbose ? stdout : stderr, "f1(), f1ga1: %G, f1ga2: %G\n", f1ga1, f1ga2);
-	const AccProb  res = kind != F1::STANDARD
+	const AccProb  res = kind != F1::AVERAGE
 		? hmean(f1ga1, f1ga2)
 		: (f1ga1 + f1ga2) / 2;
 	fprintf(verbose ? stdout : stderr, "f1(), f1ga: %G\n", res);
@@ -572,7 +584,7 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 		if(verbose)
 #endif // TRACE
 		fprintf(verbose ? stdout : stderr, "f1(), f1ga1w: %G, f1ga2w: %G\n", f1ga1w, f1ga2w);
-		const AccProb  resw = kind != F1::STANDARD
+		const AccProb  resw = kind != F1::AVERAGE
 			? hmean(f1ga1w, f1ga2w)
 			: (f1ga1w + f1ga2w) / 2;
 		fprintf(verbose ? stdout : stderr, "f1(), f1gaw: %G\n", resw);

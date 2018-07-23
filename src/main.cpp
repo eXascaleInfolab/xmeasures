@@ -23,8 +23,8 @@ int main(int argc, char **argv)
 		return err;
 
 	// Validate required xmeasure
-	if(!args_info.f1_given && !args_info.nmi_given && !args_info.label_given) {
-		fputs("WARNING, no any measures to evaluate specified\n", stderr);
+	if(!args_info.f1_given && !args_info.nmi_given && !args_info.label_given && !args_info.omega_given) {
+		fputs("WARNING, no any measures to evaluate are specified\n", stderr);
 		cmdline_parser_print_help();
 		return EINVAL;
 	}
@@ -56,8 +56,8 @@ int main(int argc, char **argv)
 	::AggHash  nbhash;
 	// Note: if label_given then either inputs_num < 2 or inputs_num[0] = sync_arg = label_arg
 	if(args_info.sync_given && args_info.inputs_num == 2 && !args_info.label_given)
-		ndbase = NodeBase::load(args_info.sync_arg, args_info.membership_arg, &nbhash
-			, 0, 0, args_info.detailed_flag);
+		ndbase = NodeBase::load(args_info.sync_arg, args_info.membership_arg
+			, &nbhash, 0, 0, args_info.detailed_flag);
 
 	auto process = [&](auto evaluation) -> int {
 		using Count = decltype(evaluation);
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 		//const char*  nbfile = args_info.sync_given
 		auto cn1 = Collection::load(cn1base ? args_info.sync_given ? args_info.sync_arg
 			: args_info.label_arg : args_info.inputs[0]
-			, args_info.membership_arg, &cn1hash
+			, args_info.unique_flag, args_info.membership_arg, &cn1hash
 			, ndbase ? &ndbase : nullptr, nullptr, args_info.detailed_flag);
 		if(ndbase) {
 			if(nbhash != cn1hash) {
@@ -81,7 +81,8 @@ int main(int argc, char **argv)
 			ndbase.clear();
 		}
 		RawIds  lostcls;
-		auto cn2 = Collection::load(args_info.inputs[!cn1base], args_info.membership_arg, &cn2hash
+		auto cn2 = Collection::load(args_info.inputs[!cn1base]
+			, args_info.unique_flag, args_info.membership_arg, &cn2hash
 			, args_info.sync_given ? &cn1 : nullptr
 			, args_info.sync_given && args_info.label_given ? &lostcls : nullptr
 			, args_info.detailed_flag);
@@ -143,8 +144,8 @@ int main(int argc, char **argv)
 				f1kind = F1::HARMONIC;
 				f1suf = 'h';
 				break;
-			case f1_arg_standard:
-				f1kind = F1::STANDARD;
+			case f1_arg_average:
+				f1kind = F1::AVERAGE;  // Standard
 				f1suf = 's';
 				break;
 			default:

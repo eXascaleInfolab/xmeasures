@@ -292,7 +292,7 @@ void ensureDir(const string& dir);
 void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum
 	, size_t& ndsnum, bool verbose=false);
 
-//! \brief Load nodes from the CNL file with optional filtering by the cluster size
+//! \brief Load all unique nodes from the CNL file with optional filtering by the cluster size
 //!
 //! \tparam Id  - Node id type
 //! \tparam AccId  - Accumulated node ids type

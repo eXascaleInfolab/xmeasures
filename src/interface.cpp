@@ -57,8 +57,8 @@ string to_string(F1 f1)
 	case F1::HARMONIC:
 		val = "HARMONIC";
 		break;
-	case F1::STANDARD:
-		val = "STANDARD";
+	case F1::AVERAGE:
+		val = "AVERAGE";  // Standard
 		break;
 	case F1::NONE:
 	default:
@@ -99,14 +99,14 @@ bool xumatch(Match m) noexcept
 	return m == Match::UNWEIGHTED || m == Match::COMBINED;
 }
 
-NodeBase NodeBase::load(const char* filename, float membership, ::AggHash* ahash
-	, size_t cmin, size_t cmax, bool verbose)
+NodeBase NodeBase::load(const char* filename, float membership
+	, ::AggHash* ahash, size_t cmin, size_t cmax, bool verbose)
 {
 	NodeBase  nb;  // Return using NRVO optimization
 	NamedFileWrapper  finp(filename, "r");
 	if(finp)
-		static_cast<UniqIds&>(nb) = loadNodes<Id, AccId>(finp, membership, ahash
-			, cmin, cmax, verbose);
+		static_cast<UniqIds&>(nb) = loadNodes<Id, AccId>(finp, membership
+			, ahash, cmin, cmax, verbose);
 	else perror((string("WARNING load(), can't open ") += filename).c_str());
 
 	return nb;

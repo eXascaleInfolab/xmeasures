@@ -31,10 +31,10 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "3.2"
+#define CMDLINE_PARSER_VERSION "4.0"
 #endif
 
-enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_standard };
+enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_average };
 enum enum_kind { kind__NULL = -1, kind_arg_weighted = 0, kind_arg_unweighed, kind_arg_combined };
 enum enum_policy { policy__NULL = -1, policy_arg_partprob = 0, policy_arg_harmonic };
 
@@ -43,66 +43,67 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  int ovp_flag;	/**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R unlike 1 for the member existing in R distinct clusters on R resolutions (default=off).  */
-  const char *ovp_help; /**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R unlike 1 for the member existing in R distinct clusters on R resolutions help description.  */
+  int ovp_flag;	/**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions (default=off).  */
+  const char *ovp_help; /**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions help description.  */
+  int unique_flag;	/**< @brief ensure on loading that all cluster members are unique by removing the duplicates. (default=off).  */
+  const char *unique_help; /**< @brief ensure on loading that all cluster members are unique by removing the duplicates. help description.  */
   char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
   NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
   char * sync_orig;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
   NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
   const char *sync_help; /**< @brief synchronize with the node base, skipping the non-matching nodes.
   NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
-  float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. (default='1').  */
-  char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. original value given at command line.  */
-  const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only for the containers preallocation facilitating estimation of the nodes number if not specified in the file header. help description.  */
+  float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only to facilitate estimation of the nodes number on the containers preallocation if this number is not specified in the file header. (default='1').  */
+  char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only to facilitate estimation of the nodes number on the containers preallocation if this number is not specified in the file header. original value given at command line.  */
+  const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only to facilitate estimation of the nodes number on the containers preallocation if this number is not specified in the file header. help description.  */
   int detailed_flag;	/**< @brief detailed (verbose) results output (default=off).  */
   const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
+  int omega_flag;	/**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to  the Fuzzy Rand Index). (default=off).  */
+  const char *omega_help; /**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to  the Fuzzy Rand Index). help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
    - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
    - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
-   - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
  (default='partprob').  */
   char * f1_orig;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
    - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
    - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
-   - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
  original value given at command line.  */
   const char *f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
    - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
    - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
-   - s (F1s)  - Arithmetic mean (average) of the [weighted] average of F1s, Standard F1-Score, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
  help description.  */
   enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
    - w  - Weighted by the number of nodes in each cluster
    - u  - Unweighed, where each cluster is treated equally
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
-    (default='weighted').  */
+ (default='weighted').  */
   char * kind_orig;	/**< @brief kind of the matching policy:
    - w  - Weighted by the number of nodes in each cluster
    - u  - Unweighed, where each cluster is treated equally
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
-    original value given at command line.  */
+ original value given at command line.  */
   const char *kind_help; /**< @brief kind of the matching policy:
    - w  - Weighted by the number of nodes in each cluster
    - u  - Unweighed, where each cluster is treated equally
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
-    help description.  */
+ help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */
   int all_flag;	/**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one (default=off).  */
   const char *all_help; /**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one help description.  */
   int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring (default=off).  */
   const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
-  char * label_arg;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
-   labeled clusters only (without the probable subclusters).
+  char * label_arg;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
-  char * label_orig;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
-   labeled clusters only (without the probable subclusters).
+  char * label_orig;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
-  const char *label_help; /**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED
-   labeled clusters only (without the probable subclusters).
+  const char *label_help; /**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
   enum enum_policy policy_arg;	/**< @brief Labels matching policy:
    - p  - Partial Probabilities (maximizes gain)
@@ -131,9 +132,11 @@ struct gengetopt_args_info
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int ovp_given ;	/**< @brief Whether ovp was given.  */
+  unsigned int unique_given ;	/**< @brief Whether unique was given.  */
   unsigned int sync_given ;	/**< @brief Whether sync was given.  */
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
   unsigned int detailed_given ;	/**< @brief Whether detailed was given.  */
+  unsigned int omega_given ;	/**< @brief Whether omega was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
   unsigned int kind_given ;	/**< @brief Whether kind was given.  */
   unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
