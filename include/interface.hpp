@@ -328,10 +328,10 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 #endif // VALIDATE
 				if(im != members.end()) {
 #if VALIDATE <= 1
-					fprintf(stderr, "WARNING load(), the cluster #%lu contained %lu duplicated members, corrected.\n"
+					fprintf(stderr, "WARNING load(), #%lu cluster contained %lu duplicated members, corrected.\n"
 						, cn.m_cls.size(), distance(im, members.end()));
 #else
-					fprintf(stderr, "WARNING load(), the cluster #%lu contains duplicated member #%lu: %u\n"
+					fprintf(stderr, "WARNING load(), #%lu cluster contains duplicated member #%lu: %u\n"
 						, cn.m_cls.size(), distance(members.begin(), im), *im);
 					throw invalid_argument("load(), the cluster contains duplicated members\n");
 #endif // VALIDATE
