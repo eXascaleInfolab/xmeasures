@@ -27,32 +27,32 @@
 
 const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation. In particular, Omega Index (a fuzzy version of\nthe Adjusted Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score\n(prob, harm and avg) for the overlapping multi-resolution clusterings, and\nstandard NMI for the non-overlapping clustering on a single resolution. Unequal\nnode base is";
 
-const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.\n  \nExamples:\n  $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl\n  $ ./xmeasures -fh -kc -i tests/5K25.cll -ph -l networks/5K25.cnl\ntests/5K25_l0.825/5K25_l0.825_796.cnl\n";
+const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.\n  \nExamples:\n  $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl\n  $ ./xmeasures -fh -kc -i tests/5K25.cll -ph -l networks/5K25.cnl\ntests/5K25_l0.825/5K25_l0.825_796.cnl\n  $ ./xmeasures -ox tests/clsevalsx/omega_c4.3-1.cnl\ntests/clsevalsx/omega_c4.3-2.cnl\n";
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. two input clusterings (collections of\nclusters) are compared to each other. Optionally, a labeling of the evaluating\nclusters with the specified ground-truth clusters is performed.\nNOTE:\n  - Multiple evaluating measures can be specified\n  - Each cluster should contain unique members, which is ensured only if the\n'unique' option is specified.\n  - Uncorrected unequal node base in the clusterings is allowed, it penalizes\nthe match.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n \nEvaluating measures are:\n  - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\nthe Fuzzy Rand Index).\n\n  - F1  - various [mean] F1 measures of the Greatest (Max) Match including the\nAverage F1-Score with optional weighting.\n NOTE: There are 3 matching policies available for each kind of F1. The most\nrepresentative evaluation is performed by the F1p with combined matching\npolicy (considers both micro and macro weightings). \n\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: This is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\n";
+const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. two input clusterings (collections of\nclusters) are compared to each other. Optionally, a labeling of the evaluating\nclusters with the specified ground-truth clusters is performed.\nNOTE:\n  - Multiple evaluating measures can be specified\n  - Each cluster should contain unique members, which is ensured only if the\n'unique' option is specified.\n  - Uncorrected unequal node base in the clusterings is allowed, it penalizes\nthe match.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n \nEvaluating measures are:\n  - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\nthe Fuzzy Rand Index).\n\n  - F1  - various [mean] F1 measures of the Greatest (Max) Match including the\nAverage F1-Score (suggested by J. Leskovec) with optional weighting.\n NOTE: There are 3 matching policies available for each kind of F1. The most\nrepresentative evaluation is performed by the F1p with combined matching\npolicy (considers both micro and macro weighting).\n\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: This is a standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\n";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help                    Print help and exit",
   "  -V, --version                 Print version and exit",
-  "  -O, --ovp                     evaluate overlapping instead of\n                                  multi-resolution clusters, where max matching\n                                  for any shared member between R overlapping\n                                  clusters is 1/R instead of 1 for the member\n                                  belonging to R distinct clusters on R\n                                  resolutions.\n                                  NOTE: It has no effect for the Omega Index\n                                  evaluation.  (default=off)",
-  "  -q, --unique                  ensure on loading that all cluster members are\n                                  unique by removing the duplicates.\n                                  (default=off)",
+  "  -O, --ovp                     evaluate overlapping instead of the\n                                  multi-resolution clusters, where max matching\n                                  for any shared member between R overlapping\n                                  clusters is 1/R (the member is shared)\n                                  instead of 1 (the member fully belongs to\n                                  each [hierarchical  sub]group) for the member\n                                  belonging to R distinct clusters on R\n                                  resolutions.\n                                  NOTE: It has no effect for the Omega Index\n                                  evaluation.  (default=off)",
+  "  -q, --unique                  ensure on loading that all cluster members are\n                                  unique by removing all duplicates.\n                                  (default=off)",
   "  -s, --sync=filename           synchronize with the node base, skipping the\n                                  non-matching nodes.\n                                  NOTE: The node base can be either a separate,\n                                  or an evaluating CNL file, in the latter case\n                                  this option should precede the evaluating\n                                  filename not repeating it",
   "  -m, --membership=FLOAT        average expected membership of the nodes in the\n                                  clusters, > 0, typically >= 1. Used only to\n                                  facilitate estimation of the nodes number on\n                                  the containers preallocation if this number\n                                  is not specified in the file header.\n                                  (default=`1')",
   "  -d, --detailed                detailed (verbose) results output\n                                  (default=off)",
-  "\nOmega Index Options:",
-  "  -o, --omega                   evaluate Omega Index (a fuzzy version of the\n                                  Adjusted Rand Index, identical to  the Fuzzy\n                                  Rand Index).  (default=off)",
-  "  -x, --extended                evaluate extended Omega Index, which does not\n                                  excessively penalize distinct node shares.\n                                  (default=off)",
-  "\nMean F1 Options:",
-  "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1s, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  indicative as satisfies the largest number of\n                                  the Formal Constraints (homogeneity,\n                                  completeness, rag bag, size/quantity,\n                                  balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1s;\n                                   - a (F1a)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1s, the least\n                                  discriminative and satisfies the lowest\n                                  number of the Formal Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"average\" default=`partprob')",
+  "\nOmega Index:",
+  "  -o, --omega                   evaluate Omega Index (a fuzzy version of the\n                                  Adjusted Rand Index, identical to the Fuzzy\n                                  Rand Index).  (default=off)",
+  "  -x, --extended                evaluate extended Omega Index, which does not\n                                  excessively penalize distinctly shared nodes.\n                                  (default=off)",
+  "\nMean F1:",
+  "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1a, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  indicative as satisfies the largest number of\n                                  the Formal Constraints (homogeneity,\n                                  completeness, rag bag, size/quantity,\n                                  balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1a;\n                                   - a (F1a)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1a, the least\n                                  discriminative and satisfies the lowest\n                                  number of the Formal Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"average\" default=`partprob')",
   "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - Weighted by the number of nodes in\n                                  each cluster\n                                   - u  - Unweighed, where each cluster is\n                                  treated equally\n                                   - c  - Combined(w, u) using geometric mean\n                                  (drops the value not so much as harmonic\n                                  mean)\n                                    (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
-  "\nClusters Labeling & standard F1:",
+  "\nClusters Labeling & F1 with Precision and Recall:",
   "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED labeled clusters only (without\n                                  the probable subclusters).\n                                  NOTE: If 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
   "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities (maximizes\n                                  gain)\n                                   - h  - Harmonic Mean (minimizes loss,\n                                  maximizes F1)\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`harmonic')",
   "  -u, --unweighted              Labels weighting policy on F1 evaluation:\n                                  weighted by the number of instances in each\n                                  label or unweighed, where each label is\n                                  treated equally  (default=off)",
-  "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)\n                                  NOTE: If 'sync' option is specified then the\n                                  reduce collection is outputted to the\n                                  <labels_filename>.cnl besides the\n                                  <labels_filename>\n",
-  "\nNMI Options:",
+  "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)\n                                  NOTE: If 'sync' option is specified then the\n                                  reduced collection is outputted to the\n                                  <labels_filename>.cnl besides the\n                                  <labels_filename>\n",
+  "\nNMI:",
   "  -n, --nmi                     evaluate NMI (Normalized Mutual Information)\n                                  (default=off)",
   "  -a, --all                     evaluate all NMIs using sqrt, avg and min\n                                  denominators besides the max one\n                                  (default=off)",
   "  -e, --ln                      use ln (exp base) instead of log2 (Shannon\n                                  entropy, bits) for the information measuring\n                                  (default=off)",
@@ -487,6 +487,11 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   /* checks for required options */
   
   /* checks for dependences among options */
+  if (args_info->extended_given && ! args_info->omega_given)
+    {
+      fprintf (stderr, "%s: '--extended' ('-x') option depends on option 'omega'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
   if (args_info->kind_given && ! args_info->f1_given)
     {
       fprintf (stderr, "%s: '--kind' ('-k') option depends on option 'f1'%s\n", prog_name, (additional_error ? additional_error : ""));
@@ -726,7 +731,7 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
-        case 'O':	/* evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions.
+        case 'O':	/* evaluate overlapping instead of the multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R (the member is shared) instead of 1 (the member fully belongs to each [hierarchical  sub]group) for the member belonging to R distinct clusters on R resolutions.
         NOTE: It has no effect for the Omega Index evaluation..  */
         
         
@@ -737,7 +742,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'q':	/* ensure on loading that all cluster members are unique by removing the duplicates..  */
+        case 'q':	/* ensure on loading that all cluster members are unique by removing all duplicates..  */
         
         
           if (update_arg((void *)&(args_info->unique_flag), 0, &(args_info->unique_given),
@@ -782,7 +787,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'o':	/* evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to  the Fuzzy Rand Index)..  */
+        case 'o':	/* evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index)..  */
         
         
           if (update_arg((void *)&(args_info->omega_flag), 0, &(args_info->omega_given),
@@ -792,7 +797,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'x':	/* evaluate extended Omega Index, which does not excessively penalize distinct node shares..  */
+        case 'x':	/* evaluate extended Omega Index, which does not excessively penalize distinctly shared nodes..  */
         
         
           if (update_arg((void *)&(args_info->extended_flag), 0, &(args_info->extended_given),
@@ -803,10 +808,10 @@ cmdline_parser_internal (
         
           break;
         case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
-        NOTE: F1p <= F1h <= F1s, where:
+        NOTE: F1p <= F1h <= F1a, where:
          - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
-         - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
-         - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+         - h (F1h)  - Harmonic mean of the [weighted] average of F1a;
+         - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1a, the least discriminative and satisfies the lowest number of the Formal Constraints.
 .  */
         
         
@@ -874,7 +879,7 @@ cmdline_parser_internal (
         
           break;
         case 'i':	/* output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
-        NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
+        NOTE: If 'sync' option is specified then the reduced collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
 .  */
         
         

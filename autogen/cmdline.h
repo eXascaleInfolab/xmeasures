@@ -43,12 +43,12 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  int ovp_flag;	/**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions.
+  int ovp_flag;	/**< @brief evaluate overlapping instead of the multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R (the member is shared) instead of 1 (the member fully belongs to each [hierarchical  sub]group) for the member belonging to R distinct clusters on R resolutions.
   NOTE: It has no effect for the Omega Index evaluation. (default=off).  */
-  const char *ovp_help; /**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions.
+  const char *ovp_help; /**< @brief evaluate overlapping instead of the multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R (the member is shared) instead of 1 (the member fully belongs to each [hierarchical  sub]group) for the member belonging to R distinct clusters on R resolutions.
   NOTE: It has no effect for the Omega Index evaluation. help description.  */
-  int unique_flag;	/**< @brief ensure on loading that all cluster members are unique by removing the duplicates. (default=off).  */
-  const char *unique_help; /**< @brief ensure on loading that all cluster members are unique by removing the duplicates. help description.  */
+  int unique_flag;	/**< @brief ensure on loading that all cluster members are unique by removing all duplicates. (default=off).  */
+  const char *unique_help; /**< @brief ensure on loading that all cluster members are unique by removing all duplicates. help description.  */
   char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
   NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
   char * sync_orig;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
@@ -60,27 +60,27 @@ struct gengetopt_args_info
   const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only to facilitate estimation of the nodes number on the containers preallocation if this number is not specified in the file header. help description.  */
   int detailed_flag;	/**< @brief detailed (verbose) results output (default=off).  */
   const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
-  int omega_flag;	/**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to  the Fuzzy Rand Index). (default=off).  */
-  const char *omega_help; /**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to  the Fuzzy Rand Index). help description.  */
-  int extended_flag;	/**< @brief evaluate extended Omega Index, which does not excessively penalize distinct node shares. (default=off).  */
-  const char *extended_help; /**< @brief evaluate extended Omega Index, which does not excessively penalize distinct node shares. help description.  */
+  int omega_flag;	/**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index). (default=off).  */
+  const char *omega_help; /**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index). help description.  */
+  int extended_flag;	/**< @brief evaluate extended Omega Index, which does not excessively penalize distinctly shared nodes. (default=off).  */
+  const char *extended_help; /**< @brief evaluate extended Omega Index, which does not excessively penalize distinctly shared nodes. help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
-  NOTE: F1p <= F1h <= F1s, where:
+  NOTE: F1p <= F1h <= F1a, where:
    - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
-   - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
-   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - h (F1h)  - Harmonic mean of the [weighted] average of F1a;
+   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1a, the least discriminative and satisfies the lowest number of the Formal Constraints.
  (default='partprob').  */
   char * f1_orig;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
-  NOTE: F1p <= F1h <= F1s, where:
+  NOTE: F1p <= F1h <= F1a, where:
    - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
-   - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
-   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - h (F1h)  - Harmonic mean of the [weighted] average of F1a;
+   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1a, the least discriminative and satisfies the lowest number of the Formal Constraints.
  original value given at command line.  */
   const char *f1_help; /**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
-  NOTE: F1p <= F1h <= F1s, where:
+  NOTE: F1p <= F1h <= F1a, where:
    - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
-   - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
-   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s, the least discriminative and satisfies the lowest number of the Formal Constraints.
+   - h (F1h)  - Harmonic mean of the [weighted] average of F1a;
+   - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1a, the least discriminative and satisfies the lowest number of the Formal Constraints.
  help description.  */
   enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
    - w  - Weighted by the number of nodes in each cluster
@@ -118,13 +118,13 @@ struct gengetopt_args_info
   int unweighted_flag;	/**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label or unweighed, where each label is treated equally (default=off).  */
   const char *unweighted_help; /**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label or unweighed, where each label is treated equally help description.  */
   char * identifiers_arg;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
-  NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
+  NOTE: If 'sync' option is specified then the reduced collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
 .  */
   char * identifiers_orig;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
-  NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
+  NOTE: If 'sync' option is specified then the reduced collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
  original value given at command line.  */
   const char *identifiers_help; /**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
-  NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
+  NOTE: If 'sync' option is specified then the reduced collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
  help description.  */
   int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
   const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */

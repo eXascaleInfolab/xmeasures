@@ -49,6 +49,7 @@ Usage: xmeasures [OPTIONS] clustering1 clustering2
 Examples:
   $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl
   $ ./xmeasures -fh -kc -i tests/5K5_l8.cll -ph -l gt/5K5.cnl tests/5K5_l8.cnl
+  $ ./xmeasures -ox tests/clsevalsx/omega_c4.3-1.cnl tests/clsevalsx/omega_c4.3-2.cnl
 
 
 Extrinsic measures are evaluated, i.e. clustering (collection of clusters) is

@@ -26,14 +26,14 @@ Evaluating measures are:
   the Fuzzy Rand Index).
 
   - F1  - various [mean] F1 measures of the Greatest (Max) Match including the Average\
- F1-Score with optional weighting.
+ F1-Score (suggested by J. Leskovec) with optional weighting.
  NOTE: There are 3 matching policies available for each kind of F1. The most\
   representative evaluation is performed by the F1p with combined matching\
-  policy (considers both micro and macro weightings). 
+  policy (considers both micro and macro weighting).
 
   - NMI  - Normalized Mutual Information, normalized by either max or also sqrt,\
  avg and min information content denominators.
-ATTENTION: This is standard NMI, which should be used ONLY for the HARD\
+ATTENTION: This is a standard NMI, which should be used ONLY for the HARD\
  partitioning evaluation (non-overlapping clustering on a single resolution).\
   It penalizes overlapping and multi-resolution structures.
 "
@@ -45,11 +45,13 @@ usage "xmeasures [OPTIONS] clustering1 clustering2
 Examples:
   $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl
   $ ./xmeasures -fh -kc -i tests/5K25.cll -ph -l networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl
+  $ ./xmeasures -ox tests/clsevalsx/omega_c4.3-1.cnl tests/clsevalsx/omega_c4.3-2.cnl
 "
 
-option  "ovp" O  "evaluate overlapping instead of multi-resolution clusters,\
+option  "ovp" O  "evaluate overlapping instead of the multi-resolution clusters,\
  where max matching for any shared member between R overlapping clusters is 1/R\
- instead of 1 for the member belonging to R distinct clusters on R resolutions.
+ (the member is shared) instead of 1 (the member fully belongs to each [hierarchical\
+  sub]group) for the member belonging to R distinct clusters on R resolutions.
 NOTE: It has no effect for the Omega Index evaluation."
   flag off
 #NOTE: Multi-resolution mode can be used as approximation of the overlapping\
@@ -57,7 +59,7 @@ NOTE: It has no effect for the Omega Index evaluation."
 # Note: ovp option requires shares evaluation/reading and processing of the directory
 # of collections in case of both multi-resolution and overlapping  clustering evaluation
 option  "unique" q  "ensure on loading that all cluster members are unique by\
- removing the duplicates."
+ removing all duplicates."
   flag off
 option  "sync" s  "synchronize with the node base, skipping the non-matching nodes.
 NOTE: The node base can be either a separate, or an evaluating CNL file, in the\
@@ -69,22 +71,22 @@ option  "membership" m  "average expected membership of the nodes in the cluster
   float default="1"
 option  "detailed" d  "detailed (verbose) results output"  flag off
 
-section "Omega Index Options"
-option  "omega" o  "evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\
-  the Fuzzy Rand Index)."
+section "Omega Index"
+option  "omega" o  "evaluate Omega Index (a fuzzy version of the Adjusted Rand Index,\
+ identical to the Fuzzy Rand Index)."
   flag off
 option  "extended" x  "evaluate extended Omega Index, which does not excessively\
- penalize distinct node shares."  flag off
+ penalize distinctly shared nodes."  flag off  dependon="omega"
 
-section "Mean F1 Options"
+section "Mean F1"
 option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\
  match by F1 or partial probability.
-NOTE: F1p <= F1h <= F1s, where:
+NOTE: F1p <= F1h <= F1a, where:
  - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the\
  most indicative as satisfies the largest number of the Formal Constraints\
  (homogeneity, completeness, rag bag, size/quantity, balance);
- - h (F1h)  - Harmonic mean of the [weighted] average of F1s;
- - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1s,\
+ - h (F1h)  - Harmonic mean of the [weighted] average of F1a;
+ - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1a,\
  the least discriminative and satisfies the lowest number of the Formal Constraints.
 "
  values="partprob","harmonic","average"  enum  default="partprob"  argoptional
@@ -96,7 +98,7 @@ option  "kind" k  "kind of the matching policy:
   values ="weighted","unweighed","combined"  enum default="weighted" argoptional
   dependon="f1"
 
-section "Clusters Labeling & standard F1"
+section "Clusters Labeling & F1 with Precision and Recall"
 option  "label" l  "label evaluating clusters with the specified ground-truth (gt)\
  cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED\
  labeled clusters only (without the probable subclusters).
@@ -116,11 +118,11 @@ option  "unweighted" u  "Labels weighting policy on F1 evaluation: weighted by t
 option  "identifiers" i  "output labels (identifiers) of the evaluating clusters\
  as lines of space-separated indices of the ground-truth clusters (.cll - clusters\
  labels list)
-NOTE: If 'sync' option is specified then the reduce collection is outputted to the\
+NOTE: If 'sync' option is specified then the reduced collection is outputted to the\
  <labels_filename>.cnl besides the <labels_filename>
 "  string  typestr="labels_filename"  dependon="label"
 
-section "NMI Options"
+section "NMI"
 option  "nmi" n  "evaluate NMI (Normalized Mutual Information)"  flag off
 option  "all" a  "evaluate all NMIs using sqrt, avg and min denominators besides\
  the max one"  flag off  dependon="nmi"

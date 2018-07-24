@@ -10,9 +10,12 @@
 //! \date 2017-02-13
 
 #include <cstdio>
+#include <sstream>
 #include "cmdline.h"  // Arguments parsing
 #include "macrodef.h"
 #include "interface.hpp"
+
+using std::stringstream;
 
 
 int main(int argc, char **argv)
@@ -107,6 +110,10 @@ int main(int argc, char **argv)
 			}
 		}
 
+		// The number of outputting measures (1 .. 4)
+		uint8_t  outsnum = args_info.omega_flag + args_info.nmi_flag
+			 + args_info.f1_given + args_info.label_given;
+		stringstream  aggouts;  // Aggregated outputs
 		// Evaluate and output measures
 		// Note: evaluation of overlapping F1 after NMI allows to reuse some
 		// calculations, for other cases the order of evaluations does not matter
@@ -123,12 +130,21 @@ int main(int argc, char **argv)
 				rnmi.h1 = rnmi.h2 = 1;
 			}
 			const auto  nmix = rnmi.mi / std::max(rnmi.h1, rnmi.h2);
-			if(args_info.all_flag)
+			if(args_info.all_flag) {
 				printf("NMI_max: %G, NMI_sqrt: %G, NMI_avg: %G, NMI_min: %G\n"
 					, nmix, rnmi.mi / sqrt(rnmi.h1 * rnmi.h2)
 					, 2 * rnmi.mi / (rnmi.h1 + rnmi.h2)
 					, rnmi.mi / std::min(rnmi.h1, rnmi.h2));
-			else printf("NMI_max:\n%G\n", nmix);
+				if(--outsnum || aggouts.tellp())
+					aggouts << "NMI_max: " << nmix
+						<< ", NMI_sqrt: " << rnmi.mi / sqrt(rnmi.h1 * rnmi.h2)
+						<< ", NMI_avg: " << 2 * rnmi.mi / (rnmi.h1 + rnmi.h2)
+						<< ", NMI_min: " << rnmi.mi / std::min(rnmi.h1, rnmi.h2);
+			} else {
+				printf("NMI_max:\n%G\n", nmix);
+				if(--outsnum || aggouts.tellp())
+					aggouts << "NMI_max: " << nmix;
+			}
 		}
 		if(args_info.f1_given) {
 			// Assign required F1 type
@@ -177,6 +193,11 @@ int main(int argc, char **argv)
 			const auto  f1val = Collection::f1(cn1, cn2, f1kind, mkind, args_info.detailed_flag);
 			printf("F1%c_%c (%s, %s):\n%G\n", f1suf, kindsuf, to_string(f1kind).c_str()
 				, to_string(mkind).c_str(), f1val);
+			if(--outsnum || aggouts.tellp()) {
+				if(aggouts.tellp())
+					aggouts << "; ";
+				aggouts << "F1" << f1suf << '_' << kindsuf << ": " << f1val;
+			}
 		}
 		// Label clusters with the ground-truth clusters indices and output F1 for the labels if required
 		if(args_info.label_given) {
@@ -196,6 +217,13 @@ int main(int argc, char **argv)
 			printf("F1 labels %c%cmatch: %G (precision: %G, recall: %G)\n"
 				, prob ? 'p' : 'h', weighted ? 'w' : 'u'
 				, hmean(pr.prec, pr.rec), pr.prec, pr.rec);
+			if(--outsnum || aggouts.tellp()) {
+				if(aggouts.tellp())
+					aggouts << "; ";
+				aggouts << "F1" << (prob ? 'p' : 'h') << '_' << (weighted ? 'w' : 'u')
+					<< "_labels: " << hmean(pr.prec, pr.rec)
+					<< " (Precision: " << pr.prec << ", Recall: " << pr.rec << ')';
+			}
 		}
 		if(args_info.omega_flag) {
 			// Transform loaded and pre-processed collection to the representation
@@ -210,8 +238,15 @@ int main(int argc, char **argv)
 				? omega<true>(ndrcs, cls1, cls2)
 				: omega<false>(ndrcs, cls1, cls2)
 				;
-			printf("OI:\n%G\n", oi);
+			printf("OI%s:\n%G\n", args_info.extended_flag ? "x" : "", oi);
+			if(--outsnum || aggouts.tellp()) {
+				if(aggouts.tellp())
+					aggouts << "; ";
+				aggouts << "OI" << (args_info.extended_flag ? "x" : "") << ": " << oi;
+			}
 		}
+		if(aggouts.tellp())
+			puts(aggouts.str().c_str());
 
 		return 0;
 	};
