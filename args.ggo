@@ -1,7 +1,7 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "4.0"
+version "4.0.1"
 
 purpose "Extrinsic measures evaluation. In particular, Omega Index (a fuzzy version of the\
  Adjusted Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score (prob, harm and avg)\
@@ -136,6 +136,7 @@ args "--default-optional --unamed-opts=clusterings"
 
 
 # = Changelog =
+# v4.0.1 - Aggregated output for multiple measures added
 # v4.0.0 - Omega index added and bound to the "-o" argument
 #	- the former "-o" argument (overlaps) renamed to "-O"
 #	- F1s renamed to F1a (average), option "-s" renamed to "-a"

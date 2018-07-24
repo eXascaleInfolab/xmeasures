@@ -225,7 +225,7 @@ struct Cluster {
 	noexcept
 #endif // VALIDATE
 	{
-		// P = P1 * P2 = m/n1 * m/n2 = m*m / (n1*n2),
+		// P = P1 * P2 = m/c1 * m/c2 = m*m / (c1*c2),
 		// where nodes contribution instead of the size should be use for overlaps.
 		// ATTENTION: F1 compares clusters per-pair, so it is much simpler and has another
 		// semantics of contribution for the multi-resolution case comparing to NMI
