@@ -67,13 +67,14 @@ using NodeRClusters = unordered_map<Id, pair<RawClusterPtrs, RawClusterPtrs>>;  
 
 //! \brief Omega Index evaluation
 //!
-//! \tparam OVP bool  - consider node shares in overlaps or take them equal to 1 (standard)
+//! \tparam EXT bool  - extended Omega Index, which does not excessively penalize
+//! 	distinct node shares
 //!
 //! \param ndrcs const NodeRClusters&  - node raw clusters relations
 //! \param cls1 const RawClusters&  - clusters of the first collection
 //! \param cls2 const RawClusters&  - clusters of the second collection
 //! \return Prob  - omega index
-template <bool OVP=false>
+template <bool EXT=false>
 Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2);
 
 //! \brief Evaluate the number of mutual raw cluster pointers in the containers

@@ -35,45 +35,74 @@ using std::domain_error;
 using namespace daoc;
 
 
-template <bool OVP=false>
+template <bool EXT=false>
 Prob omega(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2)
 {
-//	using AccContrib = conditional_t<OVP, AccProb, AccId>;  // Accumulated contribution of the pair to OI
-//	AccContrib  od = 0;  // Observed diagonal contribution to OI
-	AccId  od = 0;  // Observed diagonal contribution to OI
-	AccId  ed = 0;  // Expected diagonal contribution to OI
+	//using AccContrib = conditional_t<EXT, AccProb, AccId>;  // Accumulated contribution of the pair to OI
 	AccId  oh = 0;  // Observed contribution of the high (top right) part of the matrix
-	AccId  eh = 0;  // Expected contribution of the high (top right) part of the matrix
+	RawIds  icount(cls1.size(), 0);
+	RawIds  jcount(cls2.size(), 0);
 	const auto encs = ndrcs.end();
 	for(auto iincs = ndrcs.begin(); iincs != encs;) {
 		auto& incs = *iincs;
-		const Id  icsize = min(incs.second.first.size(), incs.second.second.size());
-		od += icsize;
-		ed += AccId(icsize) * icsize;
 		// Note: diagonal items for ovp always equal to 1 (or contrib_max) and will be added later
 		for(auto ijncs = ++iincs; ijncs != encs; ++ijncs) {
-//			const Id  jcsize = min(ijncs->second.first.size(), ijncs->second.second.size());
-//			eh += AccId(icsize) * jcsize;
-//			Id  mutnum = min(icsize, jcsize);
-//			mutnum = mutualnum(&incs.second.first, &ijncs->second.first, mutnum);
-//			if(!mutnum)
-//				continue;
-//			mutnum = mutualnum(&incs.second.second, &ijncs->second.second, mutnum);
-//			oh += mutnum;
 			const Id  inum = mutualnum(&incs.second.first, &ijncs->second.first);
-			if(!inum)
-				continue;
 			const Id  jnum = mutualnum(&incs.second.second, &ijncs->second.second);
-			oh += min(inum, jnum);
-			eh += AccId(inum) * jnum;
+			oh += inum == jnum;
+			++icount[inum];
+			++jcount[jnum];
 		}
 	}
-	AccId  npairs = ndrcs.size();
-	npairs *= npairs;  // The number of pairs = nodes_num ^ 2
-	const AccProb  enorm = AccProb(eh * 2 + ed) / npairs;
-	printf("> Observed: %lu (high: %lu, diag: %lu), expected normalized: %G, %lu nodes\n"
-		, oh * 2 + od, oh, od, enorm, ndrcs.size());
-	return (oh * 2 + od - enorm) / (npairs - enorm);
+	AccId  eh = 0;  // Expected contribution of the high (top right) part of the matrix
+	const Id  csize = min(jcount.size(), icount.size());
+	for(Id i = 0; i < csize; ++i) {
+		//printf("> omega() #%u: %lu, %u, %u\n"
+		//	, i, AccId(icount[i]) * jcount[i], icount[i], jcount[i]);
+		eh += AccId(icount[i]) * jcount[i];
+	}
+	// The number of pairs = nodes_num * (nodes_num - 1) / 2
+	const AccId  npairs = ndrcs.size() * (ndrcs.size() - 1) >> 1;
+	const AccProb  enorm = AccProb(eh) / npairs;
+	//printf("> omega() observed: %lu, expected normalized: %G, %lu nodes\n"
+	//	, oh, enorm, ndrcs.size());
+	return (oh - enorm) / (npairs - enorm);
+}
+
+template <>
+Prob omega<true>(const NodeRClusters& ndrcs, const RawClusters& cls1, const RawClusters& cls2)
+{
+	AccProb  oh = 0;  // Observed contribution of the high (top right) part of the matrix
+	RawIds  icount(cls1.size(), 0);
+	RawIds  jcount(cls2.size(), 0);
+	const auto encs = ndrcs.end();
+	for(auto iincs = ndrcs.begin(); iincs != encs;) {
+		auto& incs = *iincs;
+		// Note: diagonal items for ovp always equal to 1 (or contrib_max) and will be added later
+		for(auto ijncs = ++iincs; ijncs != encs; ++ijncs) {
+			const Id  inum = mutualnum(&incs.second.first, &ijncs->second.first);
+			const Id  jnum = mutualnum(&incs.second.second, &ijncs->second.second);
+			oh += inum == jnum ? 1 : AccProb(min(inum, jnum)) / max(inum, jnum);
+			//eh += AccProb(max<Id>(inum, 1)) * max<Id>(jnum, 1);
+			++icount[inum];
+			++jcount[jnum];
+		}
+	}
+	AccProb  eh = 0;  // Expected contribution of the high (top right) part of the matrix
+	const Id  csize = min(jcount.size(), icount.size());
+	for(Id i = 0; i < csize; ++i)
+		eh += AccId(icount[i]) * jcount[i];
+	// Consider remained accumulated counts
+	RawIds& rcount = icount.size() > csize ? icount : jcount;
+	const Id  rcsize = rcount.size();
+	for(Id i = csize; i < rcsize; ++i)
+		eh += rcount[i];
+	// The number of pairs = nodes_num * (nodes_num - 1) / 2
+	const AccId  npairs = ndrcs.size() * (ndrcs.size() - 1) >> 1;
+	const AccProb  enorm = AccProb(eh) / npairs;
+	//printf("> omega() observed: %G, expected normalized: %G, %lu nodes\n"
+	//	, oh, enorm, ndrcs.size());
+	return (oh - enorm) / (npairs - enorm);
 }
 
 // Cluster definition ----------------------------------------------------------

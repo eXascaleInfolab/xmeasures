@@ -49,7 +49,8 @@ Examples:
 
 option  "ovp" O  "evaluate overlapping instead of multi-resolution clusters,\
  where max matching for any shared member between R overlapping clusters is 1/R\
- instead of 1 for the member belonging to R distinct clusters on R resolutions"
+ instead of 1 for the member belonging to R distinct clusters on R resolutions.
+NOTE: It has no effect for the Omega Index evaluation."
   flag off
 #NOTE: Multi-resolution mode can be used as approximation of the overlapping\
 # clusters evaluation, but not vice verse"  flag off
@@ -72,6 +73,8 @@ section "Omega Index Options"
 option  "omega" o  "evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\
   the Fuzzy Rand Index)."
   flag off
+option  "extended" x  "evaluate extended Omega Index, which does not excessively\
+ penalize distinct node shares."  flag off
 
 section "Mean F1 Options"
 option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\

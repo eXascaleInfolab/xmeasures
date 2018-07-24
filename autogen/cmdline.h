@@ -43,8 +43,10 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  int ovp_flag;	/**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions (default=off).  */
-  const char *ovp_help; /**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions help description.  */
+  int ovp_flag;	/**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions.
+  NOTE: It has no effect for the Omega Index evaluation. (default=off).  */
+  const char *ovp_help; /**< @brief evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions.
+  NOTE: It has no effect for the Omega Index evaluation. help description.  */
   int unique_flag;	/**< @brief ensure on loading that all cluster members are unique by removing the duplicates. (default=off).  */
   const char *unique_help; /**< @brief ensure on loading that all cluster members are unique by removing the duplicates. help description.  */
   char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
@@ -60,6 +62,8 @@ struct gengetopt_args_info
   const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
   int omega_flag;	/**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to  the Fuzzy Rand Index). (default=off).  */
   const char *omega_help; /**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to  the Fuzzy Rand Index). help description.  */
+  int extended_flag;	/**< @brief evaluate extended Omega Index, which does not excessively penalize distinct node shares. (default=off).  */
+  const char *extended_help; /**< @brief evaluate extended Omega Index, which does not excessively penalize distinct node shares. help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1s, where:
    - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
@@ -93,12 +97,6 @@ struct gengetopt_args_info
    - u  - Unweighed, where each cluster is treated equally
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
  help description.  */
-  int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
-  const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */
-  int all_flag;	/**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one (default=off).  */
-  const char *all_help; /**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one help description.  */
-  int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring (default=off).  */
-  const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
   char * label_arg;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the clusters labels file name should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
   char * label_orig;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED labeled clusters only (without the probable subclusters).
@@ -128,6 +126,12 @@ struct gengetopt_args_info
   const char *identifiers_help; /**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
   NOTE: If 'sync' option is specified then the reduce collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
  help description.  */
+  int nmi_flag;	/**< @brief evaluate NMI (Normalized Mutual Information) (default=off).  */
+  const char *nmi_help; /**< @brief evaluate NMI (Normalized Mutual Information) help description.  */
+  int all_flag;	/**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one (default=off).  */
+  const char *all_help; /**< @brief evaluate all NMIs using sqrt, avg and min denominators besides the max one help description.  */
+  int ln_flag;	/**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring (default=off).  */
+  const char *ln_help; /**< @brief use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -137,15 +141,16 @@ struct gengetopt_args_info
   unsigned int membership_given ;	/**< @brief Whether membership was given.  */
   unsigned int detailed_given ;	/**< @brief Whether detailed was given.  */
   unsigned int omega_given ;	/**< @brief Whether omega was given.  */
+  unsigned int extended_given ;	/**< @brief Whether extended was given.  */
   unsigned int f1_given ;	/**< @brief Whether f1 was given.  */
   unsigned int kind_given ;	/**< @brief Whether kind was given.  */
-  unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
-  unsigned int all_given ;	/**< @brief Whether all was given.  */
-  unsigned int ln_given ;	/**< @brief Whether ln was given.  */
   unsigned int label_given ;	/**< @brief Whether label was given.  */
   unsigned int policy_given ;	/**< @brief Whether policy was given.  */
   unsigned int unweighted_given ;	/**< @brief Whether unweighted was given.  */
   unsigned int identifiers_given ;	/**< @brief Whether identifiers was given.  */
+  unsigned int nmi_given ;	/**< @brief Whether nmi was given.  */
+  unsigned int all_given ;	/**< @brief Whether all was given.  */
+  unsigned int ln_given ;	/**< @brief Whether ln was given.  */
 
   char **inputs ; /**< @brief unamed options (options without names) */
   unsigned inputs_num ; /**< @brief unamed options number */

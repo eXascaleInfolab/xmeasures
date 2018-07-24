@@ -25,36 +25,37 @@
 
 #include "cmdline.h"
 
-const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation. In particular, Omega Index (a fuzzy version of\nthe Adjusted Rand Index, identical to the Fuzzy Rand Index) and F1-score (prob,\nharm and avg) for the overlapping multi-resolution clusterings, and standard\nNMI for the non-overlapping clustering on a single resolution. Unequal node\nbase is";
+const char *gengetopt_args_info_purpose = "Extrinsic measures evaluation. In particular, Omega Index (a fuzzy version of\nthe Adjusted Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score\n(prob, harm and avg) for the overlapping multi-resolution clusterings, and\nstandard NMI for the non-overlapping clustering on a single resolution. Unequal\nnode base is";
 
 const char *gengetopt_args_info_usage = "Usage: xmeasures [OPTIONS] clustering1 clustering2\n\n  clustering  - input file, collection of the clusters to be evaluated.\n  \nExamples:\n  $ ./xmeasures -fp -kc networks/5K25.cnl tests/5K25_l0.825/5K25_l0.825_796.cnl\n  $ ./xmeasures -fh -kc -i tests/5K25.cll -ph -l networks/5K25.cnl\ntests/5K25_l0.825/5K25_l0.825_796.cnl\n";
 
 const char *gengetopt_args_info_versiontext = "";
 
-const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. two input clusterings (collections of\nclusters) are compared to each other. Optionally, a labeling of the evaluating\nclusters with the specified ground-truth clusters is performed.\nNOTE: Each cluster should contain unique members, which is verified only in the\ndebug mode.\nEvaluating measures are:\n  - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\nthe Fuzzy Rand Index).\n\n  - F1  - various F1 measures of the Greatest (Max) Match including the Average\nF1-Score with optional weighting.\n NOTE: There are 3 matching policies available for each kind of F1. The most\nrepresentative evaluation is performed by the F1p with combined matching\npolicy (considers both micro and macro weightings). \n\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: This is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\nNOTE: Unequal node base in the clusterings is allowed, it penalizes the\nmatch.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n";
+const char *gengetopt_args_info_description = "Extrinsic measures are evaluated, i.e. two input clusterings (collections of\nclusters) are compared to each other. Optionally, a labeling of the evaluating\nclusters with the specified ground-truth clusters is performed.\nNOTE:\n  - Multiple evaluating measures can be specified\n  - Each cluster should contain unique members, which is ensured only if the\n'unique' option is specified.\n  - Uncorrected unequal node base in the clusterings is allowed, it penalizes\nthe match.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\n[GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\nin the arbitrary collections (still each cluster should contain unique\nmembers).\n \nEvaluating measures are:\n  - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\nthe Fuzzy Rand Index).\n\n  - F1  - various [mean] F1 measures of the Greatest (Max) Match including the\nAverage F1-Score with optional weighting.\n NOTE: There are 3 matching policies available for each kind of F1. The most\nrepresentative evaluation is performed by the F1p with combined matching\npolicy (considers both micro and macro weightings). \n\n  - NMI  - Normalized Mutual Information, normalized by either max or also\nsqrt, avg and min information content denominators.\nATTENTION: This is standard NMI, which should be used ONLY for the HARD\npartitioning evaluation (non-overlapping clustering on a single resolution).\nIt penalizes overlapping and multi-resolution structures.\n";
 
 const char *gengetopt_args_info_help[] = {
   "  -h, --help                    Print help and exit",
   "  -V, --version                 Print version and exit",
-  "  -O, --ovp                     evaluate overlapping instead of\n                                  multi-resolution clusters, where max matching\n                                  for any shared member between R overlapping\n                                  clusters is 1/R instead of 1 for the member\n                                  belonging to R distinct clusters on R\n                                  resolutions  (default=off)",
+  "  -O, --ovp                     evaluate overlapping instead of\n                                  multi-resolution clusters, where max matching\n                                  for any shared member between R overlapping\n                                  clusters is 1/R instead of 1 for the member\n                                  belonging to R distinct clusters on R\n                                  resolutions.\n                                  NOTE: It has no effect for the Omega Index\n                                  evaluation.  (default=off)",
   "  -q, --unique                  ensure on loading that all cluster members are\n                                  unique by removing the duplicates.\n                                  (default=off)",
   "  -s, --sync=filename           synchronize with the node base, skipping the\n                                  non-matching nodes.\n                                  NOTE: The node base can be either a separate,\n                                  or an evaluating CNL file, in the latter case\n                                  this option should precede the evaluating\n                                  filename not repeating it",
   "  -m, --membership=FLOAT        average expected membership of the nodes in the\n                                  clusters, > 0, typically >= 1. Used only to\n                                  facilitate estimation of the nodes number on\n                                  the containers preallocation if this number\n                                  is not specified in the file header.\n                                  (default=`1')",
   "  -d, --detailed                detailed (verbose) results output\n                                  (default=off)",
   "\nOmega Index Options:",
   "  -o, --omega                   evaluate Omega Index (a fuzzy version of the\n                                  Adjusted Rand Index, identical to  the Fuzzy\n                                  Rand Index).  (default=off)",
-  "\nF1 Options:",
+  "  -x, --extended                evaluate extended Omega Index, which does not\n                                  excessively penalize distinct node shares.\n                                  (default=off)",
+  "\nMean F1 Options:",
   "  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the\n                                  greatest (maximal) match by F1 or partial\n                                  probability.\n                                  NOTE: F1p <= F1h <= F1s, where:\n                                   - p (F1p)  - Harmonic mean of the [weighted]\n                                  average of Partial Probabilities, the most\n                                  indicative as satisfies the largest number of\n                                  the Formal Constraints (homogeneity,\n                                  completeness, rag bag, size/quantity,\n                                  balance);\n                                   - h (F1h)  - Harmonic mean of the [weighted]\n                                  average of F1s;\n                                   - a (F1a)  - Arithmetic mean (average) of\n                                  the [weighted] average of F1s, the least\n                                  discriminative and satisfies the lowest\n                                  number of the Formal Constraints.\n                                    (possible values=\"partprob\",\n                                  \"harmonic\", \"average\" default=`partprob')",
   "  -k, --kind[=ENUM]             kind of the matching policy:\n                                   - w  - Weighted by the number of nodes in\n                                  each cluster\n                                   - u  - Unweighed, where each cluster is\n                                  treated equally\n                                   - c  - Combined(w, u) using geometric mean\n                                  (drops the value not so much as harmonic\n                                  mean)\n                                    (possible values=\"weighted\",\n                                  \"unweighed\", \"combined\"\n                                  default=`weighted')",
-  "\nNMI Options:",
-  "  -n, --nmi                     evaluate NMI (Normalized Mutual Information)\n                                  (default=off)",
-  "  -a, --all                     evaluate all NMIs using sqrt, avg and min\n                                  denominators besides the max one\n                                  (default=off)",
-  "  -e, --ln                      use ln (exp base) instead of log2 (Shannon\n                                  entropy, bits) for the information measuring\n                                  (default=off)",
-  "\nClusters Labeling:",
+  "\nClusters Labeling & standard F1:",
   "  -l, --label=gt_filename       label evaluating clusters with the specified\n                                  ground-truth (gt) cluster indices and\n                                  evaluate F1 (including Precision and Recall)\n                                  of the MATCHED labeled clusters only (without\n                                  the probable subclusters).\n                                  NOTE: If 'sync' option is specified then the\n                                  clusters labels file name should be the same\n                                  as the node base (if specified) and should be\n                                  in the .cnl format. The file name can be\n                                  either a separate or an evaluating CNL file,\n                                  in the latter case this option should precede\n                                  the evaluating filename not repeating it",
   "  -p, --policy[=ENUM]           Labels matching policy:\n                                   - p  - Partial Probabilities (maximizes\n                                  gain)\n                                   - h  - Harmonic Mean (minimizes loss,\n                                  maximizes F1)\n                                    (possible values=\"partprob\", \"harmonic\"\n                                  default=`harmonic')",
   "  -u, --unweighted              Labels weighting policy on F1 evaluation:\n                                  weighted by the number of instances in each\n                                  label or unweighed, where each label is\n                                  treated equally  (default=off)",
   "  -i, --identifiers=labels_filename\n                                output labels (identifiers) of the evaluating\n                                  clusters as lines of space-separated indices\n                                  of the ground-truth clusters (.cll - clusters\n                                  labels list)\n                                  NOTE: If 'sync' option is specified then the\n                                  reduce collection is outputted to the\n                                  <labels_filename>.cnl besides the\n                                  <labels_filename>\n",
+  "\nNMI Options:",
+  "  -n, --nmi                     evaluate NMI (Normalized Mutual Information)\n                                  (default=off)",
+  "  -a, --all                     evaluate all NMIs using sqrt, avg and min\n                                  denominators besides the max one\n                                  (default=off)",
+  "  -e, --ln                      use ln (exp base) instead of log2 (Shannon\n                                  entropy, bits) for the information measuring\n                                  (default=off)",
     0
 };
 
@@ -95,15 +96,16 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->membership_given = 0 ;
   args_info->detailed_given = 0 ;
   args_info->omega_given = 0 ;
+  args_info->extended_given = 0 ;
   args_info->f1_given = 0 ;
   args_info->kind_given = 0 ;
-  args_info->nmi_given = 0 ;
-  args_info->all_given = 0 ;
-  args_info->ln_given = 0 ;
   args_info->label_given = 0 ;
   args_info->policy_given = 0 ;
   args_info->unweighted_given = 0 ;
   args_info->identifiers_given = 0 ;
+  args_info->nmi_given = 0 ;
+  args_info->all_given = 0 ;
+  args_info->ln_given = 0 ;
 }
 
 static
@@ -118,13 +120,11 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->membership_orig = NULL;
   args_info->detailed_flag = 0;
   args_info->omega_flag = 0;
+  args_info->extended_flag = 0;
   args_info->f1_arg = f1_arg_partprob;
   args_info->f1_orig = NULL;
   args_info->kind_arg = kind_arg_weighted;
   args_info->kind_orig = NULL;
-  args_info->nmi_flag = 0;
-  args_info->all_flag = 0;
-  args_info->ln_flag = 0;
   args_info->label_arg = NULL;
   args_info->label_orig = NULL;
   args_info->policy_arg = policy_arg_harmonic;
@@ -132,6 +132,9 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->unweighted_flag = 0;
   args_info->identifiers_arg = NULL;
   args_info->identifiers_orig = NULL;
+  args_info->nmi_flag = 0;
+  args_info->all_flag = 0;
+  args_info->ln_flag = 0;
   
 }
 
@@ -148,15 +151,16 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->membership_help = gengetopt_args_info_help[5] ;
   args_info->detailed_help = gengetopt_args_info_help[6] ;
   args_info->omega_help = gengetopt_args_info_help[8] ;
-  args_info->f1_help = gengetopt_args_info_help[10] ;
-  args_info->kind_help = gengetopt_args_info_help[11] ;
-  args_info->nmi_help = gengetopt_args_info_help[13] ;
-  args_info->all_help = gengetopt_args_info_help[14] ;
-  args_info->ln_help = gengetopt_args_info_help[15] ;
-  args_info->label_help = gengetopt_args_info_help[17] ;
-  args_info->policy_help = gengetopt_args_info_help[18] ;
-  args_info->unweighted_help = gengetopt_args_info_help[19] ;
-  args_info->identifiers_help = gengetopt_args_info_help[20] ;
+  args_info->extended_help = gengetopt_args_info_help[9] ;
+  args_info->f1_help = gengetopt_args_info_help[11] ;
+  args_info->kind_help = gengetopt_args_info_help[12] ;
+  args_info->label_help = gengetopt_args_info_help[14] ;
+  args_info->policy_help = gengetopt_args_info_help[15] ;
+  args_info->unweighted_help = gengetopt_args_info_help[16] ;
+  args_info->identifiers_help = gengetopt_args_info_help[17] ;
+  args_info->nmi_help = gengetopt_args_info_help[19] ;
+  args_info->all_help = gengetopt_args_info_help[20] ;
+  args_info->ln_help = gengetopt_args_info_help[21] ;
   
 }
 
@@ -345,16 +349,12 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "detailed", 0, 0 );
   if (args_info->omega_given)
     write_into_file(outfile, "omega", 0, 0 );
+  if (args_info->extended_given)
+    write_into_file(outfile, "extended", 0, 0 );
   if (args_info->f1_given)
     write_into_file(outfile, "f1", args_info->f1_orig, cmdline_parser_f1_values);
   if (args_info->kind_given)
     write_into_file(outfile, "kind", args_info->kind_orig, cmdline_parser_kind_values);
-  if (args_info->nmi_given)
-    write_into_file(outfile, "nmi", 0, 0 );
-  if (args_info->all_given)
-    write_into_file(outfile, "all", 0, 0 );
-  if (args_info->ln_given)
-    write_into_file(outfile, "ln", 0, 0 );
   if (args_info->label_given)
     write_into_file(outfile, "label", args_info->label_orig, 0);
   if (args_info->policy_given)
@@ -363,6 +363,12 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "unweighted", 0, 0 );
   if (args_info->identifiers_given)
     write_into_file(outfile, "identifiers", args_info->identifiers_orig, 0);
+  if (args_info->nmi_given)
+    write_into_file(outfile, "nmi", 0, 0 );
+  if (args_info->all_given)
+    write_into_file(outfile, "all", 0, 0 );
+  if (args_info->ln_given)
+    write_into_file(outfile, "ln", 0, 0 );
   
 
   i = EXIT_SUCCESS;
@@ -486,16 +492,6 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
       fprintf (stderr, "%s: '--kind' ('-k') option depends on option 'f1'%s\n", prog_name, (additional_error ? additional_error : ""));
       error_occurred = 1;
     }
-  if (args_info->all_given && ! args_info->nmi_given)
-    {
-      fprintf (stderr, "%s: '--all' ('-a') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
-      error_occurred = 1;
-    }
-  if (args_info->ln_given && ! args_info->nmi_given)
-    {
-      fprintf (stderr, "%s: '--ln' ('-e') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
-      error_occurred = 1;
-    }
   if (args_info->policy_given && ! args_info->label_given)
     {
       fprintf (stderr, "%s: '--policy' ('-p') option depends on option 'label'%s\n", prog_name, (additional_error ? additional_error : ""));
@@ -509,6 +505,16 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   if (args_info->identifiers_given && ! args_info->label_given)
     {
       fprintf (stderr, "%s: '--identifiers' ('-i') option depends on option 'label'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->all_given && ! args_info->nmi_given)
+    {
+      fprintf (stderr, "%s: '--all' ('-a') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  if (args_info->ln_given && ! args_info->nmi_given)
+    {
+      fprintf (stderr, "%s: '--ln' ('-e') option depends on option 'nmi'%s\n", prog_name, (additional_error ? additional_error : ""));
       error_occurred = 1;
     }
 
@@ -691,19 +697,20 @@ cmdline_parser_internal (
         { "membership",	1, NULL, 'm' },
         { "detailed",	0, NULL, 'd' },
         { "omega",	0, NULL, 'o' },
+        { "extended",	0, NULL, 'x' },
         { "f1",	2, NULL, 'f' },
         { "kind",	2, NULL, 'k' },
-        { "nmi",	0, NULL, 'n' },
-        { "all",	0, NULL, 'a' },
-        { "ln",	0, NULL, 'e' },
         { "label",	1, NULL, 'l' },
         { "policy",	2, NULL, 'p' },
         { "unweighted",	0, NULL, 'u' },
         { "identifiers",	1, NULL, 'i' },
+        { "nmi",	0, NULL, 'n' },
+        { "all",	0, NULL, 'a' },
+        { "ln",	0, NULL, 'e' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVOqs:m:dof::k::nael:p::ui:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVOqs:m:doxf::k::l:p::ui:nae", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -719,7 +726,8 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
-        case 'O':	/* evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions.  */
+        case 'O':	/* evaluate overlapping instead of multi-resolution clusters, where max matching for any shared member between R overlapping clusters is 1/R instead of 1 for the member belonging to R distinct clusters on R resolutions.
+        NOTE: It has no effect for the Omega Index evaluation..  */
         
         
           if (update_arg((void *)&(args_info->ovp_flag), 0, &(args_info->ovp_given),
@@ -784,6 +792,16 @@ cmdline_parser_internal (
             goto failure;
         
           break;
+        case 'x':	/* evaluate extended Omega Index, which does not excessively penalize distinct node shares..  */
+        
+        
+          if (update_arg((void *)&(args_info->extended_flag), 0, &(args_info->extended_given),
+              &(local_args_info.extended_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "extended", 'x',
+              additional_error))
+            goto failure;
+        
+          break;
         case 'f':	/* evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
         NOTE: F1p <= F1h <= F1s, where:
          - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
@@ -813,36 +831,6 @@ cmdline_parser_internal (
               &(local_args_info.kind_given), optarg, cmdline_parser_kind_values, "weighted", ARG_ENUM,
               check_ambiguity, override, 0, 0,
               "kind", 'k',
-              additional_error))
-            goto failure;
-        
-          break;
-        case 'n':	/* evaluate NMI (Normalized Mutual Information).  */
-        
-        
-          if (update_arg((void *)&(args_info->nmi_flag), 0, &(args_info->nmi_given),
-              &(local_args_info.nmi_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "nmi", 'n',
-              additional_error))
-            goto failure;
-        
-          break;
-        case 'a':	/* evaluate all NMIs using sqrt, avg and min denominators besides the max one.  */
-        
-        
-          if (update_arg((void *)&(args_info->all_flag), 0, &(args_info->all_given),
-              &(local_args_info.all_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "all", 'a',
-              additional_error))
-            goto failure;
-        
-          break;
-        case 'e':	/* use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring.  */
-        
-        
-          if (update_arg((void *)&(args_info->ln_flag), 0, &(args_info->ln_given),
-              &(local_args_info.ln_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "ln", 'e',
               additional_error))
             goto failure;
         
@@ -895,6 +883,36 @@ cmdline_parser_internal (
               &(local_args_info.identifiers_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
               "identifiers", 'i',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'n':	/* evaluate NMI (Normalized Mutual Information).  */
+        
+        
+          if (update_arg((void *)&(args_info->nmi_flag), 0, &(args_info->nmi_given),
+              &(local_args_info.nmi_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "nmi", 'n',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'a':	/* evaluate all NMIs using sqrt, avg and min denominators besides the max one.  */
+        
+        
+          if (update_arg((void *)&(args_info->all_flag), 0, &(args_info->all_given),
+              &(local_args_info.all_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "all", 'a',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'e':	/* use ln (exp base) instead of log2 (Shannon entropy, bits) for the information measuring.  */
+        
+        
+          if (update_arg((void *)&(args_info->ln_flag), 0, &(args_info->ln_given),
+              &(local_args_info.ln_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "ln", 'e',
               additional_error))
             goto failure;
         
