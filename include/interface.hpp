@@ -24,11 +24,8 @@ using std::to_string;
 using std::min;
 using std::max;
 using std::sort;
-#if VALIDATE <= 1
 using std::unique;
-#else
-using std::adjacent_find;
-#endif // VALIDATE 2
+//using std::adjacent_find;
 #if VALIDATE >= 1
 using std::domain_error;
 #endif // VALIDATE 1
@@ -321,22 +318,24 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 			{
 				// Ensure or validate that members are unique
 				sort(members.begin(), members.end());
-#if VALIDATE <= 1
 				const auto im = unique(members.begin(), members.end());
-#else
-				const auto im = adjacent_find(members.begin(), members.end());
-#endif // VALIDATE
+				//const auto im = adjacent_find(members.begin(), members.end());
 				if(im != members.end()) {
-#if VALIDATE <= 1
 					fprintf(stderr, "WARNING load(), #%lu cluster contained %lu duplicated members, corrected.\n"
 						, cn.m_cls.size(), distance(im, members.end()));
-#else
-					fprintf(stderr, "WARNING load(), #%lu cluster contains duplicated member #%lu: %u\n"
-						, cn.m_cls.size(), distance(members.begin(), im), *im);
-					throw invalid_argument("load(), the cluster contains duplicated members\n");
-#endif // VALIDATE
+					// Remove associated clusters
+					for(auto jm = im; jm != members.end(); ++jm)
+						cn.m_ndcs[*jm].pop_back();
+					// Remove the tail of duplicated node ids
+					members.erase(im, members.end());
+					//fprintf(stderr, "WARNING load(), #%lu cluster contains duplicated member #%lu: %u\n"
+					//	, cn.m_cls.size(), distance(members.begin(), im), *im);
+					//throw invalid_argument("load(), the cluster contains duplicated members\n");
 				}
 			}
+			//for(auto v: members)
+			//	printf(" %u", v);
+			//puts("");
 			cn.m_cls.push_back(chd.release());
 			// Start filling a new cluster
 			chd.reset(new Cluster<Count>());
@@ -760,6 +759,11 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 	// Traverse all clusters in the collection
 	for(auto cl: m_cls) {
 		Prob  gmatch = 0; // Greatest value of the match (F1 or partial probability)
+		//fprintf(stderr, "> gmatches() %#x (counter: %u (%#x), mbscont: %u) %lu mbs\n"
+		//	, cl, cl->counter(), cl->counter.origin(), cl->mbscont, cl->members.size());
+		//for(auto v: cl->members)
+		//	printf(" %u", v);
+		//puts("");
 		// Traverse all members (node ids)
 		for(auto nid: cl->members) {
 			// Find Matching clusters (containing the same member node id) in the foreign collection
@@ -768,6 +772,8 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 			if(imcls == cn.m_ndcs.end())
 				continue;
 			for(auto mcl: imcls->second) {
+				//fprintf(stderr, ">> gmatches() #%u nid, mcl %#x (counter: %u (%#x), mbscont: %u) %lu mbs\n"
+				//	, nid, mcl, mcl->counter(), mcl->counter.origin(), mcl->mbscont, mcl->members.size());
 				if(m_overlaps)
 					// In case of overlap contributes the smallest share (of the largest number of owners)
 					mcl->counter(cl, AccProb(1)
