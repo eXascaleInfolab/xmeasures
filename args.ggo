@@ -13,9 +13,11 @@ description "Extrinsic measures are evaluated, i.e. two input clusterings\
  (collections of clusters) are compared to each other. Optionally, a labeling\
  of the evaluating clusters with the specified ground-truth clusters is performed.
 NOTE:
-  - Multiple evaluating measures can be specified
+  - Multiple evaluating measures can be specified.
   - Each cluster should contain unique members, which is ensured only if the\
  'unique' option is specified.
+  - All clusters should be unique to not affect Omega Indexes evaluation, which\
+  can be performed by the [resmerge](https://github.com/eXascaleInfolab/resmerge) utility.
   - Uncorrected unequal node base in the clusterings is allowed, it penalizes the match.\
 Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\
  [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\

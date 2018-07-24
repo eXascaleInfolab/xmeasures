@@ -66,9 +66,12 @@ Extrinsic measures are evaluated, i.e. two input clusterings (collections of
 clusters) are compared to each other. Optionally, a labeling of the evaluating
 clusters with the specified ground-truth clusters is performed.
 NOTE:
-  - Multiple evaluating measures can be specified
+  - Multiple evaluating measures can be specified.
   - Each cluster should contain unique members, which is ensured only if the
 'unique' option is specified.
+  - All clusters should be unique to not affect Omega Indexes evaluation, which
+can be performed by the [resmerge](https://github.com/eXascaleInfolab/resmerge)
+utility.
   - Uncorrected unequal node base in the clusterings is allowed, it penalizes
 the match.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or
 [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation
@@ -215,9 +218,9 @@ Evaluate harmonic mean of the weighted average of the greatest (maximal) match b
 $ ./xmeasures -f data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
-Evaluate harmonic mean of the weighted average (by the cluster size) of the greatest (maximal) match by F1s:
+Evaluate harmonic mean of the weighted average (by the cluster size) of the greatest (maximal) match by F1s and insure than all cluster members are unique (the duplicated members are removed):
 ```
-$ ./xmeasures -fh data/3cls5nds.cnl data/4cls6nds.cnl
+$ ./xmeasures -fh -q data/3cls5nds.cnl data/4cls6nds.cnl
 ```
 
 Evaluate harmonic mean of the [unweighted] average of the greatest (maximal) match by partial probabilities and synchronize the node base with the first evaluating collection, and considering overlapping clusters instead of multi-resolutions (`-O` does not matter for the case of non-overlapping single resolution collections):
