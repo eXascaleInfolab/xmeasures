@@ -1,10 +1,15 @@
 # xmeasures - Extrinsic Clustering Measures
-Extremely fast evaluation of the extrinsic clustering measures: various **[mean] F1 measures** (including F1-Score) and **Omega Index** *(fuzzy version of the Adjusted Rand Index)* for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization) using various matching policies (micro, macro and combined weighting), and standard **NMI** for non-overlapping clustering on a single resolution. `xmeasures` also provides clusters labeling with the indices of the ground-truth clusters considering 1:n match and evaluating F1, precision and recall of the labeled clusters.  
-`xmeasures` evaluates F1 and NMI for collections of hundreds thousands clusters withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) unlike O(N\*C) of the existing state of the art implementations, where N is the number of nodes in the network and C is the number of clusters. Computational complexity for Omega Index is standard and equals O(N^2 \* s/2), where s is the average sharing ratio (membership) of the nodes, typically s -> 1.  
+Extremely fast evaluation of the extrinsic clustering measures:  
+various **[mean] F1 measures** (including F1-Score) and **Omega Index** *(fuzzy version of the Adjusted Rand Index)* for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization) using various matching policies (micro, macro and combined weighting),  
+and standard **NMI** for non-overlapping clustering on a single resolution. `xmeasures` also provides clusters labeling with the indices of the ground-truth clusters considering 1:n match and evaluating F1, precision and recall of the labeled clusters.
+
+`xmeasures` evaluates F1 and NMI for collections of hundreds thousands clusters withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) <!-- O(N \* 2 \* s), where *s* is the average sharing ratio (membership) of the nodes, typically -> 1. -->
+unlike O(N \* (C)) <!-- O(N \* (C + C')) for the average F1-score -->
+of the existing state of the art implementations, where N is the number of nodes in the network and C is the number of clusters. Computational complexity for Omega Index is standard and equals O(N^2 \* s/2), where s is the average sharing ratio (membership) of the nodes, typically s -> 1.  
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark to evaluate clusterings of large networks.
 
 Papers about the implemented measures:
-  - [Omega Index](http://dx.doi.org/10.1207/s15327906mbr2302_6) ([fuzzy version of the Adjusted Rand Index](http://iopscience.iop.org/article/10.1088/1742-5468/2011/02/P02017/meta));
+  - [Omega Index](http://dx.doi.org/10.1207/s15327906mbr2302_6) ([fuzzy version of the Adjusted Rand Index](http://iopscience.iop.org/article/10.1088/1742-5468/2011/02/P02017/meta)), which equal to ARI when applied for the non-overlapping clusterings;
   - Mean F1 measures: [F1a (Average F1-Score)](https://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf), F1p is much more indicative and discriminative than the presented there F1a but the respective paper has not been published yet;
   - [NMI measure](http://www.jmlr.org/papers/volume11/vinh10a/vinh10a.pdf).
     > Standard NMI is implemented considering overlapping and multi-resolution clustering only to demonstrate non-applicability of the standard NMI for such cases, where it yields unfair results. See [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for the fair generalized NMI evaluation.
@@ -44,11 +49,13 @@ Execution Options:
 $ ../xmeasures -h
 xmeasures 4.0.1
 
-Extrinsic measures evaluation. In particular, Omega Index (a fuzzy version of
-the Adjusted Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score
-(prob, harm and avg) for the overlapping multi-resolution clusterings, and
-standard NMI for the non-overlapping clustering on a single resolution. Unequal
-node base is
+Extrinsic measures evaluation: Omega Index (a fuzzy version of the Adjusted
+Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score (prob, harm
+and avg) for the overlapping multi-resolution clusterings, and standard NMI for
+the non-overlapping clustering on a single resolution. Unequal node base is
+allowed in the evaluating clusterings and optionally can be synchronized
+removing nodes from the clusters missed in one of the clusterings
+(collections).
 
 Usage: xmeasures [OPTIONS] clustering1 clustering2
 
@@ -80,14 +87,13 @@ members).
  
 Evaluating measures are:
   - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to
-the Fuzzy Rand Index).
-
+the Fuzzy Rand Index), which yields the same value as Adjusted Rand Index when
+applied to the non-overlapping clusterings.
   - F1  - various [mean] F1 measures of the Greatest (Max) Match including the
 Average F1-Score (suggested by J. Leskovec) with optional weighting.
- NOTE: There are 3 matching policies available for each kind of F1. The most
+NOTE: There are 3 matching policies available for each kind of F1. The most
 representative evaluation is performed by the F1p with combined matching
 policy (considers both micro and macro weighting).
-
   - NMI  - Normalized Mutual Information, normalized by either max or also
 sqrt, avg and min information content denominators.
 ATTENTION: This is a standard NMI, which should be used ONLY for the HARD
@@ -128,7 +134,8 @@ It penalizes overlapping and multi-resolution structures.
 Omega Index:
   -o, --omega                   evaluate Omega Index (a fuzzy version of the
                                   Adjusted Rand Index, identical to the Fuzzy
-                                  Rand Index).  (default=off)
+                                  Rand Index and on the non-overlapping
+                                  clusterings equals to ARI).  (default=off)
   -x, --extended                evaluate extended Omega Index, which does not
                                   excessively penalize distinctly shared nodes.
                                   (default=off)

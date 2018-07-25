@@ -60,8 +60,8 @@ struct gengetopt_args_info
   const char *membership_help; /**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only to facilitate estimation of the nodes number on the containers preallocation if this number is not specified in the file header. help description.  */
   int detailed_flag;	/**< @brief detailed (verbose) results output (default=off).  */
   const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
-  int omega_flag;	/**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index). (default=off).  */
-  const char *omega_help; /**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index). help description.  */
+  int omega_flag;	/**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index and on the non-overlapping clusterings equals to ARI). (default=off).  */
+  const char *omega_help; /**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index and on the non-overlapping clusterings equals to ARI). help description.  */
   int extended_flag;	/**< @brief evaluate extended Omega Index, which does not excessively penalize distinctly shared nodes. (default=off).  */
   const char *extended_help; /**< @brief evaluate extended Omega Index, which does not excessively penalize distinctly shared nodes. help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
