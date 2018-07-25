@@ -1,10 +1,10 @@
 # xmeasures - Extrinsic Clustering Measures
-Extremely fast evaluation of the extrinsic clustering measures:  
+Extremely fast accuracy (extrinsic quality) measures evaluation for the [overlapping/fuzzy] clusterings (collections of groups of the objects):  
 various **[mean] F1 measures** (including F1-Score) and **Omega Index** *(fuzzy version of the Adjusted Rand Index)* for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization) using various matching policies (micro, macro and combined weighting),  
 and standard **NMI** for non-overlapping clustering on a single resolution. `xmeasures` also provides clusters labeling with the indices of the ground-truth clusters considering 1:n match and evaluating F1, precision and recall of the labeled clusters.
 
-`xmeasures` evaluates F1 and NMI for collections of hundreds thousands clusters withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) <!-- O(N \* 2 \* s), where *s* is the average sharing ratio (membership) of the nodes, typically -> 1. -->
-unlike O(N \* (C)) <!-- O(N \* (C + C')) for the average F1-score -->
+`xmeasures` evaluates F1 and NMI for collections of hundreds thousands [overlapping] clusters (covers, communities) withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) <!-- O(N \* 2 \* s), where *s* is the average sharing ratio (membership) of the nodes, typically -> 1. -->
+unlike O(N \* C) <!-- O(N \* (C + C')) for the average F1-score -->
 of the existing state of the art implementations, where N is the number of nodes in the network and C is the number of clusters. Computational complexity for Omega Index is standard and equals O(N^2 \* s/2), where s is the average sharing ratio (membership) of the nodes, typically s -> 1.  
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark to evaluate clusterings of large networks.
 
