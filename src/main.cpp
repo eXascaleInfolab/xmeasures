@@ -191,12 +191,12 @@ int main(int argc, char **argv)
 			//if(args_info.nmi_flag)
 			//	fputs("; ", stdout);
 			const auto  f1val = Collection::f1(cn1, cn2, f1kind, mkind, args_info.detailed_flag);
-			printf("F1%c_%c (%s, %s):\n%G\n", f1suf, kindsuf, to_string(f1kind).c_str()
+			printf("MF1%c_%c (%s, %s):\n%G\n", f1suf, kindsuf, to_string(f1kind).c_str()
 				, to_string(mkind).c_str(), f1val);
 			if(--outsnum || aggouts.tellp()) {
 				if(aggouts.tellp())
 					aggouts << "; ";
-				aggouts << "F1" << f1suf << '_' << kindsuf << ": " << f1val;
+				aggouts << "MF1" << f1suf << '_' << kindsuf << ": " << f1val;
 			}
 		}
 		// Label clusters with the ground-truth clusters indices and output F1 for the labels if required

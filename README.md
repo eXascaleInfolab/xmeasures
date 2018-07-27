@@ -47,7 +47,7 @@ Then `g++-5` should be installed and `Makefile` might need to be edited replacin
 Execution Options:
 ```
 $ ../xmeasures -h
-xmeasures 4.0.1
+xmeasures 4.0.2
 
 Extrinsic measures evaluation: Omega Index (a fuzzy version of the Adjusted
 Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score (prob, harm
@@ -89,8 +89,8 @@ Evaluating measures are:
   - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to
 the Fuzzy Rand Index), which yields the same value as Adjusted Rand Index when
 applied to the non-overlapping clusterings.
-  - F1  - various [mean] F1 measures of the Greatest (Max) Match including the
-Average F1-Score (suggested by J. Leskovec) with optional weighting.
+  - [M]F1  - various [mean] F1 measures of the Greatest (Max) Match including
+the Average F1-Score (suggested by J. Leskovec) with optional weighting.
 NOTE: There are 3 matching policies available for each kind of F1. The most
 representative evaluation is performed by the F1p with combined matching
 policy (considers both micro and macro weighting).
@@ -141,21 +141,23 @@ Omega Index:
                                   (default=off)
 
 Mean F1:
-  -f, --f1[=ENUM]               evaluate F1 of the [weighted] average of the
-                                  greatest (maximal) match by F1 or partial
+  -f, --f1[=ENUM]               evaluate mean F1 of the [weighted] average of
+                                  the greatest (maximal) match by F1 or partial
                                   probability.
                                   NOTE: F1p <= F1h <= F1a, where:
-                                   - p (F1p)  - Harmonic mean of the [weighted]
-                                  average of Partial Probabilities, the most
-                                  indicative as satisfies the largest number of
-                                  the Formal Constraints (homogeneity,
-                                  completeness, rag bag, size/quantity,
-                                  balance);
-                                   - h (F1h)  - Harmonic mean of the [weighted]
-                                  average of F1a;
+                                   - p (F1p)  - Harmonic mean (F1) of two
+                                  [weighted] averages of the Partial
+                                  Probabilities, the most indicative as
+                                  satisfies the largest number of the Formal
+                                  Constraints (homogeneity, completeness, rag
+                                  bag, size/quantity, balance);
+                                   - h (F1h)  - Harmonic mean (F1) of two
+                                  [weighted] averages of all local F1 (harmonic
+                                  means of the Precision and Recall of the best
+                                  matches of the clusters);
                                    - a (F1a)  - Arithmetic mean (average) of
-                                  the [weighted] average of F1a, the least
-                                  discriminative and satisfies the lowest
+                                  two [weighted] averages of all local F1, the
+                                  least discriminative and satisfies the lowest
                                   number of the Formal Constraints.
                                     (possible values="partprob",
                                   "harmonic", "average" default=`partprob')
@@ -171,19 +173,20 @@ Mean F1:
                                   "unweighed", "combined"
                                   default=`weighted')
 
-Clusters Labeling & F1 with Precision and Recall:
+Clusters Labeling & F1 evaluation with Precision and Recall:
   -l, --label=gt_filename       label evaluating clusters with the specified
                                   ground-truth (gt) cluster indices and
                                   evaluate F1 (including Precision and Recall)
-                                  of the MATCHED labeled clusters only (without
-                                  the probable subclusters).
+                                  of the (best) MATCHED labeled clusters only
+                                  (without the probable subclusters).
                                   NOTE: If 'sync' option is specified then the
-                                  clusters labels file name should be the same
-                                  as the node base (if specified) and should be
-                                  in the .cnl format. The file name can be
-                                  either a separate or an evaluating CNL file,
-                                  in the latter case this option should precede
-                                  the evaluating filename not repeating it
+                                  file name  of the clusters labels should be
+                                  the same as the node base (if specified) and
+                                  should be in the .cnl format. The file name
+                                  can be either a separate or an evaluating CNL
+                                  file, in the latter case this option should
+                                  precede the evaluating filename not repeating
+                                  it.
   -p, --policy[=ENUM]           Labels matching policy:
                                    - p  - Partial Probabilities (maximizes
                                   gain)
@@ -207,8 +210,9 @@ Clusters Labeling & F1 with Precision and Recall:
 
 
 NMI:
-  -n, --nmi                     evaluate NMI (Normalized Mutual Information)
-                                  (default=off)
+  -n, --nmi                     evaluate NMI (Normalized Mutual Information),
+                                  applicable only to the non-overlapping
+                                  clusters  (default=off)
   -a, --all                     evaluate all NMIs using sqrt, avg and min
                                   denominators besides the max one
                                   (default=off)
@@ -217,7 +221,7 @@ NMI:
                                   (default=off)
 ```
 
-> Empty lines and comments (lines starting with #) in the input file (cnl format) are skipped.
+> Empty lines and comments (lines starting with #) in the input file (cnl format) are omitted.
 
 **Examples**  
 Evaluate harmonic mean of the weighted average of the greatest (maximal) match by partial probabilities (the most discriminative F1-measure) using macro weighting (default as the most frequently used, thought combined weighting is the most indicative one):
@@ -245,9 +249,9 @@ Evaluate combined weighed and unweighted F1h (harmonic mean of the average F1s),
 $ ./xmeasures -fh -kc -i clslbs.cll -l labels.cnl clusters.cnl
 ```
 
-Evaluate extended omega index:
+Evaluate extended Omega Index and mean F1h (harmonic mean of the weighted average of the greatest (maximal) match by F1):
 ```
-$ ./xmeasures -ox omega_c4.3-1.cnl omega_c4.3-2.cnl
+$ ./xmeasures -ox -fh omega_c4.3-1.cnl omega_c4.3-2.cnl
 ```
 
 **Note:** Please, [star this project](https://github.com/eXascaleInfolab/xmeasures) if you use it.

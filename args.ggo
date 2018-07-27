@@ -1,14 +1,14 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "4.0.1"
+version "4.0.2"
 versiontext "Author:  (c) Artem Lutov <artem@exascale.info>
 Sources:  https://github.com/eXascaleInfolab/xmeasures
 "
 
 purpose "Extrinsic measures evaluation: Omega Index (a fuzzy version of the\
- Adjusted Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score (prob, harm and avg)\
- for the overlapping multi-resolution clusterings,\
+ Adjusted Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score\
+ (prob, harm and avg) for the overlapping multi-resolution clusterings,\
  and standard NMI for the non-overlapping clustering on a single resolution.\
  Unequal node base is allowed in the evaluating clusterings and optionally can\
  be synchronized removing nodes from the clusters missed in one of the clusterings (collections)."
@@ -41,8 +41,8 @@ Evaluating measures are:
   - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\
   the Fuzzy Rand Index), which yields the same value as Adjusted Rand Index when\
   applied to the non-overlapping clusterings.
-  - F1  - various [mean] F1 measures of the Greatest (Max) Match including the Average\
- F1-Score (suggested by J. Leskovec) with optional weighting.
+  - [M]F1  - various [mean] F1 measures of the Greatest (Max) Match including\
+  the Average F1-Score (suggested by J. Leskovec) with optional weighting.
 NOTE: There are 3 matching policies available for each kind of F1. The most\
   representative evaluation is performed by the F1p with combined matching\
   policy (considers both micro and macro weighting).
@@ -84,14 +84,15 @@ option  "extended" x  "evaluate extended Omega Index, which does not excessively
  penalize distinctly shared nodes."  flag off  dependon="omega"
 
 section "Mean F1"
-option  "f1" f  "evaluate F1 of the [weighted] average of the greatest (maximal)\
+option  "f1" f  "evaluate mean F1 of the [weighted] average of the greatest (maximal)\
  match by F1 or partial probability.
 NOTE: F1p <= F1h <= F1a, where:
- - p (F1p)  - Harmonic mean of the [weighted] average of Partial Probabilities, the\
- most indicative as satisfies the largest number of the Formal Constraints\
+ - p (F1p)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities,\
+ the most indicative as satisfies the largest number of the Formal Constraints\
  (homogeneity, completeness, rag bag, size/quantity, balance);
- - h (F1h)  - Harmonic mean of the [weighted] average of F1a;
- - a (F1a)  - Arithmetic mean (average) of the [weighted] average of F1a,\
+ - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1\
+ (harmonic means of the Precision and Recall of the best matches of the clusters);
+ - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1,\
  the least discriminative and satisfies the lowest number of the Formal Constraints.
 "
  values="partprob","harmonic","average"  enum  default="partprob"  argoptional
@@ -103,14 +104,14 @@ option  "kind" k  "kind of the matching policy:
   values ="weighted","unweighed","combined"  enum default="weighted" argoptional
   dependon="f1"
 
-section "Clusters Labeling & F1 with Precision and Recall"
+section "Clusters Labeling & F1 evaluation with Precision and Recall"
 option  "label" l  "label evaluating clusters with the specified ground-truth (gt)\
- cluster indices and evaluate F1 (including Precision and Recall) of the MATCHED\
+ cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED\
  labeled clusters only (without the probable subclusters).
-NOTE: If 'sync' option is specified then the clusters labels file name should be\
- the same as the node base (if specified) and should be in the .cnl format.\
+NOTE: If 'sync' option is specified then the file name  of the clusters labels\
+ should be the same as the node base (if specified) and should be in the .cnl format.\
  The file name can be either a separate or an evaluating CNL file, in the\
- latter case this option should precede the evaluating filename not repeating it"
+ latter case this option should precede the evaluating filename not repeating it."
   string  typestr="gt_filename"
 option  "policy" p  "Labels matching policy:
  - p  - Partial Probabilities (maximizes gain)
@@ -128,7 +129,8 @@ NOTE: If 'sync' option is specified then the reduced collection is outputted to 
 "  string  typestr="labels_filename"  dependon="label"
 
 section "NMI"
-option  "nmi" n  "evaluate NMI (Normalized Mutual Information)"  flag off
+option  "nmi" n  "evaluate NMI (Normalized Mutual Information), applicable only\
+ to the non-overlapping clusters"  flag off
 option  "all" a  "evaluate all NMIs using sqrt, avg and min denominators besides\
  the max one"  flag off  dependon="nmi"
 option  "ln" e  "use ln (exp base) instead of log2 (Shannon entropy, bits)\
@@ -141,6 +143,7 @@ args "--default-optional --unamed-opts=clusterings"
 
 
 # = Changelog =
+# v4.0.2 - Description and output measures notations refined
 # v4.0.1 - Aggregated output for multiple measures added
 # v4.0.0 - Omega index added and bound to the "-o" argument
 #	- the former "-o" argument (overlaps) renamed to "-O"
