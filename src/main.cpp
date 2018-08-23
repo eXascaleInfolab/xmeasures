@@ -214,14 +214,16 @@ int main(int argc, char **argv)
 			const bool  weighted = !args_info.unweighted_flag;
 			PrecRec pr = Collection::label(cn1, cn2, lostcls, prob, weighted
 				, args_info.identifiers_arg, args_info.detailed_flag);
-			printf("F1 labels %c%cmatch: %G (precision: %G, recall: %G)\n"
+			// Note: each measure name should form a single world to be properly parsed in a uniform way (see Clubmark),
+			// that is why doubled underscore is used rather than a single space.
+			printf("F1%c_%c__labels: %G (Precision: %G, Recall: %G)\n"
 				, prob ? 'p' : 'h', weighted ? 'w' : 'u'
 				, hmean(pr.prec, pr.rec), pr.prec, pr.rec);
 			if(--outsnum || aggouts.tellp()) {
 				if(aggouts.tellp())
 					aggouts << "; ";
 				aggouts << "F1" << (prob ? 'p' : 'h') << '_' << (weighted ? 'w' : 'u')
-					<< "_labels: " << hmean(pr.prec, pr.rec)
+					<< "__labels: " << hmean(pr.prec, pr.rec)
 					<< " (Precision: " << pr.prec << ", Recall: " << pr.rec << ')';
 			}
 		}
