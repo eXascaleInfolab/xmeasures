@@ -38,7 +38,7 @@ const char *gengetopt_args_info_help[] = {
   "  -V, --version                 Print version and exit",
   "  -O, --ovp                     evaluate overlapping instead of the\n                                  multi-resolution clusters, where max matching\n                                  for any shared member between R overlapping\n                                  clusters is 1/R (the member is shared)\n                                  instead of 1 (the member fully belongs to\n                                  each [hierarchical  sub]group) for the member\n                                  belonging to R distinct clusters on R\n                                  resolutions.\n                                  NOTE: It has no effect for the Omega Index\n                                  evaluation.  (default=off)",
   "  -q, --unique                  ensure on loading that all cluster members are\n                                  unique by removing all duplicates.\n                                  (default=off)",
-  "  -s, --sync=filename           synchronize with the node base, skipping the\n                                  non-matching nodes.\n                                  NOTE: The node base can be either a separate,\n                                  or an evaluating CNL file, in the latter case\n                                  this option should precede the evaluating\n                                  filename not repeating it",
+  "  -s, --sync=filename           synchronize with the specified node base\n                                  omitting the non-matching nodes.\n                                  NOTE: The node base can be either a separate,\n                                  or an evaluating CNL file, in the latter case\n                                  this option should precede the evaluating\n                                  filename not repeating it",
   "  -m, --membership=FLOAT        average expected membership of the nodes in the\n                                  clusters, > 0, typically >= 1. Used only to\n                                  facilitate estimation of the nodes number on\n                                  the containers preallocation if this number\n                                  is not specified in the file header.\n                                  (default=`1')",
   "  -d, --detailed                detailed (verbose) results output\n                                  (default=off)",
   "\nOmega Index:",
@@ -752,7 +752,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 's':	/* synchronize with the node base, skipping the non-matching nodes.
+        case 's':	/* synchronize with the specified node base omitting the non-matching nodes.
         NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
         
         

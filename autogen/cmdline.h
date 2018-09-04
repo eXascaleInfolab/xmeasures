@@ -49,11 +49,11 @@ struct gengetopt_args_info
   NOTE: It has no effect for the Omega Index evaluation. help description.  */
   int unique_flag;	/**< @brief ensure on loading that all cluster members are unique by removing all duplicates. (default=off).  */
   const char *unique_help; /**< @brief ensure on loading that all cluster members are unique by removing all duplicates. help description.  */
-  char * sync_arg;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
+  char * sync_arg;	/**< @brief synchronize with the specified node base omitting the non-matching nodes.
   NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.  */
-  char * sync_orig;	/**< @brief synchronize with the node base, skipping the non-matching nodes.
+  char * sync_orig;	/**< @brief synchronize with the specified node base omitting the non-matching nodes.
   NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it original value given at command line.  */
-  const char *sync_help; /**< @brief synchronize with the node base, skipping the non-matching nodes.
+  const char *sync_help; /**< @brief synchronize with the specified node base omitting the non-matching nodes.
   NOTE: The node base can be either a separate, or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it help description.  */
   float membership_arg;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only to facilitate estimation of the nodes number on the containers preallocation if this number is not specified in the file header. (default='1').  */
   char * membership_orig;	/**< @brief average expected membership of the nodes in the clusters, > 0, typically >= 1. Used only to facilitate estimation of the nodes number on the containers preallocation if this number is not specified in the file header. original value given at command line.  */
