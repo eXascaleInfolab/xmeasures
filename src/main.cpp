@@ -98,16 +98,16 @@ int main(int argc, char **argv)
 
 		// Check the collections' nodebase
 		if(cn1hash != cn2hash) {
-			fprintf(stderr, "WARNING, the nodes in the collections differ: %u nodes"
-				" with hash %lu, size: %lu, ids: %lu, id2s: %lu) != %u nodes with hash %lu"
-				", size: %lu, ids: %lu, id2s: %lu);  synchronize: %s, label: %s\n"
+			fprintf(stderr, "WARNING, the nodes in the collections differ (the quality will be penalized)"
+				": %u nodes with hash %lu, size: %lu, ids: %lu, id2s: %lu) !="
+				" %u nodes with hash %lu, size: %lu, ids: %lu, id2s: %lu);  synchronize: %s, label: %s\n"
 				, cn1.ndsnum(), cn1hash.hash(), cn1hash.size(), cn1hash.idsum(), cn1hash.id2sum()
 				, cn2.ndsnum(), cn2hash.hash(), cn2hash.size(), cn2hash.idsum(), cn2hash.id2sum()
 				, daoc::toYesNo(args_info.sync_given), daoc::toYesNo(args_info.label_given));
-			if(args_info.sync_given) {
-				fputs("ERROR, the nodes base had to be synchronized\n", stderr);
-				return EINVAL;
-			}
+			//if(args_info.sync_given) {
+			//	fputs("ERROR, the nodes base should be synchronized\n", stderr);
+			//	return EINVAL;
+			//}
 		}
 
 		// The number of outputting measures (1 .. 4)
