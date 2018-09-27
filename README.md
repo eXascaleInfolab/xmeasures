@@ -14,7 +14,9 @@ Papers about the implemented measures:
   - [NMI measure](http://www.jmlr.org/papers/volume11/vinh10a/vinh10a.pdf).
     > Standard NMI is implemented considering overlapping and multi-resolution clustering only to demonstrate non-applicability of the standard NMI for such cases, where it yields unfair results. See [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for the fair generalized NMI evaluation.
 
-The papers about the performed extensions and their applicability are being written now and the reference will be specified soon...
+The papers about the performed extensions and their applicability:
+"Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets" by Artem Lutov, Mourad Khayati and Philippe
+Cudré-Mauroux, 2018
 
 Author:  (c) Artem Lutov <artem@exascale.info>
 
@@ -47,7 +49,7 @@ Then `g++-5` should be installed and `Makefile` might need to be edited replacin
 Execution Options:
 ```
 $ ../xmeasures -h
-xmeasures 4.0.2
+xmeasures 4.0.3
 
 Extrinsic measures evaluation: Omega Index (a fuzzy version of the Adjusted
 Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score (prob, harm
@@ -116,8 +118,8 @@ It penalizes overlapping and multi-resolution structures.
   -q, --unique                  ensure on loading that all cluster members are
                                   unique by removing all duplicates.
                                   (default=off)
-  -s, --sync=filename           synchronize with the node base, skipping the
-                                  non-matching nodes.
+  -s, --sync=filename           synchronize with the specified node base
+                                  omitting the non-matching nodes.
                                   NOTE: The node base can be either a separate,
                                   or an evaluating CNL file, in the latter case
                                   this option should precede the evaluating
@@ -136,21 +138,22 @@ Omega Index:
                                   Adjusted Rand Index, identical to the Fuzzy
                                   Rand Index and on the non-overlapping
                                   clusterings equals to ARI).  (default=off)
-  -x, --extended                evaluate extended Omega Index, which does not
-                                  excessively penalize distinctly shared nodes.
-                                  (default=off)
+  -x, --extended                evaluate extended (Soft) Omega Index, which
+                                  does not excessively penalize distinctly
+                                  shared nodes.  (default=off)
 
 Mean F1:
   -f, --f1[=ENUM]               evaluate mean F1 of the [weighted] average of
                                   the greatest (maximal) match by F1 or partial
                                   probability.
                                   NOTE: F1p <= F1h <= F1a, where:
-                                   - p (F1p)  - Harmonic mean (F1) of two
+                                   - p (F1p or Ph)  - Harmonic mean (F1) of two
                                   [weighted] averages of the Partial
                                   Probabilities, the most indicative as
                                   satisfies the largest number of the Formal
-                                  Constraints (homogeneity, completeness, rag
-                                  bag, size/quantity, balance);
+                                  Constraints (homogeneity, completeness and
+                                  size/quantity except the rag bag in some
+                                  cases);
                                    - h (F1h)  - Harmonic mean (F1) of two
                                   [weighted] averages of all local F1 (harmonic
                                   means of the Precision and Recall of the best
