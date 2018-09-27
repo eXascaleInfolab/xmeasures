@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "4.0.2"
+#define CMDLINE_PARSER_VERSION "4.0.3"
 #endif
 
 enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_average };
@@ -62,23 +62,23 @@ struct gengetopt_args_info
   const char *detailed_help; /**< @brief detailed (verbose) results output help description.  */
   int omega_flag;	/**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index and on the non-overlapping clusterings equals to ARI). (default=off).  */
   const char *omega_help; /**< @brief evaluate Omega Index (a fuzzy version of the Adjusted Rand Index, identical to the Fuzzy Rand Index and on the non-overlapping clusterings equals to ARI). help description.  */
-  int extended_flag;	/**< @brief evaluate extended Omega Index, which does not excessively penalize distinctly shared nodes. (default=off).  */
-  const char *extended_help; /**< @brief evaluate extended Omega Index, which does not excessively penalize distinctly shared nodes. help description.  */
+  int extended_flag;	/**< @brief evaluate extended (Soft) Omega Index, which does not excessively penalize distinctly shared nodes. (default=off).  */
+  const char *extended_help; /**< @brief evaluate extended (Soft) Omega Index, which does not excessively penalize distinctly shared nodes. help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate mean F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1a, where:
-   - p (F1p)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
+   - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness and size/quantity except the rag bag in some cases);
    - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1 (harmonic means of the Precision and Recall of the best matches of the clusters);
    - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1, the least discriminative and satisfies the lowest number of the Formal Constraints.
  (default='partprob').  */
   char * f1_orig;	/**< @brief evaluate mean F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1a, where:
-   - p (F1p)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
+   - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness and size/quantity except the rag bag in some cases);
    - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1 (harmonic means of the Precision and Recall of the best matches of the clusters);
    - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1, the least discriminative and satisfies the lowest number of the Formal Constraints.
  original value given at command line.  */
   const char *f1_help; /**< @brief evaluate mean F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
   NOTE: F1p <= F1h <= F1a, where:
-   - p (F1p)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness, rag bag, size/quantity, balance);
+   - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness and size/quantity except the rag bag in some cases);
    - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1 (harmonic means of the Precision and Recall of the best matches of the clusters);
    - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1, the least discriminative and satisfies the lowest number of the Formal Constraints.
  help description.  */

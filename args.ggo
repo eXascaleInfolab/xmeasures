@@ -1,9 +1,10 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "4.0.2"
+version "4.0.3"
 versiontext "Author:  (c) Artem Lutov <artem@exascale.info>
 Sources:  https://github.com/eXascaleInfolab/xmeasures
+Paper: \"Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets\" by Artem Lutov, Mourad Khayati and Philippe Cudré-Mauroux, 2018
 "
 
 purpose "Extrinsic measures evaluation: Omega Index (a fuzzy version of the\
@@ -80,16 +81,16 @@ section "Omega Index"
 option  "omega" o  "evaluate Omega Index (a fuzzy version of the Adjusted Rand Index,\
  identical to the Fuzzy Rand Index and on the non-overlapping clusterings equals to ARI)."
   flag off
-option  "extended" x  "evaluate extended Omega Index, which does not excessively\
+option  "extended" x  "evaluate extended (Soft) Omega Index, which does not excessively\
  penalize distinctly shared nodes."  flag off  dependon="omega"
 
 section "Mean F1"
 option  "f1" f  "evaluate mean F1 of the [weighted] average of the greatest (maximal)\
  match by F1 or partial probability.
 NOTE: F1p <= F1h <= F1a, where:
- - p (F1p)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities,\
+ - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities,\
  the most indicative as satisfies the largest number of the Formal Constraints\
- (homogeneity, completeness, rag bag, size/quantity, balance);
+ (homogeneity, completeness and size/quantity except the rag bag in some cases);
  - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1\
  (harmonic means of the Precision and Recall of the best matches of the clusters);
  - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1,\
@@ -143,6 +144,7 @@ args "--default-optional --unamed-opts=clusterings"
 
 
 # = Changelog =
+# v4.0.3 - Renamed F1s -> F1a to be synced with the paper, description refined
 # v4.0.2 - Description and output measures notations refined
 # v4.0.1 - Aggregated output for multiple measures added
 # v4.0.0 - Omega index added and bound to the "-o" argument

@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 				break;
 			case f1_arg_average:
 				f1kind = F1::AVERAGE;  // Suggested by Leskovec
-				f1suf = 's';
+				f1suf = 'a';
 				break;
 			default:
 				throw invalid_argument("main(), UNKNOWN F1 policy specified\n");
