@@ -1,6 +1,6 @@
 # xmeasures - Extrinsic Clustering Measures
-Extremely fast accuracy (extrinsic quality) measures evaluation for the [overlapping/fuzzy] clusterings (collections of groups of the objects):  
-various **[mean] F1 measures** (including F1-Score) and **Omega Index** *(fuzzy version of the Adjusted Rand Index)* for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization) using various matching policies (micro, macro and combined weighting),  
+Extremely fast evaluation of accuracy (extrinsic quality) measures for the [overlapping/fuzzy] clusterings (collections of groups of items):  
+family of **[mean] F1 measures** (including Average F1-Score) and **Omega Index** *(fuzzy version of the Adjusted Rand Index)* for overlapping multi-resolution clusterings with unequal node base (and optional node base synchronization) using various matching policies (micro, macro and combined weighting),  
 and standard **NMI** for non-overlapping clustering on a single resolution. `xmeasures` also provides clusters labeling with the indices of the ground-truth clusters considering 1:n match and evaluating F1, precision and recall of the labeled clusters.
 
 `xmeasures` evaluates F1 and NMI for collections of hundreds thousands [overlapping] clusters (covers, communities) withing a dozen seconds on an ordinary laptop using a single CPU core. The computational time is O(N) <!-- O(N \* 2 \* s), where *s* is the average sharing ratio (membership) of the nodes, typically -> 1. -->
@@ -8,15 +8,23 @@ unlike O(N \* C) <!-- O(N \* (C + C')) for the average F1-score -->
 of the existing state of the art implementations, where N is the number of nodes in the network and C is the number of clusters. Computational complexity for Omega Index is standard and equals O(N^2 \* s/2), where s is the average sharing ratio (membership) of the nodes, typically s -> 1.  
 `xmeasures` is one of the utilities designed for the [PyCaBeM](https://github.com/eXascaleInfolab/PyCABeM) clustering benchmark to evaluate clusterings of large networks.
 
-Papers about the implemented measures:
+`The paper:` [Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets](https://github.com/eXascaleInfolab/xmeasures/blob/master/docs/xmeasures.pdf)
+```bibtex
+@inproceedings{Xms19,
+	author={Artem Lutov and Mourad Khayati and Philippe Cudr{\'e}-Mauroux},
+	title={Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets},
+	booktitle={2019 IEEE International Conference on Big Data and Smart Computing},
+	year={2019},
+	keywords={accuracy metrics, overlapping community evaluation, multi-resolution clustering evaluation, Generalized NMI, Omega Index, MF1, similarity of collections of sets}
+}
+```
+
+Related papers about the implemented measures:
   - [Omega Index](http://dx.doi.org/10.1207/s15327906mbr2302_6) ([fuzzy version of the Adjusted Rand Index](http://iopscience.iop.org/article/10.1088/1742-5468/2011/02/P02017/meta)), which equal to ARI when applied for the non-overlapping clusterings;
   - Mean F1 measures: [F1a (Average F1-Score)](https://cs.stanford.edu/people/jure/pubs/bigclam-wsdm13.pdf), F1p is much more indicative and discriminative than the presented there F1a but the respective paper has not been published yet;
   - [NMI measure](http://www.jmlr.org/papers/volume11/vinh10a/vinh10a.pdf).
     > Standard NMI is implemented considering overlapping and multi-resolution clustering only to demonstrate non-applicability of the standard NMI for such cases, where it yields unfair results. See [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for the fair generalized NMI evaluation.
 
-The papers about the performed extensions and their applicability:
-"Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets" by Artem Lutov, Mourad Khayati and Philippe
-Cudré-Mauroux, 2018
 
 Author:  (c) Artem Lutov <artem@exascale.info>
 
@@ -262,7 +270,7 @@ $ ./xmeasures -ox -fh omega_c4.3-1.cnl omega_c4.3-2.cnl
 # Related Projects
 - [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) - Overlapping NMI evaluation that is compatible with the original NMI and suitable for both overlapping and multi resolution (hierarchical) clustering evaluation.
 - [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI)  - NMI evaluation for the overlapping clusters (communities) that is not compatible with the standard NMI value unlike GenConvNMI, but it is much faster than GenConvNMI.
+- [Clubmark](https://github.com/eXascaleInfolab/clubmark) - A parallel isolation framework for benchmarking and profiling clustering (community detection) algorithms considering overlaps (covers).
 - [resmerge](https://github.com/eXascaleInfolab/resmerge)  - Resolution levels clustering merger with filtering. Flattens hierarchy/list of multiple resolutions levels (clusterings) into the single flat clustering with clusters on various resolution levels synchronizing the node base.
 - [ExecTime](https://bitbucket.org/lumais/exectime/)  - A lightweight resource consumption profiler.
-- [PyCABeM](https://github.com/eXascaleInfolab/PyCABeM) - Python Benchmarking Framework for the Clustering Algorithms Evaluation. Uses extrinsic (NMIs) and intrinsic (Q) measures for the clusters quality evaluation considering overlaps (nodes membership by multiple clusters).
 - [TInfES](https://github.com/eXascaleInfolab/TInfES)  - Type inference evaluation scripts and accessory apps used for the benchmarking.
