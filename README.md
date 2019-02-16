@@ -13,7 +13,7 @@ of the existing state of the art implementations, where N is the number of nodes
 @inproceedings{Xms19,
 	author={Artem Lutov and Mourad Khayati and Philippe Cudr{\'e}-Mauroux},
 	title={Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets},
-	booktitle={2019 IEEE International Conference on Big Data and Smart Computing},
+	booktitle={6th IEEE International Conference on Big Data and Smart Computing (BigComp 2019)},
 	year={2019},
 	keywords={accuracy metrics, overlapping community evaluation, multi-resolution clustering evaluation, Generalized NMI, Omega Index, MF1, similarity of collections of sets}
 }
