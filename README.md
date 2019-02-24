@@ -271,6 +271,8 @@ $ ./xmeasures -ox -fh omega_c4.3-1.cnl omega_c4.3-2.cnl
 - [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) - Overlapping NMI evaluation that is compatible with the original NMI and suitable for both overlapping and multi resolution (hierarchical) clustering evaluation.
 - [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI)  - NMI evaluation for the overlapping clusters (communities) that is not compatible with the standard NMI value unlike GenConvNMI, but it is much faster than GenConvNMI.
 - [Clubmark](https://github.com/eXascaleInfolab/clubmark) - A parallel isolation framework for benchmarking and profiling clustering (community detection) algorithms considering overlaps (covers).
+- [ParallelComMetric](https://github.com/eXascaleInfolab/ParallelComMetric) - A parallel toolkit implemented with Pthreads (or MPI) to calculate various extrinsic and intrinsic quality metrics (with and without ground truth community structure) for non-overlapping (hard, single membership) clusterings.
+- [CluSim](https://github.com/Hoosier-Clusters/clusim) - A Python module that evaluates (slowly) various extrinsic quality metrics (accuracy) for non-overlapping (hard, single membership) clusterings.
 - [resmerge](https://github.com/eXascaleInfolab/resmerge)  - Resolution levels clustering merger with filtering. Flattens hierarchy/list of multiple resolutions levels (clusterings) into the single flat clustering with clusters on various resolution levels synchronizing the node base.
 - [ExecTime](https://bitbucket.org/lumais/exectime/)  - A lightweight resource consumption profiler.
 - [TInfES](https://github.com/eXascaleInfolab/TInfES)  - Type inference evaluation scripts and accessory apps used for the benchmarking.
