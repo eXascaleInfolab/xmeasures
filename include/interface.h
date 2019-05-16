@@ -662,11 +662,15 @@ public:
 	//! \param cn1 const CollectionT&  - first collection
 	//! \param cn2 const CollectionT&  - second collection
     //! \param kind F1  - kind of F1 to be evaluated
+    //! \param rec Prob&  - recall of cn2 relative to the ground-truth cn1 or
+    //! 0 if the matching strategy does not have the precision/recall notations
+    //! \param prec Prob&  - precision of cn2 relative to the ground-truth cn1 or
+    //! 0 if the matching strategy does not have the precision/recall notations
     //! \param mkind=Match::WEIGHTED Match  - matching kind
     //! \param verbose=false bool  - print intermediate results to the stdout
 	//! \return Prob  - resulting F1_gm
 	static Prob f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
-		, Match mkind=Match::WEIGHTED, bool verbose=false);
+		, Prob& rec, Prob& prec, Match mkind=Match::WEIGHTED, bool verbose=false);
 
 	//! \brief NMI evaluation
 	//! \note Undirected (symmetric) evaluation

@@ -1,10 +1,10 @@
 # Configuration file for the automatic generation of the input options parsing
 
 package "xmeasures"
-version "4.0.3"
+version "4.0.4"
 versiontext "Author:  (c) Artem Lutov <artem@exascale.info>
 Sources:  https://github.com/eXascaleInfolab/xmeasures
-Paper: \"Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets\" by Artem Lutov, Mourad Khayati and Philippe Cudré-Mauroux, 2018
+Paper: \"Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets\" by Artem Lutov, Mourad Khayati and Philippe Cudré-Mauroux, BigComp 2018
 "
 
 purpose "Extrinsic measures evaluation: Omega Index (a fuzzy version of the\
@@ -31,19 +31,19 @@ NOTE:
   - Multiple evaluating measures can be specified.
   - Each cluster should contain unique members, which is ensured only if the\
  'unique' option is specified.
-  - All clusters should be unique to not affect Omega Indexes evaluation, which\
-  can be performed by the [resmerge](https://github.com/eXascaleInfolab/resmerge) utility.
-  - Uncorrected unequal node base in the clusterings is allowed, it penalizes the match.\
+  - All clusters should be unique to not affect Omega Index evaluation, which\
+  can be ensured by the [resmerge](https://github.com/eXascaleInfolab/resmerge) utility.
+  - Non-corrected unequal node base in the clusterings is allowed, it penalizes the match.\
 Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or\
  [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation\
  in the arbitrary collections (still each cluster should contain unique members).
- 
+
 Evaluating measures are:
   - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to\
   the Fuzzy Rand Index), which yields the same value as Adjusted Rand Index when\
   applied to the non-overlapping clusterings.
   - [M]F1  - various [mean] F1 measures of the Greatest (Max) Match including\
-  the Average F1-Score (suggested by J. Leskovec) with optional weighting.
+  the Average F1-Score (suggested by J. Leskovec) with the optional weighting.
 NOTE: There are 3 matching policies available for each kind of F1. The most\
   representative evaluation is performed by the F1p with combined matching\
   policy (considers both micro and macro weighting).
@@ -87,7 +87,7 @@ option  "extended" x  "evaluate extended (Soft) Omega Index, which does not exce
 section "Mean F1"
 option  "f1" f  "evaluate mean F1 of the [weighted] average of the greatest (maximal)\
  match by F1 or partial probability.
-NOTE: F1p <= F1h <= F1a, where:
+NOTE: F1h <= F1a, where:
  - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities,\
  the most indicative as satisfies the largest number of the Formal Constraints\
  (homogeneity, completeness and size/quantity except the rag bag in some cases);
@@ -95,6 +95,7 @@ NOTE: F1p <= F1h <= F1a, where:
  (harmonic means of the Precision and Recall of the best matches of the clusters);
  - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1,\
  the least discriminative and satisfies the lowest number of the Formal Constraints.
+Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
 "
  values="partprob","harmonic","average"  enum  default="partprob"  argoptional
 option  "kind" k  "kind of the matching policy:
@@ -109,10 +110,13 @@ section "Clusters Labeling & F1 evaluation with Precision and Recall"
 option  "label" l  "label evaluating clusters with the specified ground-truth (gt)\
  cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED\
  labeled clusters only (without the probable subclusters).
-NOTE: If 'sync' option is specified then the file name  of the clusters labels\
+NOTE: If 'sync' option is specified then the file name of the clusters labels\
  should be the same as the node base (if specified) and should be in the .cnl format.\
  The file name can be either a separate or an evaluating CNL file, in the\
- latter case this option should precede the evaluating filename not repeating it."
+ latter case this option should precede the evaluating filename not repeating it.
+Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
+
+"
   string  typestr="gt_filename"
 option  "policy" p  "Labels matching policy:
  - p  - Partial Probabilities (maximizes gain)
@@ -144,6 +148,7 @@ args "--default-optional --unamed-opts=clusterings"
 
 
 # = Changelog =
+# v4.0.4 - Precision and recall added to the MF1 output
 # v4.0.3 - Renamed F1s -> F1a to be synced with the paper, description refined
 # v4.0.2 - Description and output measures notations refined
 # v4.0.1 - Aggregated output for multiple measures added

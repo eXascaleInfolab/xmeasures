@@ -635,7 +635,7 @@ void Collection<Count>::initconts(const CollectionT& cn) noexcept
 
 template <typename Count>
 Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
-	, Match mkind, bool verbose)
+	, Prob& rec, Prob& prec, Match mkind, bool verbose)
 {
 	if(kind == F1::NONE || mkind == Match::NONE) {
 		fputs("WARNING f1(), f1 or match kind is not specified, the evaluation is skipped\n", stderr);
@@ -658,11 +658,15 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 	// it should be called only once for each collection and with the same value of prob
 	const auto  gmats1 = cn1.gmatches(cn2, prob);
 	const AccProb  f1ga1 = cn1.avggms(gmats1, mkind==Match::WEIGHTED);
+	rec = f1ga1;
 #if TRACE >= 3
 	fputs("f1(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
 	const auto  gmats2 = cn2.gmatches(cn1, prob);
 	const AccProb  f1ga2 = cn2.avggms(gmats2, mkind==Match::WEIGHTED);
+	if(kind != F1::AVERAGE)
+		prec = f1ga2;
+	else rec = prec = 0;  // Note: Precision and recall are not defined for the MF1a
 #if TRACE <= 1
 	if(verbose)
 #endif // TRACE
@@ -673,6 +677,7 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 	fprintf(verbose ? stdout : stderr, "f1(), f1ga: %G\n", res);
 
 	if(mkind == Match::COMBINED) {
+		rec = prec = 0;  // There are no precision and recall notations for combined matching strategy
 		// ATTENTION: gmats already evaluated and should be reused, their reevaluation would
 		// affect internal states of the collections (counters) and requires reset of the state
 		const AccProb  f1ga1w = cn1.avggms(gmats1, true);
@@ -739,7 +744,7 @@ AccProb Collection<Count>::avggms(const Probs& gmats, bool weighted) const  // c
 		accgm /= gmats.size();
 	}
 #if VALIDATE >= 1
-	if(less<AccProb>(1, accgm, gmats.size()))
+	if(lessx<AccProb>(1, accgm, gmats.size()))
 		throw overflow_error("avggms(), accgm is invalid (> 1: " + std::to_string(accgm)
 			+ "), probably invalid dataset is supplied\n");
 #endif // VALIDATE
@@ -927,7 +932,7 @@ RawNmi Collection<Count>::nmi(const CollectionT& cn, bool expbase) const
 	}
 #if VALIDATE >= 2
 	fprintf(stderr, "nmi(), psum: %G, h12: %G\n", psum, h12);
-	assert(equal(psum, 1., cmmsum) && "nmi(), total probability of the matrix should be 1");
+	assert(equalx(psum, 1., cmmsum) && "nmi(), total probability of the matrix should be 1");
 #endif // VALIDATE
 
 	// Evaluate information size cn2 clusters
@@ -1107,8 +1112,8 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 	fputs("\n", stderr);
 #endif // TRACING_CLSCOUNTS_
 	if(m_overlaps
-	&& !(equal<AccCont>(m_contsum - econt1, ndsnum(), ndsnum())
-	&& equal<AccCont>(cn.m_contsum - econt2, cn.ndsnum(), cn.ndsnum()))) {  // consum equals to the number of nodes for the overlapping case
+	&& !(equalx<AccCont>(m_contsum - econt1, ndsnum(), ndsnum())
+	&& equalx<AccCont>(cn.m_contsum - econt2, cn.ndsnum(), cn.ndsnum()))) {  // consum equals to the number of nodes for the overlapping case
 		fprintf(stderr, "evalconts(), c1csum: %.3G (- %.3G lacked), nds1num: %u"
 			", c2csum: %.3G (- %.3G lacked), nds2num: %u,  cmmsum: %.3G\n"
 			, AccProb(m_contsum), AccProb(econt1), ndsnum()
@@ -1116,8 +1121,8 @@ auto Collection<Count>::evalconts(const CollectionT& cn, ClustersMatching* pclsm
 		assert(0 && "evalconts(), consum validation failed");
 	}
 #endif // VALIDATE 2
-	const bool match1 = equal<AccProb>(m_contsum - econt1, cmmsum, m_cls.size());
-	const bool match2 = equal<AccProb>(cn.m_contsum - econt2, cmmsum, cn.m_cls.size());
+	const bool match1 = equalx<AccProb>(m_contsum - econt1, cmmsum, m_cls.size());
+	const bool match2 = equalx<AccProb>(cn.m_contsum - econt2, cmmsum, cn.m_cls.size());
 	if((m_ndshash == cn.m_ndshash && m_ndshash && m_ndshash && (!match1 || !match2))  // The same node base
 	|| (m_ndshash != cn.m_ndshash && (!match1 && !match2))   // Distinct node base
 	) {  // Note: cmmsum should match to either of the sums

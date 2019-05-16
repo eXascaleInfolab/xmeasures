@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "4.0.3"
+#define CMDLINE_PARSER_VERSION "4.0.4"
 #endif
 
 enum enum_f1 { f1__NULL = -1, f1_arg_partprob = 0, f1_arg_harmonic, f1_arg_average };
@@ -65,22 +65,25 @@ struct gengetopt_args_info
   int extended_flag;	/**< @brief evaluate extended (Soft) Omega Index, which does not excessively penalize distinctly shared nodes. (default=off).  */
   const char *extended_help; /**< @brief evaluate extended (Soft) Omega Index, which does not excessively penalize distinctly shared nodes. help description.  */
   enum enum_f1 f1_arg;	/**< @brief evaluate mean F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
-  NOTE: F1p <= F1h <= F1a, where:
+  NOTE: F1h <= F1a, where:
    - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness and size/quantity except the rag bag in some cases);
    - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1 (harmonic means of the Precision and Recall of the best matches of the clusters);
    - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1, the least discriminative and satisfies the lowest number of the Formal Constraints.
+  Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
  (default='partprob').  */
   char * f1_orig;	/**< @brief evaluate mean F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
-  NOTE: F1p <= F1h <= F1a, where:
+  NOTE: F1h <= F1a, where:
    - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness and size/quantity except the rag bag in some cases);
    - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1 (harmonic means of the Precision and Recall of the best matches of the clusters);
    - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1, the least discriminative and satisfies the lowest number of the Formal Constraints.
+  Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
  original value given at command line.  */
   const char *f1_help; /**< @brief evaluate mean F1 of the [weighted] average of the greatest (maximal) match by F1 or partial probability.
-  NOTE: F1p <= F1h <= F1a, where:
+  NOTE: F1h <= F1a, where:
    - p (F1p or Ph)  - Harmonic mean (F1) of two [weighted] averages of the Partial Probabilities, the most indicative as satisfies the largest number of the Formal Constraints (homogeneity, completeness and size/quantity except the rag bag in some cases);
    - h (F1h)  - Harmonic mean (F1) of two [weighted] averages of all local F1 (harmonic means of the Precision and Recall of the best matches of the clusters);
    - a (F1a)  - Arithmetic mean (average) of two [weighted] averages of all local F1, the least discriminative and satisfies the lowest number of the Formal Constraints.
+  Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
  help description.  */
   enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
    - w  - Weighted by the number of nodes in each cluster
@@ -98,11 +101,20 @@ struct gengetopt_args_info
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
  help description.  */
   char * label_arg;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED labeled clusters only (without the probable subclusters).
-  NOTE: If 'sync' option is specified then the file name  of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it..  */
+  NOTE: If 'sync' option is specified then the file name of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.
+  Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
+  
+.  */
   char * label_orig;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED labeled clusters only (without the probable subclusters).
-  NOTE: If 'sync' option is specified then the file name  of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it. original value given at command line.  */
+  NOTE: If 'sync' option is specified then the file name of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.
+  Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
+  
+ original value given at command line.  */
   const char *label_help; /**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED labeled clusters only (without the probable subclusters).
-  NOTE: If 'sync' option is specified then the file name  of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it. help description.  */
+  NOTE: If 'sync' option is specified then the file name of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.
+  Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
+  
+ help description.  */
   enum enum_policy policy_arg;	/**< @brief Labels matching policy:
    - p  - Partial Probabilities (maximizes gain)
    - h  - Harmonic Mean (minimizes loss, maximizes F1)
