@@ -25,6 +25,9 @@ Related papers about the implemented measures:
   - [NMI measure](http://www.jmlr.org/papers/volume11/vinh10a/vinh10a.pdf).
     > Standard NMI is implemented considering overlapping and multi-resolution clustering only to demonstrate non-applicability of the standard NMI for such cases, where it yields unfair results. See [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for the fair generalized NMI evaluation.
 
+The execution time and the total processing time (relative power consumption) of `xmeasures` on a single CPU core vs [ParallelComMetric](https://github.com/eXascaleInfolab/ParallelComMetric) on multiple SMP cores evaluated on the SNAP DBLP dataset and shown in the log scale demonstrates that `xmeasures` evaluates F1 family measures multiple orders of magnitude faster than other state-of-the-art solutions:
+![Clubmark_Poster-w1024](images/CPU-Timings-DBLP.png)
+
 
 Author:  (c) Artem Lutov <artem@exascale.info>
 
@@ -57,7 +60,7 @@ Then `g++-5` should be installed and `Makefile` might need to be edited replacin
 Execution Options:
 ```
 $ ../xmeasures -h
-xmeasures 4.0.3
+xmeasures 4.0.4
 
 Extrinsic measures evaluation: Omega Index (a fuzzy version of the Adjusted
 Rand Index, identical to the Fuzzy Rand Index) and [mean] F1-score (prob, harm
@@ -86,21 +89,21 @@ NOTE:
   - Multiple evaluating measures can be specified.
   - Each cluster should contain unique members, which is ensured only if the
 'unique' option is specified.
-  - All clusters should be unique to not affect Omega Indexes evaluation, which
-can be performed by the [resmerge](https://github.com/eXascaleInfolab/resmerge)
+  - All clusters should be unique to not affect Omega Index evaluation, which
+can be ensured by the [resmerge](https://github.com/eXascaleInfolab/resmerge)
 utility.
-  - Uncorrected unequal node base in the clusterings is allowed, it penalizes
+  - Non-corrected unequal node base in the clusterings is allowed, it penalizes
 the match.Use [OvpNMI](https://github.com/eXascaleInfolab/OvpNMI) or
 [GenConvNMI](https://github.com/eXascaleInfolab/GenConvNMI) for NMI evaluation
 in the arbitrary collections (still each cluster should contain unique
 members).
- 
+
 Evaluating measures are:
   - OI  - Omega Index (a fuzzy version of the Adjusted Rand Index, identical to
 the Fuzzy Rand Index), which yields the same value as Adjusted Rand Index when
 applied to the non-overlapping clusterings.
   - [M]F1  - various [mean] F1 measures of the Greatest (Max) Match including
-the Average F1-Score (suggested by J. Leskovec) with optional weighting.
+the Average F1-Score (suggested by J. Leskovec) with the optional weighting.
 NOTE: There are 3 matching policies available for each kind of F1. The most
 representative evaluation is performed by the F1p with combined matching
 policy (considers both micro and macro weighting).
@@ -154,7 +157,7 @@ Mean F1:
   -f, --f1[=ENUM]               evaluate mean F1 of the [weighted] average of
                                   the greatest (maximal) match by F1 or partial
                                   probability.
-                                  NOTE: F1p <= F1h <= F1a, where:
+                                  NOTE: F1h <= F1a, where:
                                    - p (F1p or Ph)  - Harmonic mean (F1) of two
                                   [weighted] averages of the Partial
                                   Probabilities, the most indicative as
@@ -170,13 +173,18 @@ Mean F1:
                                   two [weighted] averages of all local F1, the
                                   least discriminative and satisfies the lowest
                                   number of the Formal Constraints.
+                                  Precision and recall are evaluated relative
+                                  to the FIRST clustering dataset
+                                  (ground-truth, gold standard).
                                     (possible values="partprob",
                                   "harmonic", "average" default=`partprob')
   -k, --kind[=ENUM]             kind of the matching policy:
                                    - w  - Weighted by the number of nodes in
-                                  each cluster
+                                  each cluster (known as micro weighting,
+                                  MF1_micro)
                                    - u  - Unweighed, where each cluster is
-                                  treated equally
+                                  treated equally (known as macro weighting,
+                                  MF1_macro)
                                    - c  - Combined(w, u) using geometric mean
                                   (drops the value not so much as harmonic
                                   mean)
@@ -191,13 +199,17 @@ Clusters Labeling & F1 evaluation with Precision and Recall:
                                   of the (best) MATCHED labeled clusters only
                                   (without the probable subclusters).
                                   NOTE: If 'sync' option is specified then the
-                                  file name  of the clusters labels should be
+                                  file name of the clusters labels should be
                                   the same as the node base (if specified) and
                                   should be in the .cnl format. The file name
                                   can be either a separate or an evaluating CNL
                                   file, in the latter case this option should
                                   precede the evaluating filename not repeating
                                   it.
+                                  Precision and recall are evaluated relative
+                                  to the FIRST clustering dataset
+                                  (ground-truth, gold standard).
+
   -p, --policy[=ENUM]           Labels matching policy:
                                    - p  - Partial Probabilities (maximizes
                                   gain)
@@ -207,8 +219,10 @@ Clusters Labeling & F1 evaluation with Precision and Recall:
                                   default=`harmonic')
   -u, --unweighted              Labels weighting policy on F1 evaluation:
                                   weighted by the number of instances in each
-                                  label or unweighed, where each label is
-                                  treated equally  (default=off)
+                                  label by default (micro weighting, F1_micro)
+                                  or unweighed, where each label is treated
+                                  equally (i.e. macro weighting, F1_macro)
+                                  (default=off)
   -i, --identifiers=labels_filename
                                 output labels (identifiers) of the evaluating
                                   clusters as lines of space-separated indices
@@ -218,7 +232,6 @@ Clusters Labeling & F1 evaluation with Precision and Recall:
                                   reduced collection is outputted to the
                                   <labels_filename>.cnl besides the
                                   <labels_filename>
-
 
 NMI:
   -n, --nmi                     evaluate NMI (Normalized Mutual Information),
