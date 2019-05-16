@@ -408,7 +408,7 @@ void Collection<Count>::clearcounts() const noexcept
 }
 
 template <typename Count>
-PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
+PrcRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
 	, bool prob, bool weighted, const char* flname, bool verbose)
 {
 	// Initialized accessory data for evaluations if has not been done yet
@@ -463,7 +463,7 @@ PrecRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, c
 }
 
 template <typename Count>
-PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted, ClsLabels* csls) const
+PrcRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted, ClsLabels* csls) const
 {
 	// Reserve space for all clusters of the collection (but not more than the number of labels) to avoid reallocations
 	if(csls)
@@ -477,7 +477,7 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted,
 	using MarkNodes = unordered_set<Id>;
 	MarkNodes  mnds;
 	// Aggregated precision and recall
-	AccProb  prec = 0;
+	AccProb  prc = 0;
 	AccProb  rec = 0;
 #if TRACE >= 2
 	Id  nmlbs = 0;  // The number of labels with multiple clusters
@@ -557,8 +557,13 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted,
 			AccProb  gm = mcl.counter();  // Matches
 			if(weighted)
 				gm *= gtc->members.size();
-			prec += gm / static_cast<AccProb>(m_overlaps ? gtc->cont() : gtc->members.size());
-			rec += gm / static_cast<AccProb>(m_overlaps ? mcl.cont() : mcl.members.size());
+			prc += gm / static_cast<AccProb>(m_overlaps ? mcl.cont() : mcl.members.size());
+			rec += gm / static_cast<AccProb>(m_overlaps ? gtc->cont() : gtc->members.size());
+#if TRACE >= 3
+			printf("  > mark(), gmatch: %G, gm: %G, accumulated prc: %G (mcl cont: %G), rec: %G (gtc cont: %G)\n"
+				, gmatch, gm, prc, static_cast<AccProb>(m_overlaps ? mcl.cont() : mcl.members.size())
+				, rec, static_cast<AccProb>(m_overlaps ? gtc->cont() : gtc->members.size()));
+#endif // TRACE
 		} else {
 			// The label marked multiple clusters, compared it's nodes with the
 			// nodes of the merged respective clusters
@@ -578,9 +583,9 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted,
 #endif // TRACE
 				if(weighted)
 					accgm *= gtc->members.size();
-				prec += accgm / static_cast<AccProb>(gtc->cont());
+				prc += accgm / static_cast<AccProb>(accont);
 				// Note: mnds.size() <= mcands.size()
-				rec += accgm / static_cast<AccProb>(accont);
+				rec += accgm / static_cast<AccProb>(gtc->cont());
 			} else {
 				// Evaluate the number of matched nodes from the aggregated clusters (<= sum(cls_matches))
 				for(auto nid: gtc->members)
@@ -591,8 +596,8 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted,
 #endif // TRACE
 				if(weighted)
 					accgm *= gtc->members.size();
-				prec += accgm / static_cast<AccProb>(gtc->members.size());
-				rec += accgm / static_cast<AccProb>(mnds.size());
+				prc += accgm / static_cast<AccProb>(mnds.size());
+				rec += accgm / static_cast<AccProb>(gtc->members.size());
 			}
 			mnds.clear();
 		}
@@ -612,7 +617,7 @@ PrecRec Collection<Count>::mark(const CollectionT& cn, bool prob, bool weighted,
 		assert(equal<Prob>(accw, m_cls.size()) && "mark(), total weight on unweighted eval"
 			" should be equal to the number of labels");
 #endif // VALIDATE
-	return PrecRec(prec / accw, rec / accw);
+	return PrcRec(prc / accw, rec / accw);
 }
 
 template <typename Count>
@@ -635,7 +640,7 @@ void Collection<Count>::initconts(const CollectionT& cn) noexcept
 
 template <typename Count>
 Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
-	, Prob& rec, Prob& prec, Match mkind, bool verbose)
+	, Prob& rec, Prob& prc, Match mkind, bool verbose)
 {
 	if(kind == F1::NONE || mkind == Match::NONE) {
 		fputs("WARNING f1(), f1 or match kind is not specified, the evaluation is skipped\n", stderr);
@@ -658,26 +663,25 @@ Prob Collection<Count>::f1(const CollectionT& cn1, const CollectionT& cn2, F1 ki
 	// it should be called only once for each collection and with the same value of prob
 	const auto  gmats1 = cn1.gmatches(cn2, prob);
 	const AccProb  f1ga1 = cn1.avggms(gmats1, mkind==Match::WEIGHTED);
-	rec = f1ga1;
+	prc = f1ga1;  // cn1 (ground-truth) relative to cn2
 #if TRACE >= 3
 	fputs("f1(), F1 Max Avg of the second collection\n", stderr);
 #endif // TRACE
 	const auto  gmats2 = cn2.gmatches(cn1, prob);
 	const AccProb  f1ga2 = cn2.avggms(gmats2, mkind==Match::WEIGHTED);
 	if(kind != F1::AVERAGE)
-		prec = f1ga2;
-	else rec = prec = 0;  // Note: Precision and recall are not defined for the MF1a
-#if TRACE <= 1
-	if(verbose)
-#endif // TRACE
-	fprintf(verbose ? stdout : stderr, "f1(), f1ga1: %G, f1ga2: %G\n", f1ga1, f1ga2);
+		rec = f1ga2;  // cn2 relative to cn1 (ground-truth)
+	else prc = rec = 0;  // Note: Precision and recall are not defined for the MF1a
 	const AccProb  res = kind != F1::AVERAGE
 		? hmean(f1ga1, f1ga2)
 		: (f1ga1 + f1ga2) / 2;
-	fprintf(verbose ? stdout : stderr, "f1(), f1ga: %G\n", res);
+#if TRACE <= 1
+	if(verbose)
+#endif // TRACE
+	fprintf(verbose ? stdout : stderr, "f1(), f1ga: %G (f1ga1: %G, f1ga2: %G)\n", res, f1ga1, f1ga2);
 
 	if(mkind == Match::COMBINED) {
-		rec = prec = 0;  // There are no precision and recall notations for combined matching strategy
+		prc = rec = 0;  // There are no precision and recall notations for combined matching strategy
 		// ATTENTION: gmats already evaluated and should be reused, their reevaluation would
 		// affect internal states of the collections (counters) and requires reset of the state
 		const AccProb  f1ga1w = cn1.avggms(gmats1, true);

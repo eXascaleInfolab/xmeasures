@@ -536,12 +536,12 @@ bool xwmatch(Match m) noexcept;
 bool xumatch(Match m) noexcept;
 
 //! Precision and recall
-struct PrecRec {
-	Prob prec;  //!< Precision
+struct PrcRec {
+	Prob prc;  //!< Precision
 	Prob rec;  //!< Recall
 
 	// Explicit members initialization by value to avoid uninitialized members
-	PrecRec(Prob prec=0, Prob rec=0): prec(prec), rec(rec)  {}
+	PrcRec(Prob prc=0, Prob rec=0): prc(prc), rec(rec)  {}
 };
 
 //! Collection describing cluster-node relations
@@ -640,8 +640,8 @@ public:
     //! treat each label equally
     //! \param flname=nullptr const char*  - resulting label indices filename (.cll format)
     //! \param verbose=false bool  - print intermediate results to the stdout
-    //! \return PrecRec  - resulting precision and recall for the labeled items
-	static PrecRec label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
+    //! \return PrcRec  - resulting precision and recall for the labeled items
+	static PrcRec label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
 		, bool prob, bool weighted=true, const char* flname=nullptr, bool verbose=false);
 
 	//! \brief Specified F1 evaluation of the Greatest (Max) Match for the
@@ -664,13 +664,13 @@ public:
     //! \param kind F1  - kind of F1 to be evaluated
     //! \param rec Prob&  - recall of cn2 relative to the ground-truth cn1 or
     //! 0 if the matching strategy does not have the precision/recall notations
-    //! \param prec Prob&  - precision of cn2 relative to the ground-truth cn1 or
+    //! \param prc Prob&  - precision of cn2 relative to the ground-truth cn1 or
     //! 0 if the matching strategy does not have the precision/recall notations
     //! \param mkind=Match::WEIGHTED Match  - matching kind
     //! \param verbose=false bool  - print intermediate results to the stdout
 	//! \return Prob  - resulting F1_gm
 	static Prob f1(const CollectionT& cn1, const CollectionT& cn2, F1 kind
-		, Prob& rec, Prob& prec, Match mkind=Match::WEIGHTED, bool verbose=false);
+		, Prob& rec, Prob& prc, Match mkind=Match::WEIGHTED, bool verbose=false);
 
 	//! \brief NMI evaluation
 	//! \note Undirected (symmetric) evaluation
@@ -697,11 +697,11 @@ protected:
     //! treat each label equally
     //! \param csls=nullptr ClsLabels*  - resulting labels as clusters of the
     //! ground-truth collection if not nullptr
-    //! \return PrecRec  - resulting average over all labels Precision and Recall
+    //! \return PrcRec  - resulting average over all labels Precision and Recall
     //! for all nodes of the marked clusters, where each label can be assigned
     //! to multiple cn clusters and then all nodes of that clusters are matched
     //! to the ground truth cluster (label) nodes
-	PrecRec mark(const CollectionT& cn, bool prob, bool weighted=true, ClsLabels* csls=nullptr) const;
+	PrcRec mark(const CollectionT& cn, bool prob, bool weighted=true, ClsLabels* csls=nullptr) const;
 
 	// F1-related functions ----------------------------------------------------
     //! \brief Average of the maximal matches (by F1 or partial probabilities)

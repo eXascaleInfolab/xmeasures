@@ -190,20 +190,20 @@ int main(int argc, char **argv)
 
 			//if(args_info.nmi_flag)
 			//	fputs("; ", stdout);
-			Prob  prec, rec;  // Precision and recall of cn2 relative to ground-truth cn1
-			const auto  f1val = Collection::f1(cn1, cn2, f1kind, rec, prec, mkind, args_info.detailed_flag);
+			Prob  prc, rec;  // Precision and recall of cn2 relative to ground-truth cn1
+			const auto  f1val = Collection::f1(cn1, cn2, f1kind, rec, prc, mkind, args_info.detailed_flag);
 			printf("MF1%c_%c (%s, %s):\n%G", f1suf, kindsuf, to_string(f1kind).c_str()
 				, to_string(mkind).c_str(), f1val);
-			if(prec || rec)
-				printf(" (Prc: %G, Rec: %G)", prec, rec);
+			if(prc || rec)
+				printf(" (Prc: %G, Rec: %G)", prc, rec);
 			fputc('\n', stdout);
 			if(--outsnum || aggouts.tellp()) {
 				if(aggouts.tellp())
 					aggouts << "; ";
 				aggouts << "MF1" << f1suf << '_' << kindsuf << ": " << f1val;
-				// Note: prec and rec are zeroized if the matching strategy does not support them
-				if(prec || rec)
-					aggouts << " (Prc: " << prec << ", Rec: " << rec << ')';
+				// Note: prc and rec are zeroized if the matching strategy does not support them
+				if(prc || rec)
+					aggouts << " (Prc: " << prc << ", Rec: " << rec << ')';
 			}
 		}
 		// Label clusters with the ground-truth clusters indices and output F1 for the labels if required
@@ -219,19 +219,19 @@ int main(int argc, char **argv)
 			}
 			const bool  prob = args_info.policy_arg == policy_arg_partprob;  // Partial Probabilities matching policy
 			const bool  weighted = !args_info.unweighted_flag;
-			PrecRec pr = Collection::label(cn1, cn2, lostcls, prob, weighted
+			PrcRec pr = Collection::label(cn1, cn2, lostcls, prob, weighted
 				, args_info.identifiers_arg, args_info.detailed_flag);
 			// Note: each measure name should form a single world to be properly parsed in a uniform way (see Clubmark),
 			// that is why doubled underscore is used rather than a single space.
 			printf("F1%c_%c__labels: %G (Prc: %G, Rec: %G)\n"
 				, prob ? 'p' : 'h', weighted ? 'w' : 'u'
-				, hmean(pr.prec, pr.rec), pr.prec, pr.rec);
+				, hmean(pr.prc, pr.rec), pr.prc, pr.rec);
 			if(--outsnum || aggouts.tellp()) {
 				if(aggouts.tellp())
 					aggouts << "; ";
 				aggouts << "F1" << (prob ? 'p' : 'h') << '_' << (weighted ? 'w' : 'u')
-					<< "__labels: " << hmean(pr.prec, pr.rec)
-					<< " (Prc: " << pr.prec << ", Rec: " << pr.rec << ')';
+					<< "__labels: " << hmean(pr.prc, pr.rec)
+					<< " (Prc: " << pr.prc << ", Rec: " << pr.rec << ')';
 			}
 		}
 		if(args_info.omega_flag) {

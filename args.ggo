@@ -4,7 +4,7 @@ package "xmeasures"
 version "4.0.4"
 versiontext "Author:  (c) Artem Lutov <artem@exascale.info>
 Sources:  https://github.com/eXascaleInfolab/xmeasures
-Paper: \"Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets\" by Artem Lutov, Mourad Khayati and Philippe Cudré-Mauroux, BigComp 2018
+Paper: \"Accuracy Evaluation of Overlapping and Multi-resolution Clustering Algorithms on Large Datasets\" by Artem Lutov, Mourad Khayati and Philippe Cudré-Mauroux, BigComp 2019
 "
 
 purpose "Extrinsic measures evaluation: Omega Index (a fuzzy version of the\
@@ -99,8 +99,8 @@ Precision and recall are evaluated relative to the FIRST clustering dataset (gro
 "
  values="partprob","harmonic","average"  enum  default="partprob"  argoptional
 option  "kind" k  "kind of the matching policy:
- - w  - Weighted by the number of nodes in each cluster
- - u  - Unweighed, where each cluster is treated equally
+ - w  - Weighted by the number of nodes in each cluster (known as micro weighting, MF1_micro)
+ - u  - Unweighed, where each cluster is treated equally (known as macro weighting, MF1_macro)
  - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
 "
   values ="weighted","unweighed","combined"  enum default="weighted" argoptional
@@ -115,7 +115,6 @@ NOTE: If 'sync' option is specified then the file name of the clusters labels\
  The file name can be either a separate or an evaluating CNL file, in the\
  latter case this option should precede the evaluating filename not repeating it.
 Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
-
 "
   string  typestr="gt_filename"
 option  "policy" p  "Labels matching policy:
@@ -124,7 +123,8 @@ option  "policy" p  "Labels matching policy:
 "
  values="partprob","harmonic"  enum  default="harmonic"  argoptional  dependon="label"
 option  "unweighted" u  "Labels weighting policy on F1 evaluation: weighted by the number\
- of instances in each label or unweighed, where each label is treated equally"
+ of instances in each label by default (micro weighting, F1_micro) or unweighed,\
+ where each label is treated equally (i.e. macro weighting, F1_macro)"
   flag off  dependon="label"
 option  "identifiers" i  "output labels (identifiers) of the evaluating clusters\
  as lines of space-separated indices of the ground-truth clusters (.cll - clusters\
@@ -148,7 +148,7 @@ args "--default-optional --unamed-opts=clusterings"
 
 
 # = Changelog =
-# v4.0.4 - Precision and recall added to the MF1 output
+# v4.0.4 - Precision and recall added to the MF1 output, mixed Prc, Rec in F1 fixed
 # v4.0.3 - Renamed F1s -> F1a to be synced with the paper, description refined
 # v4.0.2 - Description and output measures notations refined
 # v4.0.1 - Aggregated output for multiple measures added

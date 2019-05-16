@@ -86,34 +86,31 @@ struct gengetopt_args_info
   Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
  help description.  */
   enum enum_kind kind_arg;	/**< @brief kind of the matching policy:
-   - w  - Weighted by the number of nodes in each cluster
-   - u  - Unweighed, where each cluster is treated equally
+   - w  - Weighted by the number of nodes in each cluster (known as micro weighting, MF1_micro)
+   - u  - Unweighed, where each cluster is treated equally (known as macro weighting, MF1_macro)
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
  (default='weighted').  */
   char * kind_orig;	/**< @brief kind of the matching policy:
-   - w  - Weighted by the number of nodes in each cluster
-   - u  - Unweighed, where each cluster is treated equally
+   - w  - Weighted by the number of nodes in each cluster (known as micro weighting, MF1_micro)
+   - u  - Unweighed, where each cluster is treated equally (known as macro weighting, MF1_macro)
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
  original value given at command line.  */
   const char *kind_help; /**< @brief kind of the matching policy:
-   - w  - Weighted by the number of nodes in each cluster
-   - u  - Unweighed, where each cluster is treated equally
+   - w  - Weighted by the number of nodes in each cluster (known as micro weighting, MF1_micro)
+   - u  - Unweighed, where each cluster is treated equally (known as macro weighting, MF1_macro)
    - c  - Combined(w, u) using geometric mean (drops the value not so much as harmonic mean)
  help description.  */
   char * label_arg;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the file name of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.
   Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
-  
 .  */
   char * label_orig;	/**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the file name of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.
   Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
-  
  original value given at command line.  */
   const char *label_help; /**< @brief label evaluating clusters with the specified ground-truth (gt) cluster indices and evaluate F1 (including Precision and Recall) of the (best) MATCHED labeled clusters only (without the probable subclusters).
   NOTE: If 'sync' option is specified then the file name of the clusters labels should be the same as the node base (if specified) and should be in the .cnl format. The file name can be either a separate or an evaluating CNL file, in the latter case this option should precede the evaluating filename not repeating it.
   Precision and recall are evaluated relative to the FIRST clustering dataset (ground-truth, gold standard).
-  
  help description.  */
   enum enum_policy policy_arg;	/**< @brief Labels matching policy:
    - p  - Partial Probabilities (maximizes gain)
@@ -127,8 +124,8 @@ struct gengetopt_args_info
    - p  - Partial Probabilities (maximizes gain)
    - h  - Harmonic Mean (minimizes loss, maximizes F1)
  help description.  */
-  int unweighted_flag;	/**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label or unweighed, where each label is treated equally (default=off).  */
-  const char *unweighted_help; /**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label or unweighed, where each label is treated equally help description.  */
+  int unweighted_flag;	/**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label by default (micro weighting, F1_micro) or unweighed, where each label is treated equally (i.e. macro weighting, F1_macro) (default=off).  */
+  const char *unweighted_help; /**< @brief Labels weighting policy on F1 evaluation: weighted by the number of instances in each label by default (micro weighting, F1_micro) or unweighed, where each label is treated equally (i.e. macro weighting, F1_macro) help description.  */
   char * identifiers_arg;	/**< @brief output labels (identifiers) of the evaluating clusters as lines of space-separated indices of the ground-truth clusters (.cll - clusters labels list)
   NOTE: If 'sync' option is specified then the reduced collection is outputted to the <labels_filename>.cnl besides the <labels_filename>
 .  */
