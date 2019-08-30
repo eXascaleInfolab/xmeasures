@@ -210,7 +210,7 @@ less(const ValT a, const ValT b=ValT(0))
 {
 	static_assert(is_floating_point<ValT>::value, "less(), value type should be fractional");
 	static_assert(CONFIM > 0 && CONFIM <= CONFIDENCE_DEN, "less(), values CONFIDENCE should E (0, 1]");
-	// a < b   <= For x > 0:  a + x < b =>  For y > 0:  a - b + y * abs(a+b) < 0
+	// a < b   <= For x > 0:  a + x < b =>  For y > 0:  a - b + y * fabs(a+b) < 0
 	// ATTENTION:
 	// - "precision_limit" must be the first multiplier to have correct evaluation for huge values
 	// - fabs(a + b) should not be used in the normalization, it diminishes accuracy
@@ -254,7 +254,7 @@ lessx(const ValT a, const ValT b=ValT(0), const float size=1)
 #if VALIDATE >= 2
 	assert(size && "less(), positive size is expected for the imprecise values");
 #endif // VALIDATE
-	// a < b   <= For x > 0:  a + x < b =>  For y > 0:  a - b + y * abs(a+b) < 0
+	// a < b   <= For x > 0:  a + x < b =>  For y > 0:  a - b + y * fabs(a+b) < 0
 	// ATTENTION:
 	// - "1 +" is required to handle accumulation error correctly for float numbers < 1
 	// - "precision_limit" must be the first multiplier to have correct evaluation for huge values
@@ -262,14 +262,14 @@ lessx(const ValT a, const ValT b=ValT(0), const float size=1)
 	// 	it will diminish precision and make the comparison invalid
 	// - fabs(a + b) should not be used in the normalization, it diminishes accuracy
 	// Exact solution:
-	//return a - b + precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b)) < 0;
+	//return a - b + precision_limit<ValT>() * (1 + log2f(size)) * max(fabs(a), fabs(b)) < 0;
 	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
 	// NOTE: CONFID multiplier in the end to not affect accuracy if sizeof(ValT) > sizeof(CONFID)
 	// NOTE: either <= with precision_limit<ValT>() or < with epsilon<ValT>()
 	// Faster computation with sufficient accuracy:
 	return (CONFIM < CONFIDENCE_DEN ? static_cast<ValT>(2 * CONFIM) / CONFIDENCE_DEN : 2)
 		* (a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
-		+ precision_limit<ValT>() * (1 + log2(size)) < 0;
+		+ precision_limit<ValT>() * (1 + log2f(size)) < 0;
 }
 
 //! \brief Strict less for integral numbers
@@ -367,13 +367,13 @@ equalx(const ValT a, const ValT b=ValT(0), const float size=1)
 	// - size should not be used as a direct multiplier, because for the huge number of items
 	// 	it will diminish precision and make the comparison invalid
 	//// - "fabs(a + b)" is not appropriate here in case of a = -b && b > 0  => fabs(a) + fabs(b)
-	//return fabs(a - b) <= precision_limit<ValT>() * (1 + log2(size)) * max(fabs(a), fabs(b));
+	//return fabs(a - b) <= precision_limit<ValT>() * (1 + log2f(size)) * max(fabs(a), fabs(b));
 	// NOTE: Exact Evaluations with Floating Point Numbers: https://goo.gl/A1DSwn
 	// NOTE: CONFID multiplier in the end to not affect accuracy if sizeof(ValT) > sizeof(CONFID)
 	// NOTE: either <= with precision_limit<ValT>() or < with epsilon<ValT>()
 	return (CONFIM < CONFIDENCE_DEN ? static_cast<ValT>(2 * CONFIM) / CONFIDENCE_DEN : 2)
 		* fabs(a - b) / (fabs(a) + fabs(b) + precision_limit<ValT>())
-		<= precision_limit<ValT>() * (1 + log2(size));
+		<= precision_limit<ValT>() * (1 + log2f(size));
 }
 
 //! \brief Strict equal for integral numbers
