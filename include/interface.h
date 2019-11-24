@@ -320,7 +320,7 @@ struct RowVecItem {
     //! \param i=Index() Index  - index of value in the row
     //! \param v=Value() Value  - payload value
 	template <typename T=Value, enable_if_t<sizeof(T) <= sizeof(void*)>* = nullptr>
-	RowVecItem(Index i=Index(), Value v=Value()) noexcept(Value())
+	RowVecItem(Index i=Index(), Value v=Value()) noexcept(static_cast<bool>(Value()))
 	: pos(i), val(v)  {}
 
 	//! Constructor in case of the compound value

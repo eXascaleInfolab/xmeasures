@@ -31,7 +31,7 @@
 //
 //	- UTEST  - build [also] unit tests, requires installation and linking of the unit test library.
 //
-// NOTE: undefined maro definition is interpreted as having value 0
+// NOTE: undefined macro definition is interpreted as having value 0
 
 #ifndef TRACE
 #ifdef DEBUG

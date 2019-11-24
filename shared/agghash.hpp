@@ -138,6 +138,8 @@ public:
 };
 
 // Type Definitions ----------------------------------------------------
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wterminate"  // Disable the warning about the exception throwing function marked as noexcept
 template <typename Id, typename AccId>
 void AggHash<Id, AccId>::add(Id id) noexcept
 {
@@ -151,6 +153,7 @@ void AggHash<Id, AccId>::add(Id id) noexcept
 	m_idsum += id;
 	m_id2sum += id * id;
 }
+#pragma GCC diagnostic pop
 
 template <typename Id, typename AccId>
 void AggHash<Id, AccId>::clear() noexcept

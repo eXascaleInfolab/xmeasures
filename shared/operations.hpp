@@ -18,7 +18,7 @@
 #include <limits>  // Type limits
 #include <type_traits>  // type check, enable_if_t
 #include <cassert>
-#include <utility>  // declval, move, forward
+#include <utility>  // declval, move, forward, make_pair
 #include <iterator>  // iterator_traits
 #include <stdexcept>  // Exception (for Arguments processing)
 #include <string>  // to_string
@@ -40,7 +40,7 @@ namespace daoc {
 //	element is not present
 //
 // NOTE:
-// - undefined maro definition is interpreted as having value 0
+// - undefined macro definition is interpreted as having value 0
 // - constexpr are noexcept since the noexcept operator always returns true for
 //	a constant expression
 

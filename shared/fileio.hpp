@@ -26,7 +26,7 @@
 #include <cmath>  // sqrt
 
 #ifdef INCLUDE_STL_FS
-#if defined(__has_include) && __has_include(<filesystem>)
+#if defined(__has_include) && __has_include(<filesystem>) && __cplusplus >= 201703L  // C++17+
 	#include <filesystem>
 	namespace fs = std::filesystem;
 #elif defined(__has_include) && __has_include(<experimental/filesystem>)
