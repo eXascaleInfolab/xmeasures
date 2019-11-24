@@ -18,6 +18,7 @@
 					<Add option="-Wextra" />
 					<Add option="-Og" />
 					<Add option="-g" />
+					<Add option="-fasynchronous-unwind-tables" />
 					<Add option="-fsanitize=address" />
 					<Add option="-fsanitize=leak" />
 					<Add option="-fsanitize=undefined" />
@@ -41,6 +42,7 @@
 					<Add option="-march=core2" />
 					<Add option="-fomit-frame-pointer" />
 					<Add option="-O3" />
+					<Add option="-Wfatal-errors" />
 					<Add option="-DTRACE=1" />
 					<Add option="-DVALIDATE=1" />
 				</Compiler>
