@@ -633,16 +633,16 @@ public:
     //!
     //! \param gt const CollectionT&  - ground-truth cluster collection
     //! \param cn const CollectionT&  - processing cluster collection
-	//! \param lostcls const RawIds&  - indices of the lost clusters during the node base
-	//! synchronization
+//	//! \param lostcls const RawIds&  - indices of the lost clusters during the node base
+//	//! synchronization
     //! \param prob bool  - Partial Probabilities or F1 (harmonic) matching policy
     //! \param weighted=true bool  - weight labels by the number of instances or
     //! treat each label equally
     //! \param flname=nullptr const char*  - resulting label indices filename (.cll format)
-    //! \param verbose=false bool  - print intermediate results to the stdout
+//    //! \param verbose=false bool  - print intermediate results to the stdout
     //! \return PrcRec  - resulting precision and recall for the labeled items
-	static PrcRec label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
-		, bool prob, bool weighted=true, const char* flname=nullptr, bool verbose=false);
+	static PrcRec label(const CollectionT& gt, const CollectionT& cn //, const RawIds& lostcls
+		, bool prob, bool weighted=true, const char* flname=nullptr); //, bool verbose=false);
 
 	//! \brief Specified F1 evaluation of the Greatest (Max) Match for the
 	//! multi-resolution clustering with possibly unequal node base

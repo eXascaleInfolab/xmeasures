@@ -219,8 +219,8 @@ int main(int argc, char **argv)
 			}
 			const bool  prob = args_info.policy_arg == policy_arg_partprob;  // Partial Probabilities matching policy
 			const bool  weighted = !args_info.unweighted_flag;
-			PrcRec pr = Collection::label(cn1, cn2, lostcls, prob, weighted
-				, args_info.identifiers_arg, args_info.detailed_flag);
+			PrcRec pr = Collection::label(cn1, cn2 //, lostcls
+				, prob, weighted, args_info.identifiers_arg); //, args_info.detailed_flag);
 			// Note: each measure name should form a single world to be properly parsed in a uniform way (see Clubmark),
 			// that is why doubled underscore is used rather than a single space.
 			printf("F1%c_%c__labels: %G (Prc: %G, Rec: %G)\n"

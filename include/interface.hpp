@@ -196,7 +196,7 @@ Collection<Count>::~Collection()
 
 template <typename Count>
 Collection<Count> Collection<Count>::load(const char* filename, bool makeunique, float membership
-	, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose)
+	, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, [[maybe_unused]] bool verbose)
 {
 	Collection  cn;  // Return using NRVO, named return value optimization
 
@@ -312,10 +312,7 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 		} while((tok = strtok(nullptr, mbdelim)));
 		if(!members.empty()) {
 			members.shrink_to_fit();  // Free over reserved space
-#if VALIDATE <= 1
-			if(makeunique)
-#endif // VALIDATE
-			{
+			if(makeunique) {
 				// Ensure or validate that members are unique
 				sort(members.begin(), members.end());
 				const auto im = unique(members.begin(), members.end());
@@ -408,8 +405,8 @@ void Collection<Count>::clearcounts() const noexcept
 }
 
 template <typename Count>
-PrcRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn, const RawIds& lostcls
-	, bool prob, bool weighted, const char* flname, bool verbose)
+PrcRec Collection<Count>::label(const CollectionT& gt, const CollectionT& cn  //, const RawIds& lostcls
+	, bool prob, bool weighted, const char* flname) //, bool verbose)
 {
 	// Initialized accessory data for evaluations if has not been done yet
 	// (nmi also initializes mbscont)
@@ -813,7 +810,7 @@ Probs Collection<Count>::gmatches(const CollectionT& cn, bool prob) const
 }
 
 template <typename Count>
-RawNmi Collection<Count>::nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase, bool verbose)
+RawNmi Collection<Count>::nmi(const CollectionT& cn1, const CollectionT& cn2, bool expbase, [[maybe_unused]] bool verbose)
 {
 	RawNmi  rnmi1;
 	if(!cn1.clsnum() || !cn2.clsnum())

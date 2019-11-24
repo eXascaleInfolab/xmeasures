@@ -194,7 +194,7 @@ void ensureDir(const string& dir)
 }
 
 void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum
-	, size_t& ndsnum, bool verbose)
+	, size_t& ndsnum, [[maybe_unused]] bool verbose)
 {
     //! Parse count value
     //! \return  - id value of 0 in case of parsing errors

@@ -379,7 +379,7 @@ equalx(const ValT a, const ValT b=ValT(0), const float size=1)
 //! \brief Strict equal for integral numbers
 template <typename ValT, ConfidanceInt CONFIM=CONFIDENCE_MUL>
 constexpr enable_if_t<is_integral<ValT>::value, bool>
-equalx(const ValT a, const ValT b=ValT(0), const float size=1)
+equalx(const ValT a, const ValT b=ValT(0), [[maybe_unused]] const float size=1)
 {
 	static_assert(is_integral<ValT>::value, "equal(), value type should be integral");
 	static_assert(CONFIM > 0 && CONFIM <= CONFIDENCE_DEN, "equal(), values CONFIDENCE should E (0, 1]");
