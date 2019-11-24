@@ -15,7 +15,7 @@
 					<Add option="-Wredundant-decls" />
 					<Add option="-Wswitch-default" />
 					<Add option="-Wmain" />
-					<Add option="-Wall" />
+					<Add option="-Wextra" />
 					<Add option="-Og" />
 					<Add option="-g" />
 					<Add option="-fsanitize=address" />
@@ -60,6 +60,7 @@
 			<Add option="-Wmissing-include-dirs" />
 			<Add option="-Weffc++" />
 			<Add option="-Wzero-as-null-pointer-constant" />
+			<Add option="-Wall" />
 			<Add option="-std=c++14" />
 			<Add option="-fexceptions" />
 			<Add option="-fstack-protector-strong" />
