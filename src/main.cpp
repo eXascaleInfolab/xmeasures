@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <sstream>
+#include <stdexcept>
 #include "cmdline.h"  // Arguments parsing
 #include "macrodef.h"
 #include "interface.hpp"
@@ -18,12 +19,23 @@
 using std::stringstream;
 
 
+//! \brief Arguments parser
+struct ArgParser: gengetopt_args_info {
+	ArgParser(int argc, char **argv) {
+		auto  err = cmdline_parser(argc, argv, this);
+		if(err)
+			throw std::invalid_argument("Arguments parsing failed: " + to_string(err));
+	}
+
+	~ArgParser() {
+		cmdline_parser_free(this);
+	}
+};
+
+
 int main(int argc, char **argv)
 {
-	gengetopt_args_info  args_info;
-	auto  err = cmdline_parser(argc, argv, &args_info);
-	if(err)
-		return err;
+	ArgParser  args_info(argc, argv);
 
 	// Validate required xmeasure
 	if(!args_info.omega_flag && !args_info.nmi_flag && !args_info.f1_given && !args_info.label_given) {
