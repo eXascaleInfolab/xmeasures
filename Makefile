@@ -12,30 +12,30 @@ LD = g++
 WINDRES = windres
 
 INC = -Iinclude -Iautogen -Ishared
-CFLAGS = -Wnon-virtual-dtor -Winit-self -Wcast-align -Wundef -Wfloat-equal -Wunreachable-code -Wmissing-include-dirs -Weffc++ -Wzero-as-null-pointer-constant -std=c++14 -fexceptions -fstack-protector-strong -Wno-float-equal -D_FORTIFY_SOURCE=2
+CFLAGS = -Wnon-virtual-dtor -Winit-self -Wcast-align -Wundef -Wfloat-equal -Wunreachable-code -Wmissing-include-dirs -Weffc++ -Wzero-as-null-pointer-constant -Wall -std=c++14 -fexceptions -fstack-protector-strong -fstack-clash-protection -Werror=format-security -Wold-style-cast -Wno-float-equal -D_FORTIFY_SOURCE=2
 RESINC = 
 LIBDIR = 
 LIB = -lstdc++fs
-LDFLAGS = 
+LDFLAGS = -Wl,-z,defs
 
 INC_DEBUG = $(INC)
-CFLAGS_DEBUG = $(CFLAGS) -Wredundant-decls -Winline -Wswitch-default -Wmain -Wall -g -DDEBUG -D_GLIBCXX_DEBUG -DTRACE=2 -DVALIDATE=2
+CFLAGS_DEBUG = $(CFLAGS) -Wredundant-decls -Wswitch-default -Wmain -Wextra -Og -g -fasynchronous-unwind-tables -fsanitize=address -fsanitize=leak -DDEBUG -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS -DTRACE=2 -DVALIDATE=2
 RESINC_DEBUG = $(RESINC)
 RCFLAGS_DEBUG = $(RCFLAGS)
 LIBDIR_DEBUG = $(LIBDIR)
-LIB_DEBUG = $(LIB)
+LIB_DEBUG = $(LIB)-lasan
 LDFLAGS_DEBUG = $(LDFLAGS)
 OBJDIR_DEBUG = obj/Debug
 DEP_DEBUG = 
 OUT_DEBUG = bin/Debug/xmeasures
 
 INC_RELEASE = $(INC)
-CFLAGS_RELEASE = $(CFLAGS) -march=core2 -fomit-frame-pointer -O3 -DTRACE=1 -DVALIDATE=1
+CFLAGS_RELEASE = $(CFLAGS) -march=core2 -fomit-frame-pointer -O3 -Wfatal-errors -DTRACE=1 -DVALIDATE=1
 RESINC_RELEASE = $(RESINC)
 RCFLAGS_RELEASE = $(RCFLAGS)
 LIBDIR_RELEASE = $(LIBDIR)
 LIB_RELEASE = $(LIB)
-LDFLAGS_RELEASE = $(LDFLAGS) -s
+LDFLAGS_RELEASE = $(LDFLAGS) -s -Wl,-z,relro,-z,now
 OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
 OUT_RELEASE = bin/Release/xmeasures
