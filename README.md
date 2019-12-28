@@ -53,8 +53,9 @@ $ make release
 ```
 To update/extend the input parameters modify `args.ggo` and run `GenerateArgparser.sh` (calls `gengetopt`) before running `make`. To install [*gengetopt*](https://www.gnu.org/software/gengetopt) execute: `$ sudo apt-get install gengetopt`.
 
-> Build errors might occur if the default *g++/gcc <= 5.x*.  
-Then `g++-5` should be installed and `Makefile` might need to be edited replacing `g++`, `gcc` with `g++-5`, `gcc-5`.
+> The following **build errors** might occur and should be resolved as outlined.  
+> If the default *g++/gcc <= 5.x*, then `g++-5` or higher should be installed and `Makefile` might need to be edited replacing `g++`, `gcc` with `g++-5`, `gcc-5`.  
+> `-fstack-clash-protection` compiler flag is added since `xmeasures v4.0.5`, which might not be supported by Clang/LLVM and GCC before v8.2. This flag just hardens the application against some stack overflow attacks and should be excluded form the `Makefile` if not supported on your platform.
 
 # Usage
 Execution Options:
