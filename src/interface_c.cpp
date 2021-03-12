@@ -175,3 +175,36 @@ Probability f1x(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
 	const auto c2 = loadCollection(cn2);
 	return Collection<Id>::f1(c1, c2, static_cast<F1>(kind), rec, prc, static_cast<Match>(mkind), verbose);
 }
+
+Probability omega(const NodeCollection cn1, const NodeCollection cn2)
+{
+	// Transform loaded and pre-processed collection to the representation
+	// suitable for Omega Index evaluation
+	RawClusters  cls1;
+	RawClusters  cls2;
+	NodeRClusters  ndrcs;
+
+	// Load nodes
+	auto c1 = loadCollection(cn1);
+	c1.template transfer<true>(cls1, ndrcs);
+	auto c2 = loadCollection(cn2);
+	c2.template transfer<false>(cls2, ndrcs);
+	return omega<false>(ndrcs, cls1, cls2);
+}
+
+Probability omegaExt(const NodeCollection cn1, const NodeCollection cn2)
+{
+	// Transform loaded and pre-processed collection to the representation
+	// suitable for Omega Index evaluation
+	RawClusters  cls1;
+	RawClusters  cls2;
+	NodeRClusters  ndrcs;
+
+	// Load nodes
+	auto c1 = loadCollection(cn1);
+	c1.template transfer<true>(cls1, ndrcs);
+	auto c2 = loadCollection(cn2);
+	c2.template transfer<false>(cls2, ndrcs);
+	return omega<true>(ndrcs, cls1, cls2);
+}
+

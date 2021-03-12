@@ -17,6 +17,7 @@ extern "C" {
 
 #include <stdint.h>  // uintX_t
 
+
 typedef uint32_t  NodeId;  //!< Node Id type
 typedef uint64_t  AccNodeId;  //!< Accumulated Node Id type
 
@@ -73,7 +74,7 @@ typedef float  Probability;
 //! of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
 //! \note Undirected (symmetric) evaluation
 //!
-//! \param cn1 const NodeCollection  - first collection
+//! \param cn1 const NodeCollection  - first collection of clusters (node relations)
 //! \param cn2 const NodeCollection  - second collection
 //! \param kind F1Kind  - kind of F1 to be evaluated
 //! \param rec Probability&  - recall of cn2 relative to the ground-truth cn1 or
@@ -87,6 +88,14 @@ Probability f1x(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
 	, Probability& rec, Probability& prc, MatchKind mkind, uint8_t verbose);
 Probability f1(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
 	, Probability& rec, Probability& prc);  // MATCH_WEIGHTED, false
+
+//! \brief (Extended) Omega Index evaluation
+//!
+//! \param cn1 const NodeCollection  - first collection of clusters (node relations)
+//! \param cn2 const NodeCollection  - second collection
+//! \return Probability  - omega index
+Probability omega(const NodeCollection cn1, const NodeCollection cn2);
+Probability omegaExt(const NodeCollection cn1, const NodeCollection cn2);
 
 #ifdef __cplusplus
 };
