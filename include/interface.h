@@ -611,6 +611,7 @@ public:
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
 	bool nodeExists(Id nid) const noexcept  { return m_ndcs.count(nid); }
 
+#ifndef NO_FILEIO
 	//! \brief Load collection from the CNL file
 	//! \pre All clusters in the file are expected to be unique and not validated for
 	//! the mutual match until makeunique is set
@@ -631,6 +632,7 @@ public:
 	static CollectionT load(const char* filename, bool makeunique=false
 		, float membership=1, AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
 		, RawIds* lostcls=nullptr, bool verbose=false);
+#endif // NO_FILEIO
 
     //! \brief Transfer collection data
     //! \post This collection becomes empty
