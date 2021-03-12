@@ -35,6 +35,8 @@ Author:  (c) Artem Lutov <artem@exascale.info>
 - [Deployment](#deployment)
 	- [Requirements](#requirements)
 	- [Compilation](#compilation)
+  	- [Application Compilation](#application-compilation)
+  	- [Library Compilation](#library-compilation)
 - [Usage](#usage)
 - [Related Projects](#related-projects)
 
@@ -48,6 +50,7 @@ There are no any requirements for the execution or compilation except the *stand
 To run the *prebuilt executable* on Linux Ubuntu 16.04 x64, the standard library can be installed by: `$ sudo apt-get install libstdc++6`.
 
 ## Compilation
+### Application Compilation
 ```
 $ make release
 ```
@@ -57,6 +60,15 @@ The following **build errors** might occur on some platforms and should be resol
 * `-fstack-clash-protection` compiler flag is added since `xmeasures v4.0.5`, which might not be supported by Clang/LLVM and *GCC < 8.2*. This flag just hardens the application against some stack overflow attacks and should be excluded from the `Makefile` if not supported on your platform.
 
 To **update/extend the input parameters**, modify `args.ggo` and run `GenerateArgparser.sh` (calls `gengetopt`) before running `make`. To install [*gengetopt*](https://www.gnu.org/software/gengetopt), execute: `$ sudo apt-get install gengetopt`.
+
+
+### Library Compilation
+Some core functionality of xmeasures is available as a library with C API, making it possible to link the library from Python and other scripting languages.  
+The interface is defined in `include/interface_c.h`.  
+To build the library, execute:
+```
+$ make -f makefile_libxmeasures release
+```
 
 # Usage
 Execution Options:

@@ -20,6 +20,7 @@
 					<Add option="-Wswitch-default" />
 					<Add option="-Wmain" />
 					<Add option="-Wall" />
+					<Add option="-fPIC" />
 					<Add option="-Og" />
 					<Add option="-g" />
 					<Add option="-Wsuggest-final-types" />

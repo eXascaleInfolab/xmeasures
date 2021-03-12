@@ -19,7 +19,7 @@ LIB =
 LDFLAGS = -Wl,-z,defs
 
 INC_DEBUG = $(INC)
-CFLAGS_DEBUG = $(CFLAGS) -Wredundant-decls -Winline -Wswitch-enum -Wswitch-default -Wmain -Wall -Og -g -Wsuggest-final-types -Wsuggest-final-methods -ftemplate-backtrace-limit=32 -fasynchronous-unwind-tables -fsanitize=leak -fsanitize=address -DDEBUG -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS -DTRACE=2 -DVALIDATE=2
+CFLAGS_DEBUG = $(CFLAGS) -Wredundant-decls -Winline -Wswitch-enum -Wswitch-default -Wmain -Wall -fPIC -Og -g -Wsuggest-final-types -Wsuggest-final-methods -ftemplate-backtrace-limit=32 -fasynchronous-unwind-tables -fsanitize=leak -fsanitize=address -DDEBUG -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS -DTRACE=2 -DVALIDATE=2
 RESINC_DEBUG = $(RESINC)
 RCFLAGS_DEBUG = $(RCFLAGS)
 LIBDIR_DEBUG = $(LIBDIR)
