@@ -648,7 +648,7 @@ public:
     //! \return void
 	void clearcounts() const noexcept;
 
-    //! \brief Label collection clusters according to the ground-truth cluster indices
+    //! \brief Label collection of clusters according to the ground-truth cluster indices
     //!
     //! \param gt const CollectionT&  - ground-truth cluster collection
     //! \param cn const CollectionT&  - processing cluster collection
