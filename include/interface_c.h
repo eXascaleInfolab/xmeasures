@@ -20,19 +20,20 @@ extern "C" {
 
 typedef uint32_t  NodeId;  //!< Node Id type
 typedef uint64_t  AccNodeId;  //!< Accumulated Node Id type
+typedef float  LinkWeight;  ///< Link weight
 
 //! \brief Node relations
 typedef struct {
 	NodeId  sid;  //!< Id of the source node
 	NodeId  dnum;  //!< The number of destination nodes
 	NodeId*  dids;  //!< Ids of destination nodes
-	NodeId*  dws;  //!< Weighte of the relations to the destination nodes, can be NULL
+	LinkWeight*  dws;  //!< Weighte of the relations to the destination nodes, can be NULL
 } NodeRels;
 
 //! \brief Node collection (clusters)
 typedef struct {
-	NodeId  snum;  //!< The number of source nodes
-	NodeRels*  srels;  //!< Relations of source nodes
+	NodeId  rnum;  //!< The number of node relations (clusters) in a collection
+	NodeRels*  rels;  //!< Relations of nodes
 } NodeCollection;
 
 //! \brief F1 Kind

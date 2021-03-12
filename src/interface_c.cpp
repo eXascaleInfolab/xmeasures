@@ -54,22 +54,22 @@ Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
 	, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose)
 {
 	Collection<Id>  cn;  // Return using NRVO, named return value optimization
-	if(!rcn.srels) {
+	if(!rcn.rels) {
 		fputs("WARNING loadCollection(), the empty input collection is omitted\n", stderr);
 		return cn;
 	}
 
 	// Preallocate space for the clusters and nodes
-	size_t  nsnum = rcn.snum * 2;  // The (estimated) number of nodes
-	if(cn.m_cls.capacity() < rcn.snum)  //  * cn.m_cls.max_load_factor()
-		cn.m_cls.reserve(rcn.snum);
+	size_t  nsnum = rcn.rnum * 2;  // The (estimated) number of nodes
+	if(cn.m_cls.capacity() < rcn.rnum)  //  * cn.m_cls.max_load_factor()
+		cn.m_cls.reserve(rcn.rnum);
 	if(cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() < nsnum)
 		cn.m_ndcs.reserve(nsnum);
 
 	// Load clusters
 #if TRACE >= 2
 	fprintf(stderr, "loadCollection(), expected %lu clusters, %lu nodes from %u raw node relations\n"
-		, rcn.snum, nsnum, rcn.snum);
+		, rcn.rnum, nsnum, rcn.rnum);
 	if(nodebase)
 		fprintf(stderr, "loadCollection(), nodebase provided with %u nodes\n", nodebase->ndsnum());
 #endif // TRACE
@@ -77,10 +77,10 @@ Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
 	// Parse clusters
 	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
 	ClusterHolder<Id>  chd(new Cluster<Id>());
-	for(NodeId i = 0; i < rcn.snum; ++i) {
+	for(NodeId i = 0; i < rcn.rnum; ++i) {
 		Cluster<Id>* const  pcl = chd.get();
 		auto& members = pcl->members;
-		const auto& ndrels = rcn.srels[i];
+		const auto& ndrels = rcn.rels[i];
 		// Filter out nodes if required
 		if(nodebase && !nodebase->nodeExists(ndrels.sid))
 			continue;
@@ -150,11 +150,11 @@ Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, cn.m_ndcs.size() ? float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.size() * 100
 			: numeric_limits<float>::infinity()
-		, cn.m_ndshash, rcn.snum);
+		, cn.m_ndshash, rcn.rnum);
 #elif TRACE >= 1
 	if(verbose)
 		printf("loadCollection(), loaded %lu clusters %lu nodes from %u raw node relations\n", cn.m_cls.size()
-			, cn.m_ndcs.size(), rcn.snum);
+			, cn.m_ndcs.size(), rcn.rnum);
 #endif
 
 	return cn;
