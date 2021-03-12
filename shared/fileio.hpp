@@ -273,6 +273,8 @@ public:
 	bool readline(FILE* input);
 };
 
+#ifndef NO_FILEIO  // Turn off file I/O
+
 // File I/O functions declaration ----------------------------------------------
 //! \brief Ensure existence of the specified directory
 //!
@@ -306,7 +308,7 @@ void parseCnlHeader(NamedFileWrapper& fcls, StringBuffer& line, size_t& clsnum
 //! \param cmin=0 size_t  - min allowed cluster size
 //! \param cmax=0 size_t  - max allowed cluster size, 0 means any size
 //! \param verbose=true bool  - print the number of loaded nodes to the stdout
-//! \return bool  - the collection is loaded successfully
+//! \return unordered_set<Id>  - the loaded collection of nodes
 template <typename Id, typename AccId>
 unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership=1
 	, AggHash<Id, AccId>* ahash=nullptr, size_t cmin=0, size_t cmax=0, bool verbose=true);
@@ -451,6 +453,8 @@ unordered_set<Id> loadNodes(NamedFileWrapper& file, float membership
 
 	return nodebase;
 }
+
+#endif  // NO_FILEIO
 
 }  // daoc
 

@@ -26,6 +26,10 @@
 #include "operations.hpp"
 #endif // VALIDATE 2
 
+#ifdef C_API
+#include "interface_c.h"
+#endif // C_API
+
 
 using std::vector;
 using std::unordered_set;
@@ -487,6 +491,7 @@ struct NodeBase: protected UniqIds, NodeBaseI {
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
 	bool nodeExists(Id nid) const noexcept  { return count(nid); }
 
+#ifndef NO_FILEIO
 	//! \brief Load all unique nodes from the CNL file with optional filtering by the cluster size
 	//!
 	//! \param filename const char*  - name of the input file
@@ -501,6 +506,7 @@ struct NodeBase: protected UniqIds, NodeBaseI {
     //! \return bool  - the collection is loaded successfully
 	static NodeBase load(const char* filename, float membership=1
 		, AggHash* ahash=nullptr, size_t cmin=0, size_t cmax=0, bool verbose=false);
+#endif // NO_FILEIO
 };
 
 //! Collection matching kind base
@@ -544,6 +550,14 @@ struct PrcRec {
 	PrcRec(Prob prc=0, Prob rec=0): prc(prc), rec(rec)  {}
 };
 
+#ifdef C_API
+template <typename Count>
+class Collection;
+
+Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
+	, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose);
+#endif // C_API
+
 //! Collection describing cluster-node relations
 //! \tparam Count  - arithmetic counting type
 template <typename Count>
@@ -557,6 +571,11 @@ public:
 	//! Clusters matching matrix
 	using ClustersMatching = SparseMatrix<Cluster<Count>*, AccCont>;  // Used only for NMI
 	using ClsLabels = ClustersLabels<Count>;
+
+#ifdef C_API
+	friend Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
+		, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose);
+#endif // C_API
 private:
 	// ATTENTNION: Collection manages the memory of the m_cls
 	ClusterPtrs<Count>  m_cls;  //!< Clusters

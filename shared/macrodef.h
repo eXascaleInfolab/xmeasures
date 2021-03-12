@@ -31,6 +31,8 @@
 //
 //	- UTEST  - build [also] unit tests, requires installation and linking of the unit test library.
 //
+//	- NO_FILEIO  - omit STL file I/O related routines
+//
 // NOTE: undefined macro definition is interpreted as having value 0
 
 #ifndef TRACE

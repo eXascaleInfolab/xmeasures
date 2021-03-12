@@ -151,6 +151,7 @@ bool xumatch(Match m) noexcept
 	return m == Match::UNWEIGHTED || m == Match::COMBINED;
 }
 
+#ifndef NO_FILEIO
 NodeBase NodeBase::load(const char* filename, float membership
 	, ::AggHash* ahash, size_t cmin, size_t cmax, bool verbose)
 {
@@ -163,6 +164,7 @@ NodeBase NodeBase::load(const char* filename, float membership
 
 	return nb;
 }
+#endif // NO_FILEIO
 
 // Accessory functions ---------------------------------------------------------
 Id  parseId(char* str)

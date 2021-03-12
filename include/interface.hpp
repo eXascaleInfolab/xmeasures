@@ -181,6 +181,7 @@ Collection<Count>::~Collection()
 	m_cls.clear();
 }
 
+#ifndef NO_FILEIO
 template <typename Count>
 Collection<Count> Collection<Count>::load(const char* filename, bool makeunique, float membership
 	, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, [[maybe_unused]] bool verbose)
@@ -292,13 +293,10 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 				continue;
 			members.push_back(nid);
 			auto& ncs = cn.m_ndcs[nid];
-			// Update hash if required
-			if(ncs.empty())
-				mbhash.add(nid);
+			// Note: the hash should be updated later considering that some nodes can be removed
 			ncs.push_back(pcl);
 		} while((tok = strtok(nullptr, mbdelim)));
 		if(!members.empty()) {
-			members.shrink_to_fit();  // Free over reserved space
 			if(makeunique) {
 				// Ensure or validate that members are unique
 				sort(members.begin(), members.end());
@@ -317,8 +315,12 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 					//throw invalid_argument("load(), the cluster contains duplicated members\n");
 				}
 			}
-			//for(auto v: members)
-			//	printf(" %u", v);
+			members.shrink_to_fit();  // Free over reserved space
+			// Update hash
+			for(auto v: members) {
+				mbhash.add(v);
+				//printf(" %u", v);
+			}
 			//puts("");
 			cn.m_cls.push_back(chd.release());
 			// Start filling a new cluster
@@ -356,6 +358,7 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 
 	return cn;
 }
+#endif // NO_FILEIO
 
 template <typename Count>
 template <bool FIRST>
