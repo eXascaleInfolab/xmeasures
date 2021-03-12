@@ -554,7 +554,7 @@ struct PrcRec {
 template <typename Count>
 class Collection;
 
-Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
+Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 	, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose);
 #endif // C_API
 
@@ -573,7 +573,7 @@ public:
 	using ClsLabels = ClustersLabels<Count>;
 
 #ifdef C_API
-	friend Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
+	friend Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 		, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose);
 #endif // C_API
 private:

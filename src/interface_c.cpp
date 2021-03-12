@@ -33,7 +33,7 @@ using std::unordered_set;
 //! \pre All clusters in the collection are expected to be unique and not validated for
 //! the mutual match until makeunique is set
 //!
-//! \param rcn const NodeCollection  - raw collection of nodes
+//! \param rcn const ClusterCollection  - raw collection of nodes
 //! \param makeunique=false bool  - ensure that clusters contain unique members by
 //! 	removing the duplicates
 //! \param membership=1 float  - expected membership of the nodes, >0, typically >= 1.
@@ -46,30 +46,30 @@ using std::unordered_set;
 //! synchronization
 //! \param verbose=false bool  - print the number of loaded nodes to the stdout
 //! \return CollectionT  - the collection is loaded successfully
-Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique=false
+Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique=false
 	, float membership=1, ::AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
 	, RawIds* lostcls=nullptr, bool verbose=false);
 
-Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
+Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 	, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose)
 {
 	Collection<Id>  cn;  // Return using NRVO, named return value optimization
-	if(!rcn.rels) {
+	if(!rcn.nodes) {
 		fputs("WARNING loadCollection(), the empty input collection is omitted\n", stderr);
 		return cn;
 	}
 
 	// Preallocate space for the clusters and nodes
-	size_t  nsnum = rcn.rnum * 2;  // The (estimated) number of nodes
-	if(cn.m_cls.capacity() < rcn.rnum)  //  * cn.m_cls.max_load_factor()
-		cn.m_cls.reserve(rcn.rnum);
+	size_t  nsnum = rcn.num * 2;  // The (estimated) number of nodes
+	if(cn.m_cls.capacity() < rcn.num)  //  * cn.m_cls.max_load_factor()
+		cn.m_cls.reserve(rcn.num);
 	if(cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() < nsnum)
 		cn.m_ndcs.reserve(nsnum);
 
 	// Load clusters
 #if TRACE >= 2
 	fprintf(stderr, "loadCollection(), expected %lu clusters, %lu nodes from %u raw node relations\n"
-		, rcn.rnum, nsnum, rcn.rnum);
+		, rcn.num, nsnum, rcn.num);
 	if(nodebase)
 		fprintf(stderr, "loadCollection(), nodebase provided with %u nodes\n", nodebase->ndsnum());
 #endif // TRACE
@@ -77,17 +77,14 @@ Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
 	// Parse clusters
 	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
 	ClusterHolder<Id>  chd(new Cluster<Id>());
-	for(NodeId i = 0; i < rcn.rnum; ++i) {
+	for(NodeId i = 0; i < rcn.num; ++i) {
 		Cluster<Id>* const  pcl = chd.get();
 		auto& members = pcl->members;
-		const auto& ndrels = rcn.rels[i];
-		// Filter out nodes if required
-		if(nodebase && !nodebase->nodeExists(ndrels.sid))
-			continue;
-		members.reserve(ndrels.dnum);
-		for(NodeId j = 0; j < ndrels.dnum; ++j) {
-			assert(ndrels.dids && "Invalid (non-allocated) node relations");
-			const auto did = ndrels.dids[j];
+		const auto& ndrels = rcn.nodes[i];
+		members.reserve(ndrels.num);
+		for(NodeId j = 0; j < ndrels.num; ++j) {
+			assert(ndrels.ids && "Invalid (non-allocated) node relations");
+			const auto did = ndrels.ids[j];
 			// Filter out nodes if required
 			if(nodebase && !nodebase->nodeExists(did))
 				continue;
@@ -150,24 +147,24 @@ Collection<Id> loadCollection(const NodeCollection rcn, bool makeunique
 		, cn.m_ndcs.size(), cn.m_ndcs.bucket_count()
 		, cn.m_ndcs.size() ? float(cn.m_ndcs.bucket_count() - cn.m_ndcs.size()) / cn.m_ndcs.size() * 100
 			: numeric_limits<float>::infinity()
-		, cn.m_ndshash, rcn.rnum);
+		, cn.m_ndshash, rcn.num);
 #elif TRACE >= 1
 	if(verbose)
 		printf("loadCollection(), loaded %lu clusters %lu nodes from %u raw node relations\n", cn.m_cls.size()
-			, cn.m_ndcs.size(), rcn.rnum);
+			, cn.m_ndcs.size(), rcn.num);
 #endif
 
 	return cn;
 }
 
 // Interface implementation ----------------------------------------------------
-Probability f1(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
+Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
 	, Probability& rec, Probability& prc)
 {
 	return f1x(cn1, cn2, kind, rec, prc, MATCH_WEIGHTED, 0);
 }
 
-Probability f1x(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
+Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
 	, Probability& rec, Probability& prc, MatchKind mkind, uint8_t verbose)
 {
 	// Load nodes
@@ -176,7 +173,7 @@ Probability f1x(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
 	return Collection<Id>::f1(c1, c2, static_cast<F1>(kind), rec, prc, static_cast<Match>(mkind), verbose);
 }
 
-Probability omega(const NodeCollection cn1, const NodeCollection cn2)
+Probability omega(const ClusterCollection cn1, const ClusterCollection cn2)
 {
 	// Transform loaded and pre-processed collection to the representation
 	// suitable for Omega Index evaluation
@@ -192,7 +189,7 @@ Probability omega(const NodeCollection cn1, const NodeCollection cn2)
 	return omega<false>(ndrcs, cls1, cls2);
 }
 
-Probability omegaExt(const NodeCollection cn1, const NodeCollection cn2)
+Probability omegaExt(const ClusterCollection cn1, const ClusterCollection cn2)
 {
 	// Transform loaded and pre-processed collection to the representation
 	// suitable for Omega Index evaluation

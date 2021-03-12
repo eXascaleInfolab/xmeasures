@@ -24,17 +24,16 @@ typedef float  LinkWeight;  ///< Link weight
 
 //! \brief Node relations
 typedef struct {
-	NodeId  sid;  //!< Id of the source node
-	NodeId  dnum;  //!< The number of destination nodes
-	NodeId*  dids;  //!< Ids of destination nodes
-	LinkWeight*  dws;  //!< Weighte of the relations to the destination nodes, can be NULL
-} NodeRels;
+	NodeId  num;  //!< The number of cluster nodes
+	NodeId*  ids;  //!< Node ids
+	LinkWeight*  weights;  //!< Node weights in this cluster, can be NULL which means equal weights = 1
+} ClusterNodes;
 
 //! \brief Node collection (clusters)
 typedef struct {
-	NodeId  rnum;  //!< The number of node relations (clusters) in a collection
-	NodeRels*  rels;  //!< Relations of nodes
-} NodeCollection;
+	NodeId  num;  //!< The number of node relations (clusters) in a collection
+	ClusterNodes*  nodes;  //!< Relations of nodes
+} ClusterCollection;
 
 //! \brief F1 Kind
 typedef enum {
@@ -75,8 +74,8 @@ typedef float  Probability;
 //! of the Greatest (Max) Match [Weighted] Average Harmonic Mean evaluation
 //! \note Undirected (symmetric) evaluation
 //!
-//! \param cn1 const NodeCollection  - first collection of clusters (node relations)
-//! \param cn2 const NodeCollection  - second collection
+//! \param cn1 const ClusterCollection  - first collection of clusters (node relations)
+//! \param cn2 const ClusterCollection  - second collection
 //! \param kind F1Kind  - kind of F1 to be evaluated
 //! \param rec Probability&  - recall of cn2 relative to the ground-truth cn1 or
 //! 0 if the matching strategy does not have the precision/recall notations
@@ -85,18 +84,18 @@ typedef float  Probability;
 //! \param mkind=MATCH_WEIGHTED MatchKind  - matching kind
 //! \param verbose=0 uint8_t  - print intermediate results to the stdout
 //! \return Probability  - resulting F1_gm
-Probability f1x(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
+Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
 	, Probability& rec, Probability& prc, MatchKind mkind, uint8_t verbose);
-Probability f1(const NodeCollection cn1, const NodeCollection cn2, F1Kind kind
+Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
 	, Probability& rec, Probability& prc);  // MATCH_WEIGHTED, false
 
 //! \brief (Extended) Omega Index evaluation
 //!
-//! \param cn1 const NodeCollection  - first collection of clusters (node relations)
-//! \param cn2 const NodeCollection  - second collection
+//! \param cn1 const ClusterCollection  - first collection of clusters (node relations)
+//! \param cn2 const ClusterCollection  - second collection
 //! \return Probability  - omega index
-Probability omega(const NodeCollection cn1, const NodeCollection cn2);
-Probability omegaExt(const NodeCollection cn1, const NodeCollection cn2);
+Probability omega(const ClusterCollection cn1, const ClusterCollection cn2);
+Probability omegaExt(const ClusterCollection cn1, const ClusterCollection cn2);
 
 #ifdef __cplusplus
 };
