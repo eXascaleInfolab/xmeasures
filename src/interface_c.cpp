@@ -178,6 +178,11 @@ Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind 
 Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
 	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t verbose)
 {
+#if TRACE >= 2
+	if(verbose)
+		printf("%s(), loading clustering collections of size: %u, %u\n", __FUNCTION__
+			, cn1.num, cn2.num);
+#endif // TRACE
 	// Load nodes
 	const auto c1 = loadCollection(cn1);
 	const auto c2 = loadCollection(cn2);
