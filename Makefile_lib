@@ -27,7 +27,7 @@ LIB_DEBUG = $(LIB)-lasan
 LDFLAGS_DEBUG = $(LDFLAGS)
 OBJDIR_DEBUG = obj/Debug
 DEP_DEBUG = 
-OUT_DEBUG = bin/Debug/xmeasures.so
+OUT_DEBUG = bin/Debug/libxmeasures.so
 
 INC_RELEASE = $(INC)
 CFLAGS_RELEASE = $(CFLAGS) -fomit-frame-pointer -O3 -march=core2 -ftemplate-backtrace-limit=32 -Wno-strict-aliasing -DTRACE=1 -DVALIDATE=1
@@ -38,7 +38,7 @@ LIB_RELEASE = $(LIB)
 LDFLAGS_RELEASE = $(LDFLAGS) -s
 OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
-OUT_RELEASE = bin/Release/xmeasures.so
+OUT_RELEASE = bin/Release/libxmeasures.so
 
 OBJ_DEBUG = $(OBJDIR_DEBUG)/src/interface.o $(OBJDIR_DEBUG)/src/interface_c.o
 

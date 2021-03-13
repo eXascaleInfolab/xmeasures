@@ -67,7 +67,7 @@ Some core functionality of xmeasures is available as a library with C API, makin
 The interface is defined in `include/interface_c.h`.  
 To build the library, execute:
 ```
-$ make -f makefile_libxmeasures release
+$ make -f Makefile_lib release
 ```
 
 # Usage

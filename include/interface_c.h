@@ -77,17 +77,19 @@ typedef float  Probability;
 //! \param cn1 const ClusterCollection  - first collection of clusters (node relations)
 //! \param cn2 const ClusterCollection  - second collection
 //! \param kind F1Kind  - kind of F1 to be evaluated
-//! \param rec Probability&  - recall of cn2 relative to the ground-truth cn1 or
+//! \param[out] rec Probability*  - recall of cn2 relative to the ground-truth cn1 or
 //! 0 if the matching strategy does not have the precision/recall notations
-//! \param prc Probability&  - precision of cn2 relative to the ground-truth cn1 or
+//! \param[out] prc Probability*  - precision of cn2 relative to the ground-truth cn1 or
 //! 0 if the matching strategy does not have the precision/recall notations
 //! \param mkind=MATCH_WEIGHTED MatchKind  - matching kind
 //! \param verbose=0 uint8_t  - print intermediate results to the stdout
 //! \return Probability  - resulting F1_gm
 Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
-	, Probability& rec, Probability& prc, MatchKind mkind, uint8_t verbose);
+	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t verbose);
 Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
-	, Probability& rec, Probability& prc);  // MATCH_WEIGHTED, false
+	, Probability* rec, Probability* prc);  // MATCH_WEIGHTED, false
+Probability f1p(const ClusterCollection cn1, const ClusterCollection cn2);  // MATCH_WEIGHTED, false
+Probability f1h(const ClusterCollection cn1, const ClusterCollection cn2);  // MATCH_WEIGHTED, false
 
 //! \brief (Extended) Omega Index evaluation
 //!

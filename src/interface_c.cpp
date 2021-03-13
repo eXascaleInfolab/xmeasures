@@ -158,19 +158,31 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 }
 
 // Interface implementation ----------------------------------------------------
-Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
-	, Probability& rec, Probability& prc)
+Probability f1p(const ClusterCollection cn1, const ClusterCollection cn2)
 {
-	return f1x(cn1, cn2, kind, rec, prc, MATCH_WEIGHTED, 0);
+	return f1(cn1, cn2, F1_PARTPROB, nullptr, nullptr);
+}
+
+Probability f1h(const ClusterCollection cn1, const ClusterCollection cn2)
+{
+	return f1(cn1, cn2, F1_HARMONIC, nullptr, nullptr);
+}
+
+Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
+	, Probability* rec, Probability* prc)
+{
+	Probability  tmp;  // Temporary buffer, a placeholder
+	return f1x(cn1, cn2, kind, rec ? rec : &tmp, prc ? prc : &tmp, MATCH_WEIGHTED, 0);
 }
 
 Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
-	, Probability& rec, Probability& prc, MatchKind mkind, uint8_t verbose)
+	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t verbose)
 {
 	// Load nodes
 	const auto c1 = loadCollection(cn1);
 	const auto c2 = loadCollection(cn2);
-	return Collection<Id>::f1(c1, c2, static_cast<F1>(kind), rec, prc, static_cast<Match>(mkind), verbose);
+	assert(rec && prc && "Invalid output arguments");
+	return Collection<Id>::f1(c1, c2, static_cast<F1>(kind), *rec, *prc, static_cast<Match>(mkind), verbose);
 }
 
 Probability omega(const ClusterCollection cn1, const ClusterCollection cn2)
