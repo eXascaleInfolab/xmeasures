@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 :Description: Python API and usage example for C API of the xmeasures library
+Note that items in collections are allowed to be non-contiguous (i.e., hashes can be used as ids)
 
 :Authors: (c) Artem Lutov <lua@lutan.ch>
 :Date: 2020-03-12
@@ -73,11 +74,13 @@ if __name__ == "__main__":
 	xms.f1p.restype = c_float
 	xms.f1h.restype = c_float
 	xms.omegaExt.restype = c_float
+	xms.omega.restype = c_float
 	# Perform evaluations
-	nc1 = clusterCollection(((1,2,4), (2,3)))
-	nc2 = clusterCollection(((1,3,2), (2,4)))
-	print('F1p: {}, F1h: {}, omegaExt: {}'.format(
+	nc1 = clusterCollection(((9,2,4), (2,13)))
+	nc2 = clusterCollection(((9,13,2), (2,4)))
+	print('F1p: {}, F1h: {}, omegaExt: {}, omega: {}'.format(
 		xms.f1p(nc1, nc2),
 		xms.f1h(nc1, nc2),
-		xms.omegaExt(nc1, nc2)
+		xms.omegaExt(nc1, nc2),
+		xms.omega(nc1, nc2)
 	))
