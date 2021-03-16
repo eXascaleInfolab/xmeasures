@@ -456,6 +456,9 @@ struct RawNmi {
 };
 
 // Collection ------------------------------------------------------------------
+//! Unique ids (node ids)
+using UniqIds = unordered_set<Id>;
+
 //! Node base interface
 struct NodeBaseI {
     //! \brief Default virtual destructor
@@ -476,20 +479,29 @@ struct NodeBaseI {
     //! \param nid  - node id
     //! \return bool  - specified node id exists
 	virtual bool nodeExists(Id nid) const noexcept = 0;
-};
 
-//! Unique ids (node ids)
-using UniqIds = unordered_set<Id>;
+	//! \brief Nodebase content
+	//!
+	//! \return virtual const UniqIds&  - nodebase content
+	virtual const UniqIds& nodes() const noexcept = 0;
+};
 
 //! Node base
 struct NodeBase: protected UniqIds, NodeBaseI {
 	using UniqIds::clear;
+	using UniqIds::reserve;
+	using UniqIds::insert;
+	using UniqIds::begin;
+	using UniqIds::end;
 
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
-	Id ndsnum() const noexcept  { return size(); }
+	Id ndsnum() const noexcept override  { return size(); }
 
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
-	bool nodeExists(Id nid) const noexcept  { return count(nid); }
+	bool nodeExists(Id nid) const noexcept override  { return count(nid); }
+
+	//! \copydoc NodeBaseI::nodes() const noexcept
+	const UniqIds& nodes() const noexcept override  { return *this; }
 
 #ifndef NO_FILEIO
 	//! \brief Load all unique nodes from the CNL file with optional filtering by the cluster size
@@ -508,6 +520,42 @@ struct NodeBase: protected UniqIds, NodeBaseI {
 		, AggHash* ahash=nullptr, size_t cmin=0, size_t cmax=0, bool verbose=false);
 #endif // NO_FILEIO
 };
+
+//template <typename Iter>
+//Id iterValSimple(Iter it) noexcept  { return *it; }
+//
+//template <typename Iter>
+//Id iterValFirst(Iter it) noexcept  { return it->first; }
+//
+////! \brief Identify external nodes that are complementary (do not belong) to the node base
+////!
+////! \tparam Iter  - iterator type for the external nodes
+////! \tparam IterValF  - function, obtaining node value from the iterator
+////!
+////! \param begin  - begin of the external nodes
+////! \param end  - end of the external nodes
+////! \param size=0 Id  - size of the external nodes, 0 means not specified; used to pre-allocate data
+////! \param itval=iterValSimple<Iter> IterValF  - iterator value extracting function
+////! \return RawIds  - external nodes that are complementary (do not belong) to the node base
+//template <typename Iter, typename IterValF>
+//virtual RawIds complementary(Iter begin, Iter end, Id size=0, IterValF itval=iterValSimple<Iter>) const noexcept = 0;
+//
+//template <typename Iter, typename IterValF>
+//RawIds NodeBase::complementary(Iter begin, Iter end, Id size, IterValF itval) const override noexcept
+//{
+//	RawIds ndcpl;  // Return using NRVO, named return value optimization
+//	UniqIds ndext;  // External nodes, whose complementary values should be extracted
+//	if(size)
+//		ndext.reserve(size);
+//	for(Iter it = begin; it != end; ++it)
+//		ndext.insert(ndext.end(), itval(it));
+//	ndcpl.reserve(ndext.size() - this->size());
+//	for(auto nid: ndext)
+//		if(!count(nid))
+//			ndcpl.push_back(nid);
+//
+//	return ndcpl;
+//}
 
 //! Collection matching kind base
 using MatchBase = uint8_t;
@@ -573,8 +621,8 @@ public:
 	using ClsLabels = ClustersLabels<Count>;
 
 #ifdef C_API
-	friend Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
-		, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose);
+	friend Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique, float membership
+		, ::AggHash* ahash, const NodeBaseI* nodebase, bool reduce, RawIds* lostcls, bool verbose);
 #endif // C_API
 private:
 	// ATTENTNION: Collection manages the memory of the m_cls
@@ -584,6 +632,13 @@ private:
 	//mutable bool  m_dirty;  //!< The cluster members contribution is not zero (should be reseted on reprocessing)
 	//! Sum of contributions of all members in each cluster
 	mutable AccCont  m_contsum;  // Used by NMI only, marked also by overlapping F1
+
+	//! \copydoc NodeBaseI::nodes() const noexcept
+	const UniqIds& nodes() const noexcept override  // Make a stub and close it
+	{
+		assert(0 && "Nodes should not be accessed in collection via the NodeBaseI interface");
+		return UniqIds();  // Stub output
+	}
 protected:
     //! Default constructor
 	Collection(): m_cls(), m_ndcs(), m_ndshash(0), m_contsum(0)  {}  //, m_dirty(false)  {}
@@ -603,13 +658,11 @@ public:
     //! \return Id  - the number of clusters in the collection
 	Id clsnum() const noexcept  { return m_cls.size(); }
 
-    //! \brief The number of nodes
-    //!
-    //! \return Id  - the number of nodes in the collection
-	Id ndsnum() const noexcept  { return m_ndcs.size(); }
+	//! \copydoc NodeBaseI::ndsnum() const noexcept
+	Id ndsnum() const noexcept override  { return m_ndcs.size(); }
 
 	//! \copydoc NodeBaseI::nodeExists(Id nid) const noexcept
-	bool nodeExists(Id nid) const noexcept  { return m_ndcs.count(nid); }
+	bool nodeExists(Id nid) const noexcept override  { return m_ndcs.count(nid); }
 
 #ifndef NO_FILEIO
 	//! \brief Load collection from the CNL file
@@ -649,6 +702,17 @@ public:
     //!
     //! \return void
 	void clearcounts() const noexcept;
+
+//	//! \brief Synchronize the node base of the cluster collections
+//	//!
+//	//! \tparam REDUCE bool  - whether to reduce collections by removing the non-matching nodes
+//	//! 	or extend collections by appending those nodes them to a single "noise" cluster
+//	///
+//	/// \param cn1 CollectionT&  - first collection
+//	/// \param cn2 CollectionT&  - second collection
+//	/// \return Prob  - harmonic mean of the nodebase correction (complement or reduction) for both collections
+//	template <bool REDUCE>
+//	static Prob syncCollections(CollectionT& cn1, CollectionT& cn2);
 
     //! \brief Label collection of clusters according to the ground-truth cluster indices
     //!

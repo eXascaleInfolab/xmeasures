@@ -249,7 +249,6 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 	//fprintf(stderr, "load(), ndchars: %.4G\n", ndchars);
 	assert(ndchars >= 1 && "load(), ndchars invalid");
 #endif // VALIDATE
-	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
 	ClusterHolder<Count>  chd(new Cluster<Count>());
 	do {
 		// Skip cluster id if specified and parse first node id
@@ -316,11 +315,8 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 				}
 			}
 			members.shrink_to_fit();  // Free over reserved space
-			// Update hash
-			for(auto v: members) {
-				mbhash.add(v);
-				//printf(" %u", v);
-			}
+			//for(auto v: members)
+			//	printf(" %u", v);
 			//puts("");
 			cn.m_cls.push_back(chd.release());
 			// Start filling a new cluster
@@ -336,6 +332,11 @@ Collection<Count> Collection<Count>::load(const char* filename, bool makeunique,
 	//	cn.m_cls.reserve(cn.m_cls.size());
 	if(cn.m_ndcs.size() < cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() / 2)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
+
+	// Evaluate the node hash
+	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
+	for(const auto& ndcl: cn.m_ndcs)
+		mbhash.add(ndcl.first);
 	// Assign hash to the results
 	cn.m_ndshash = mbhash.hash();  // Note: required to identify the unequal node base in the processing collections
 	if(ahash)

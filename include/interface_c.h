@@ -82,10 +82,11 @@ typedef float  Probability;
 //! \param[out] prc Probability*  - precision of cn2 relative to the ground-truth cn1 or
 //! 0 if the matching strategy does not have the precision/recall notations
 //! \param mkind=MATCH_WEIGHTED MatchKind  - matching kind
+//! \param sync uint8_t  - synchronize node base of the input collections, by appending the lacking single-node clusters
 //! \param verbose=0 uint8_t  - print intermediate results to the stdout
 //! \return Probability  - resulting F1_gm
 Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
-	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t verbose);
+	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t sync, uint8_t verbose);
 Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
 	, Probability* rec, Probability* prc);  // MATCH_WEIGHTED, false
 Probability f1p(const ClusterCollection cn1, const ClusterCollection cn2);  // MATCH_WEIGHTED, false
@@ -98,6 +99,15 @@ Probability f1h(const ClusterCollection cn1, const ClusterCollection cn2);  // M
 //! \return Probability  - omega index
 Probability omega(const ClusterCollection cn1, const ClusterCollection cn2);
 Probability omegaExt(const ClusterCollection cn1, const ClusterCollection cn2);
+
+//! \brief (Extended) Omega Index evaluation
+//!
+//! \param cn1 const ClusterCollection  - first collection of clusters (node relations)
+//! \param cn2 const ClusterCollection  - second collection
+//! \param ext uint8_t  - evaluate extended omega index
+//! \param sync uint8_t  - synchronize node base of the input collections, by appending the lacking single-node clusters
+//! \return Probability  - omega index
+Probability omegax(const ClusterCollection cn1, const ClusterCollection cn2, uint8_t ext, uint8_t sync);
 
 #ifdef __cplusplus
 };

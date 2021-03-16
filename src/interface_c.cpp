@@ -31,28 +31,34 @@ using std::unordered_set;
 //! \brief Load collection from the provided raw collection
 //! \note This is an accessory routine for C API
 //! \pre All clusters in the collection are expected to be unique and not validated for
-//! the mutual match until makeunique is set
+//! the mutual match until makeunique is set;
+//! (reduce == (nodebase->ndsnum() < rcn.num)) || nodebase->ndsnum() == rcn.num
 //!
-//! \param rcn const ClusterCollection  - raw collection of nodes
+//! \param rcn const ClusterCollection  - raw collection of clusters
 //! \param makeunique=false bool  - ensure that clusters contain unique members by
-//! 	removing the duplicates
+//! removing the duplicates
 //! \param membership=1 float  - expected membership of the nodes, >0, typically >= 1.
 //! Used only for the node container preallocation to estimate the number of nodes
 //! if not specified in the file header
 //! \param ahash=nullptr AggHash*  - resulting hash of the loaded
 //! member ids base (unique ids only are hashed, not all ids) if not nullptr
-//! \param const nodebase=nullptr NodeBaseI*  - node base to filter-out nodes if required
+//! \param const nodebase=nullptr NodeBaseI*  - node base to filter-out or complement nodes if required
+//! \param reduce=false bool  - whether to reduce collections by removing the non-matching nodes
+//! or extend collections by appending those nodes them to a single "noise" cluster
 //! \param lostcls=nullptr RawIds*  - indices of the lost clusters during the node base
 //! synchronization
 //! \param verbose=false bool  - print the number of loaded nodes to the stdout
 //! \return CollectionT  - the collection is loaded successfully
 Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique=false
 	, float membership=1, ::AggHash* ahash=nullptr, const NodeBaseI* nodebase=nullptr
-	, RawIds* lostcls=nullptr, bool verbose=false);
+	, bool reduce=false, RawIds* lostcls=nullptr, bool verbose=false);
 
-Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
-	, float membership, ::AggHash* ahash, const NodeBaseI* nodebase, RawIds* lostcls, bool verbose)
+Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique, float membership
+	, ::AggHash* ahash, const NodeBaseI* nodebase, bool reduce, RawIds* lostcls, bool verbose)
 {
+	assert(((reduce == (nodebase->ndsnum() < rcn.num)) || nodebase->ndsnum() == rcn.num)
+		&& "Nodebase is not synced with the reduce argument");
+
 	Collection<Id>  cn;  // Return using NRVO, named return value optimization
 	if(!rcn.nodes) {
 		fputs("WARNING loadCollection(), the empty input collection is omitted\n", stderr);
@@ -75,7 +81,6 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 #endif // TRACE
 
 	// Parse clusters
-	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
 	ClusterHolder<Id>  chd(new Cluster<Id>());
 	for(NodeId i = 0; i < rcn.num; ++i) {
 		Cluster<Id>* const  pcl = chd.get();
@@ -86,7 +91,7 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 			assert(ndrels.ids && "Invalid (non-allocated) node relations");
 			const auto did = ndrels.ids[j];
 			// Filter out nodes if required
-			if(nodebase && !nodebase->nodeExists(did))
+			if(nodebase && reduce && !nodebase->nodeExists(did))
 				continue;
 			members.push_back(did);
 			auto& ncs = cn.m_ndcs[did];
@@ -113,17 +118,30 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 				}
 			}
 			members.shrink_to_fit();  // Free over reserved space
-			// Update hash
-			for(auto v: members) {
-				mbhash.add(v);
-				//printf(" %u", v);
-			}
+			//for(auto v: members)
+			//	printf(" %u", v);
 			//puts("");
 			cn.m_cls.push_back(chd.release());
 			// Start filling a new cluster
 			chd.reset(new Cluster<Id>());
 		} else if(lostcls)
 			lostcls->push_back(lostcls->size() + cn.m_cls.size());
+	}
+
+	// Extend collection with a single "noise" cluster containing missed nodes if required
+	if(nodebase && !reduce && cn.m_ndcs.size() < nodebase->ndsnum()) {
+		// Fetch complementary nodes
+		RawIds nids;
+		nids.reserve(nodebase->ndsnum() - cn.m_ndcs.size());
+		for(auto nid: nodebase->nodes())
+			if(!cn.m_ndcs.count(nid))
+				nids.push_back(nid);
+		// Add complementary nodes to the
+		Cluster<Id>* const  pcl = chd.get();
+		pcl->members.insert(pcl->members.end(), nids.begin(), nids.end());
+		for(auto nid: nids)
+			cn.m_ndcs[nid].push_back(pcl);
+		cn.m_cls.push_back(chd.release());
 	}
 
 	// Save some space if it is essential
@@ -134,6 +152,11 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 	//	cn.m_cls.reserve(cn.m_cls.size());
 	if(cn.m_ndcs.size() < cn.m_ndcs.bucket_count() * cn.m_ndcs.max_load_factor() / 2)
 		cn.m_ndcs.reserve(cn.m_ndcs.size());
+
+	// Evaluate the node hash
+	::AggHash  mbhash;  // Nodes hash (only unique nodes, not all the members)
+	for(const auto& ndcl: cn.m_ndcs)
+		mbhash.add(ndcl.first);
 	// Assign hash to the results
 	cn.m_ndshash = mbhash.hash();  // Note: required to identify the unequal node base in the processing collections
 	if(ahash)
@@ -157,6 +180,59 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique
 	return cn;
 }
 
+/// \brief Fetch nodes from the raw collection of clusters
+///
+/// \param cn const ClusterCollection  - raw collection of clusters
+/// \return UniqIds  - cluster nodes
+UniqIds fetchNodes(const ClusterCollection cn)
+{
+	UniqIds nodes;  // Uses NRVO return value optimization
+	nodes.reserve(cn.num * 2);
+
+	if(cn.nodes) {
+		for(NodeId i = 0; i < cn.num; ++i) {
+			const auto& ndrs = cn.nodes[i];
+			if(!ndrs.ids) {
+				fprintf(stderr, "WARNING %s(), the empty node ids (nominally: %u ids) is omitted\n", __FUNCTION__, ndrs.num);
+				continue;
+			}
+			for(NodeId j = 0; j < ndrs.num; ++j)
+				nodes.insert(nodes.end(), ndrs.ids[j]);
+		}
+	} else fprintf(stderr, "WARNING %s(), the empty input collection (nominally: %u nodes) is omitted\n", __FUNCTION__, cn.num);
+
+	return nodes;
+}
+
+/// \brief Fetch nodebase from collection of clusters, reduced (intersection) or extended (union) one
+///
+/// \param cn1 ClusterCollection const  - first raw collection of clusters
+/// \param cn2 ClusterCollection const  - second raw collection of clusters
+/// \param reduced=false bool  - whether reduce or extend tham
+/// \return NodeBase  - resulting nodebase
+NodeBase fetchNodebase(const ClusterCollection cn1, const ClusterCollection cn2, bool reduced=false)
+{
+	NodeBase nodes;  // Uses NRVO return value optimization
+	if(reduced) {
+		UniqIds  nds1 = fetchNodes(cn1);
+		UniqIds  nds2 = fetchNodes(cn2);
+		nodes.reserve(abs(static_cast<long>(nds1.size()) - static_cast<long>(nds2.size())));
+		for(auto nid: nds1)
+			if(!nds2.count(nid))
+				nodes.insert(nodes.end(), nid);
+		for(auto nid: nds2)
+			if(!nds1.count(nid))
+				nodes.insert(nodes.end(), nid);
+#if VALIDATE >= 2
+		assert((nodes.ndsnum() <= min(nds1.size(), nds2.size())) && "Unexpected size of resulting nodes");
+#endif // VALIDATE
+	} else for(const auto& cn: {cn1, cn2}) {
+		const auto partnds = fetchNodes(cn);
+		nodes.insert(partnds.begin(), partnds.end());
+	}
+	return nodes;
+}
+
 // Interface implementation ----------------------------------------------------
 Probability f1p(const ClusterCollection cn1, const ClusterCollection cn2)
 {
@@ -172,41 +248,45 @@ Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind 
 	, Probability* rec, Probability* prc)
 {
 	Probability  tmp;  // Temporary buffer, a placeholder
-	return f1x(cn1, cn2, kind, rec ? rec : &tmp, prc ? prc : &tmp, MATCH_WEIGHTED, 0);
+	return f1x(cn1, cn2, kind, rec ? rec : &tmp, prc ? prc : &tmp, MATCH_WEIGHTED, 1, 0);
 }
 
 Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
-	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t verbose)
+	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t sync, uint8_t verbose)
 {
 #if TRACE >= 2
 	if(verbose)
 		printf("%s(), loading clustering collections of size: %u, %u\n", __FUNCTION__
 			, cn1.num, cn2.num);
 #endif // TRACE
-	// Load nodes
-	const auto c1 = loadCollection(cn1);
-	const auto c2 = loadCollection(cn2);
 	assert(rec && prc && "Invalid output arguments");
-	return Collection<Id>::f1(c1, c2, static_cast<F1>(kind), *rec, *prc, static_cast<Match>(mkind), verbose);
+	// Load nodes
+	const bool reduce = false;  // Whether to reduce or extend collections of clusters
+	Probability res = 0;
+	if(sync) {
+		NodeBase ndbase = fetchNodebase(cn1, cn2, reduce);
+		Collection<Id>  c1 = loadCollection(cn1, false, 1, nullptr, &ndbase, reduce);
+		Collection<Id>  c2 = loadCollection(cn2, false, 1, nullptr, &ndbase, reduce);
+		res = Collection<Id>::f1(c1, c2, static_cast<F1>(kind), *rec, *prc, static_cast<Match>(mkind), verbose);
+	} else {
+		Collection<Id>  c1 = loadCollection(cn1);
+		Collection<Id>  c2 = loadCollection(cn2);
+		res = Collection<Id>::f1(c1, c2, static_cast<F1>(kind), *rec, *prc, static_cast<Match>(mkind), verbose);
+	}
+	return res;
 }
 
 Probability omega(const ClusterCollection cn1, const ClusterCollection cn2)
 {
-	// Transform loaded and pre-processed collection to the representation
-	// suitable for Omega Index evaluation
-	RawClusters  cls1;
-	RawClusters  cls2;
-	NodeRClusters  ndrcs;
-
-	// Load nodes
-	auto c1 = loadCollection(cn1);
-	c1.template transfer<true>(cls1, ndrcs);
-	auto c2 = loadCollection(cn2);
-	c2.template transfer<false>(cls2, ndrcs);
-	return omega<false>(ndrcs, cls1, cls2);
+	return omegax(cn1, cn2, 0, 1);
 }
 
 Probability omegaExt(const ClusterCollection cn1, const ClusterCollection cn2)
+{
+	return omegax(cn1, cn2, 1, 1);
+}
+
+Probability omegax(const ClusterCollection cn1, const ClusterCollection cn2, uint8_t ext, uint8_t sync)
 {
 	// Transform loaded and pre-processed collection to the representation
 	// suitable for Omega Index evaluation
@@ -214,11 +294,19 @@ Probability omegaExt(const ClusterCollection cn1, const ClusterCollection cn2)
 	RawClusters  cls2;
 	NodeRClusters  ndrcs;
 
-	// Load nodes
-	auto c1 = loadCollection(cn1);
-	c1.template transfer<true>(cls1, ndrcs);
-	auto c2 = loadCollection(cn2);
-	c2.template transfer<false>(cls2, ndrcs);
-	return omega<true>(ndrcs, cls1, cls2);
+	const bool reduce = false;  // Whether to reduce or expand collections of clusters
+	if(sync) {
+		NodeBase ndbase = fetchNodebase(cn1, cn2, reduce);
+		Collection<Id>  c1 = loadCollection(cn1, false, 1, nullptr, &ndbase, reduce);
+		Collection<Id>  c2 = loadCollection(cn2, false, 1, nullptr, &ndbase, reduce);
+		c1.template transfer<true>(cls1, ndrcs);
+		c2.template transfer<false>(cls2, ndrcs);
+	} else {
+		Collection<Id>  c1 = loadCollection(cn1);
+		Collection<Id>  c2 = loadCollection(cn2);
+		c1.template transfer<true>(cls1, ndrcs);
+		c2.template transfer<false>(cls2, ndrcs);
+	}
+	return ext ? omega<true>(ndrcs, cls1, cls2)
+		: omega<false>(ndrcs, cls1, cls2);
 }
-

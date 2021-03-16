@@ -54,6 +54,7 @@ def clusterCollection(clusters):
 	cc = (ClusterNodes * len(clusters))(*(clusterNodes(nds) for nds in clusters))
 	return ClusterCollection(len(clusters), cc)
 
+
 def weightedClusterCollection(clusters):
 	"""ClusterCollection initialization
 
@@ -65,10 +66,11 @@ def weightedClusterCollection(clusters):
 	cc = (c_uint * len(clusters))(*(clusterNodes(nds, wgs) for nds, wgs in clusters))
 	return ClusterCollection(len(clusters), cc)
 
+
 # Example of xmeasures usage from Python -------------------------------------------------------------------------------
 if __name__ == "__main__":
 	# Load the shared library into ctypes
-	libXms = pathlib.Path().absolute() / "bin/Release/libxmeasures.so"  # Release
+	libXms = pathlib.Path().absolute() / "bin/Release/libxmeasures.so"
 	xms = CDLL(libXms)
 	# Set proper return types for the importing functions
 	xms.f1p.restype = c_float
@@ -77,7 +79,7 @@ if __name__ == "__main__":
 	xms.omega.restype = c_float
 	# Perform evaluations
 	nc1 = clusterCollection(((9,2,4), (2,13)))
-	nc2 = clusterCollection(((9,13,2), (2,4)))
+	nc2 = clusterCollection([[9,13,2], [2,4]])
 	print('F1p: {}, F1h: {}, omegaExt: {}, omega: {}'.format(
 		xms.f1p(nc1, nc2),
 		xms.f1h(nc1, nc2),
