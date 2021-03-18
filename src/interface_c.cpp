@@ -248,11 +248,11 @@ Probability f1(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind 
 	, Probability* rec, Probability* prc)
 {
 	Probability  tmp;  // Temporary buffer, a placeholder
-	return f1x(cn1, cn2, kind, rec ? rec : &tmp, prc ? prc : &tmp, MATCH_WEIGHTED, 1, 0);
+	return f1x(cn1, cn2, kind, rec ? rec : &tmp, prc ? prc : &tmp, MATCH_WEIGHTED, 1, 1, 0);
 }
 
 Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind kind
-	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t sync, uint8_t verbose)
+	, Probability* rec, Probability* prc, MatchKind mkind, uint8_t sync, uint8_t makeunique, uint8_t verbose)
 {
 #if TRACE >= 2
 	if(verbose)
@@ -265,8 +265,8 @@ Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind
 	Probability res = 0;
 	if(sync) {
 		NodeBase ndbase = fetchNodebase(cn1, cn2, reduce);
-		Collection<Id>  c1 = loadCollection(cn1, false, 1, nullptr, &ndbase, reduce);
-		Collection<Id>  c2 = loadCollection(cn2, false, 1, nullptr, &ndbase, reduce);
+		Collection<Id>  c1 = loadCollection(cn1, makeunique, 1, nullptr, &ndbase, reduce);
+		Collection<Id>  c2 = loadCollection(cn2, makeunique, 1, nullptr, &ndbase, reduce);
 		res = Collection<Id>::f1(c1, c2, static_cast<F1>(kind), *rec, *prc, static_cast<Match>(mkind), verbose);
 	} else {
 		Collection<Id>  c1 = loadCollection(cn1);
@@ -278,15 +278,15 @@ Probability f1x(const ClusterCollection cn1, const ClusterCollection cn2, F1Kind
 
 Probability omega(const ClusterCollection cn1, const ClusterCollection cn2)
 {
-	return omegax(cn1, cn2, 0, 1);
+	return omegax(cn1, cn2, 0, 1, 1);
 }
 
 Probability omegaExt(const ClusterCollection cn1, const ClusterCollection cn2)
 {
-	return omegax(cn1, cn2, 1, 1);
+	return omegax(cn1, cn2, 1, 1, 1);
 }
 
-Probability omegax(const ClusterCollection cn1, const ClusterCollection cn2, uint8_t ext, uint8_t sync)
+Probability omegax(const ClusterCollection cn1, const ClusterCollection cn2, uint8_t ext, uint8_t sync, uint8_t makeunique)
 {
 	// Transform loaded and pre-processed collection to the representation
 	// suitable for Omega Index evaluation
@@ -297,8 +297,8 @@ Probability omegax(const ClusterCollection cn1, const ClusterCollection cn2, uin
 	const bool reduce = false;  // Whether to reduce or expand collections of clusters
 	if(sync) {
 		NodeBase ndbase = fetchNodebase(cn1, cn2, reduce);
-		Collection<Id>  c1 = loadCollection(cn1, false, 1, nullptr, &ndbase, reduce);
-		Collection<Id>  c2 = loadCollection(cn2, false, 1, nullptr, &ndbase, reduce);
+		Collection<Id>  c1 = loadCollection(cn1, makeunique, 1, nullptr, &ndbase, reduce);
+		Collection<Id>  c2 = loadCollection(cn2, makeunique, 1, nullptr, &ndbase, reduce);
 		c1.template transfer<true>(cls1, ndrcs);
 		c2.template transfer<false>(cls2, ndrcs);
 	} else {
