@@ -698,9 +698,14 @@ AccProb Collection<Count>::avggms(const Probs& gmats, bool weighted) const  // c
 	//const auto  gmats = gmatches(cn, prob);
 
 	if(weighted) {
-#if VALIDATE >= 1
+#if VALIDATE >= 2
 		assert(gmats.size() == m_cls.size()
 			&& "avggms(), matches are not synchronized with the clusters");
+#elif VALIDATE >= 1
+		if(gmats.size() != m_cls.size()) {
+			fprintf(stderr, "ERROR: avggms(), matches (%lu) are not synchronized with the clusters (%lu)\n", gmats.size(), m_cls.size());
+			return -1;
+		}
 #endif // VALIDATE
 		AccCont  csizesSum = 0;
 		auto icl = m_cls.begin();

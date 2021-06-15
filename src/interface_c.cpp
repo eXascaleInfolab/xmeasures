@@ -56,10 +56,20 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique=false
 Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique, float membership
 	, ::AggHash* ahash, const NodeBaseI* nodebase, bool reduce, RawIds* lostcls, bool verbose)
 {
+	Collection<Id>  cn;  // Return using NRVO, named return value optimization
+
+#ifdef DEBUG
+	// Note: asserts break libraries (=> may crash a webservice), and, hence, should be avoided in the release mode
 	assert(((reduce == (nodebase->ndsnum() < rcn.num)) || nodebase->ndsnum() == rcn.num)
 		&& "Nodebase is not synced with the reduce argument");
+#else
+	if(!((reduce == (nodebase->ndsnum() < rcn.num)) || nodebase->ndsnum() == rcn.num)) {
+		fprintf(stderr, "ERROR: loadCollection(). Nodebase is not synced with the reduce argument (reduce: %u, nodebase: %u, rcn: %u)\n"
+			, reduce, nodebase->ndsnum(), rcn.num);
+		return cn;
+	}
+#endif // DEBUG
 
-	Collection<Id>  cn;  // Return using NRVO, named return value optimization
 	if(!rcn.nodes) {
 		fputs("WARNING loadCollection(), the empty input collection is omitted\n", stderr);
 		return cn;
@@ -88,7 +98,15 @@ Collection<Id> loadCollection(const ClusterCollection rcn, bool makeunique, floa
 		const auto& ndrels = rcn.nodes[i];
 		members.reserve(ndrels.num);
 		for(NodeId j = 0; j < ndrels.num; ++j) {
+#ifdef DEBUG
 			assert(ndrels.ids && "Invalid (non-allocated) node relations");
+#else
+			if(!ndrels.ids) {
+				fputs("ERROR: loadCollection(). Invalid (non-allocated) node relations\n", stderr);
+				cn = Collection<Id>();
+				return cn;
+			}
+#endif // DEBUG
 			const auto did = ndrels.ids[j];
 			// Filter out nodes if required
 			if(nodebase && reduce && !nodebase->nodeExists(did))

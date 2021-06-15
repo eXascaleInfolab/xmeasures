@@ -637,7 +637,8 @@ private:
 	const UniqIds& nodes() const noexcept override  // Make a stub and close it
 	{
 		assert(0 && "Nodes should not be accessed in collection via the NodeBaseI interface");
-		return UniqIds();  // Stub output
+		static UniqIds  nds;
+		return nds;  // Stub output
 	}
 protected:
     //! Default constructor
